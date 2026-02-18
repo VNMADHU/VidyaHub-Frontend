@@ -24,7 +24,14 @@ const ProtectedRoute = ({ children, requiredRole = null }: ProtectedRouteProps) 
   useEffect(() => {
     if (!isChecking) {
       if (!token || !role) {
-        navigate('/')
+        // Redirect to the correct login page based on the required role
+        if (requiredRole === 'portal-student') {
+          navigate('/student-login')
+        } else if (requiredRole === 'portal-teacher') {
+          navigate('/teacher-login')
+        } else {
+          navigate('/')
+        }
         return
       }
 

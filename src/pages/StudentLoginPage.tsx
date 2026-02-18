@@ -2,9 +2,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '@/services/api'
+import { useAppDispatch } from '@/store'
+import { login } from '@/store/slices/authSlice'
 
 const StudentLoginPage = () => {
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
   const [rollNumber, setRollNumber] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,15 +19,22 @@ const StudentLoginPage = () => {
 
     try {
       const response = await apiClient.studentLogin(rollNumber.trim())
-      // Store student data in sessionStorage (not persistent like admin)
-      sessionStorage.setItem('portalUser', JSON.stringify({
-        type: 'student',
-        id: response.data.id,
-        name: `${response.data.firstName} ${response.data.lastName}`,
-        rollNumber: response.data.rollNumber,
-        profilePic: response.data.profilePic,
-        schoolName: response.data.school?.name,
-      }))
+
+      // Store JWT token in Redux auth store (same as admin login)
+      dispatch(
+        login({
+          user: {
+            id: response.data.id,
+            email: response.data.email || '',
+            role: 'portal-student',
+            schoolId: response.data.schoolId,
+          },
+          token: response.token,
+          role: 'portal-student',
+          schoolId: String(response.data.schoolId || ''),
+        }),
+      )
+
       navigate(`/my/student/${response.data.id}`)
     } catch (err) {
       setError(err.message || 'Invalid Roll Number. Please try again.')

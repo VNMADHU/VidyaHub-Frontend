@@ -2,10 +2,16 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import apiClient from '@/services/api'
+import { useAppSelector, useAppDispatch } from '@/store'
+import { logout } from '@/store/slices/authSlice'
 
 const MyStudentProfile = () => {
   const { studentId } = useParams()
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
+  const token = useAppSelector((state) => state.auth.token)
+  const role = useAppSelector((state) => state.auth.role)
+  const authUser = useAppSelector((state) => state.auth.user)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
@@ -36,14 +42,14 @@ const MyStudentProfile = () => {
   }, [])
 
   useEffect(() => {
-    const portalUser = JSON.parse(sessionStorage.getItem('portalUser') || '{}')
-    if (!portalUser.id || portalUser.type !== 'student' || String(portalUser.id) !== String(studentId)) {
+    // Verify user is authenticated with a portal-student JWT
+    if (!token || role !== 'portal-student' || String(authUser?.id) !== String(studentId)) {
       navigate('/student-login')
       return
     }
     loadProfile()
     loadFees()
-  }, [studentId])
+  }, [studentId, token, role])
 
   const loadFees = async () => {
     try {
@@ -67,7 +73,7 @@ const MyStudentProfile = () => {
   }
 
   const handleLogout = () => {
-    sessionStorage.removeItem('portalUser')
+    dispatch(logout())
     navigate('/student-login')
   }
 

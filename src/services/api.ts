@@ -76,7 +76,13 @@ api.interceptors.response.use(
       if (status === HTTP.UNAUTHORIZED) {
         logger.warn('Unauthorized — clearing session')
         localStorage.removeItem(STORAGE_KEYS.AUTH)
-        if (window.location.pathname.startsWith('/portal')) {
+        // Redirect to appropriate login page based on current path
+        const path = window.location.pathname
+        if (path.startsWith('/my/student')) {
+          window.location.href = '/student-login'
+        } else if (path.startsWith('/my/teacher')) {
+          window.location.href = '/teacher-login'
+        } else if (path !== '/') {
           window.location.href = '/'
         }
       }

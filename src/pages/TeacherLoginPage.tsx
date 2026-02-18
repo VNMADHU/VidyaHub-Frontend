@@ -2,9 +2,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '@/services/api'
+import { useAppDispatch } from '@/store'
+import { login } from '@/store/slices/authSlice'
 
 const TeacherLoginPage = () => {
   const navigate = useNavigate()
+  const dispatch = useAppDispatch()
   const [teacherId, setTeacherId] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,15 +19,22 @@ const TeacherLoginPage = () => {
 
     try {
       const response = await apiClient.teacherLogin(teacherId.trim())
-      // Store teacher data in sessionStorage
-      sessionStorage.setItem('portalUser', JSON.stringify({
-        type: 'teacher',
-        id: response.data.id,
-        name: `${response.data.firstName} ${response.data.lastName}`,
-        teacherId: response.data.teacherId,
-        profilePic: response.data.profilePic,
-        schoolName: response.data.school?.name,
-      }))
+
+      // Store JWT token in Redux auth store (same as admin login)
+      dispatch(
+        login({
+          user: {
+            id: response.data.id,
+            email: response.data.email || '',
+            role: 'portal-teacher',
+            schoolId: response.data.schoolId,
+          },
+          token: response.token,
+          role: 'portal-teacher',
+          schoolId: String(response.data.schoolId || ''),
+        }),
+      )
+
       navigate(`/my/teacher/${response.data.id}`)
     } catch (err) {
       setError(err.message || 'Invalid Teacher ID. Please try again.')
