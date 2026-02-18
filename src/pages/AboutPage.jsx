@@ -172,7 +172,11 @@ const AboutPage = () => {
                 <input
                   type="tel"
                   value={schoolInfo.contact}
-                  onChange={(e) => setSchoolInfo({ ...schoolInfo, contact: e.target.value })}
+                  onChange={(e) => setSchoolInfo({ ...schoolInfo, contact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                  pattern="[6-9][0-9]{9}"
+                  title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                  maxLength={10}
+                  placeholder="10-digit mobile number"
                 />
               ) : (
                 <p>{schoolInfo.contact}</p>

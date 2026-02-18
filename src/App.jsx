@@ -24,7 +24,12 @@ import SettingsPage from './pages/SettingsPage'
 import ExamManagementPage from './pages/ExamManagementPage'
 import StudentDetailPage from './pages/StudentDetailPage'
 import TeacherDetailPage from './pages/TeacherDetailPage'
+import FeesPage from './pages/FeesPage'
 import ProtectedRoute from './components/ProtectedRoute'
+import StudentLoginPage from './pages/StudentLoginPage'
+import TeacherLoginPage from './pages/TeacherLoginPage'
+import MyStudentProfile from './pages/MyStudentProfile'
+import MyTeacherProfile from './pages/MyTeacherProfile'
 
 const router = createBrowserRouter([
   {
@@ -40,6 +45,11 @@ const router = createBrowserRouter([
       { path: 'super-admin', element: <SuperAdminDashboard /> },
     ],
   },
+  // Student & Teacher self-service portal (no password login)
+  { path: '/student-login', element: <StudentLoginPage /> },
+  { path: '/teacher-login', element: <TeacherLoginPage /> },
+  { path: '/my/student/:studentId', element: <MyStudentProfile /> },
+  { path: '/my/teacher/:teacherId', element: <MyTeacherProfile /> },
   {
     path: '/portal',
     element: (
@@ -58,6 +68,7 @@ const router = createBrowserRouter([
       { path: 'exams', element: <ExamsPage /> },
       { path: 'exam-management', element: <ExamManagementPage /> },
       { path: 'attendance', element: <AttendancePage /> },
+      { path: 'fees', element: <FeesPage /> },
       { path: 'events', element: <EventsPage /> },
       { path: 'announcements', element: <AnnouncementsPage /> },
       { path: 'achievements', element: <AchievementsPage /> },

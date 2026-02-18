@@ -30,12 +30,12 @@ const AuthSection = () => {
         activeRole,
       )
 
-      // Store user info and redirect to portal dashboard
+      // Use actual user data and token from the server response
       login(
-        { email: formData.email, role: activeRole },
-        'demo-token-123',
-        activeRole,
-        '1',
+        response.user,
+        response.token,
+        response.user.role,
+        String(response.user.schoolId || ''),
       )
 
       setMessage('✓ Login successful! Redirecting...')
@@ -43,7 +43,7 @@ const AuthSection = () => {
         navigate('/portal/dashboard')
       }, 500)
     } catch (error) {
-      setMessage(`✗ Login failed: ${error.message}`)
+      setMessage(`✗ ${error.message || 'Login failed. Please check your credentials.'}`)
     } finally {
       setIsLoading(false)
     }

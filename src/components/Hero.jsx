@@ -18,6 +18,21 @@ const Hero = () => (
             View Features
           </a>
         </div>
+        <div className="portal-access-strip">
+          <span className="portal-access-label">Quick Access</span>
+          <div className="portal-access-links">
+            <a className="portal-link student" href="/student-login">
+              <span className="portal-link-icon">🎓</span>
+              <span className="portal-link-text">Student Portal</span>
+              <span className="portal-link-arrow">→</span>
+            </a>
+            <a className="portal-link teacher" href="/teacher-login">
+              <span className="portal-link-icon">👨‍🏫</span>
+              <span className="portal-link-text">Teacher Portal</span>
+              <span className="portal-link-arrow">→</span>
+            </a>
+          </div>
+        </div>
       </div>
       <div className="hero-card">
         {heroStats.map((stat) => (

@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
-import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
 
 const AttendancePage = () => {
-  const { confirm } = useConfirm()
   const [attendance, setAttendance] = useState([])
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState({})
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
-  const [showMarkForm, setShowMarkForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
 
   useEffect(() => {
@@ -37,14 +34,11 @@ const AttendancePage = () => {
         apiClient.listStudents(),
         apiClient.listClasses(),
       ])
-      console.log('Attendance data:', attendanceResponse)
-      console.log('Students data:', studentsResponse)
       setAttendance(attendanceResponse?.data || [])
       setStudents(studentsResponse?.data || [])
       setClasses(classesResponse?.data || [])
     } catch (error) {
       console.error('Failed to load data:', error)
-      alert(`Failed to load data: ${error.message}`)
     } finally {
       setLoading(false)
     }
@@ -60,35 +54,68 @@ const AttendancePage = () => {
   }
 
   const markAttendance = async (studentId, status) => {
+    setSaving(prev => ({ ...prev, [studentId]: true }))
     try {
-      const existing = attendance.find(
-        (record) => record.studentId === studentId && record.date === selectedDate
-      )
+      const existing = todayAttendance.find(r => r.studentId === studentId)
       if (existing) {
         await apiClient.updateAttendance(existing.id, { status })
+        // Update local state immediately for responsiveness
+        setAttendance(prev =>
+          prev.map(r => r.id === existing.id ? { ...r, status } : r)
+        )
       } else {
-      await apiClient.createAttendance({
-        studentId,
-        date: selectedDate,
-        status,
-      })
+        const res = await apiClient.createAttendance({
+          studentId,
+          date: selectedDate,
+          status,
+        })
+        setAttendance(prev => [...prev, res.data])
       }
-      loadData()
     } catch (error) {
       console.error('Failed to mark attendance:', error)
+      loadData() // Reload on error to get accurate state
+    } finally {
+      setSaving(prev => ({ ...prev, [studentId]: false }))
     }
   }
 
-  const deleteAttendance = async (attendanceId) => {
-    const confirmed = await confirm({
-      message: 'Are you sure you want to delete this attendance record?',
-    })
-    if (!confirmed) return
+  const markAllAs = async (status) => {
+    const unmarked = filteredStudents.filter(
+      s => !todayAttendance.find(r => r.studentId === s.id)
+    )
+    const toUpdate = filteredStudents.filter(
+      s => {
+        const record = todayAttendance.find(r => r.studentId === s.id)
+        return record && record.status !== status
+      }
+    )
+    const allToProcess = [...unmarked, ...toUpdate]
+    if (allToProcess.length === 0) return
+
+    // Set all as saving
+    const savingState = {}
+    allToProcess.forEach(s => savingState[s.id] = true)
+    setSaving(prev => ({ ...prev, ...savingState }))
+
     try {
-      await apiClient.deleteAttendance(attendanceId)
-      loadData()
+      for (const student of allToProcess) {
+        const existing = todayAttendance.find(r => r.studentId === student.id)
+        if (existing) {
+          await apiClient.updateAttendance(existing.id, { status })
+        } else {
+          await apiClient.createAttendance({
+            studentId: student.id,
+            date: selectedDate,
+            status,
+          })
+        }
+      }
+      await loadData()
     } catch (error) {
-      console.error('Failed to delete attendance:', error)
+      console.error('Failed to mark all:', error)
+      await loadData()
+    } finally {
+      setSaving({})
     }
   }
 
@@ -99,10 +126,7 @@ const AttendancePage = () => {
   const attendanceTemplateHeaders = ['studentId', 'date', 'status']
 
   const mapAttendanceRow = (row) => {
-    if (!row.studentId || !row.date || !row.status) {
-      return null
-    }
-
+    if (!row.studentId || !row.date || !row.status) return null
     return {
       studentId: Number(row.studentId),
       date: String(row.date).trim(),
@@ -110,18 +134,24 @@ const AttendancePage = () => {
     }
   }
 
-  const todayAttendance = attendance.filter(
-    (record) => {
-      const recordDate = record.date?.split('T')[0] || record.date
-      return recordDate === selectedDate
-    }
-  )
+  const todayAttendance = attendance.filter(record => {
+    const recordDate = record.date?.split('T')[0] || record.date
+    return recordDate === selectedDate
+  })
 
   const filteredStudents = students.filter(student => {
     if (selectedClass && student.classId !== Number(selectedClass)) return false
     if (selectedSection && student.sectionId !== Number(selectedSection)) return false
     return true
   })
+
+  const presentCount = todayAttendance.filter(r => r.status === 'present').length
+  const absentCount = todayAttendance.filter(r => r.status === 'absent').length
+  const lateCount = todayAttendance.filter(r => r.status === 'late').length
+  const unmarkedCount = filteredStudents.length - todayAttendance.filter(r => filteredStudents.some(s => s.id === r.studentId)).length
+  const attendanceRate = filteredStudents.length > 0 
+    ? Math.round(((presentCount + lateCount) / filteredStudents.length) * 100) 
+    : 0
 
   return (
     <div className="page">
@@ -133,9 +163,6 @@ const AttendancePage = () => {
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
-          </button>
-          <button className="btn primary" onClick={() => setShowMarkForm(!showMarkForm)}>
-            {showMarkForm ? 'Cancel' : '✓ Mark Attendance'}
           </button>
         </div>
       </div>
@@ -149,9 +176,7 @@ const AttendancePage = () => {
           >
             <option value="">All Classes</option>
             {classes.map(cls => (
-              <option key={cls.id} value={cls.id}>
-                {cls.name}
-              </option>
+              <option key={cls.id} value={cls.id}>{cls.name}</option>
             ))}
           </select>
         </div>
@@ -164,9 +189,7 @@ const AttendancePage = () => {
           >
             <option value="">All Sections</option>
             {sections.map(section => (
-              <option key={section.id} value={section.id}>
-                {section.name}
-              </option>
+              <option key={section.id} value={section.id}>{section.name}</option>
             ))}
           </select>
         </div>
@@ -180,121 +203,106 @@ const AttendancePage = () => {
           />
         </div>
         <div className="stat-mini">
-          <span className="stat-label">Total Students</span>
+          <span className="stat-label">Total</span>
           <span className="stat-number">{filteredStudents.length}</span>
         </div>
         <div className="stat-mini">
-          <span className="stat-label">Present Today</span>
-          <span className="stat-number">{todayAttendance.filter(r => r.status === 'present').length}</span>
+          <span className="stat-label">Present</span>
+          <span className="stat-number" style={{ color: '#10b981' }}>{presentCount}</span>
         </div>
         <div className="stat-mini">
-          <span className="stat-label">Attendance Rate</span>
-          <span className="stat-number">{filteredStudents.length > 0 ? Math.round((todayAttendance.filter(r => r.status === 'present').length / filteredStudents.length) * 100) : 0}%</span>
+          <span className="stat-label">Absent</span>
+          <span className="stat-number" style={{ color: '#ef4444' }}>{absentCount}</span>
+        </div>
+        <div className="stat-mini">
+          <span className="stat-label">Rate</span>
+          <span className="stat-number">{attendanceRate}%</span>
         </div>
       </div>
 
       <div className="page-content-scrollable">
-      {showMarkForm && filteredStudents.length > 0 && (
-        <div className="form-card">
-          <h3>Mark Attendance for {selectedDate}</h3>
-          <div className="attendance-list">
-            {filteredStudents.map((student) => {
-              const record = todayAttendance.find(r => r.studentId === student.id)
-              return (
-                <div key={student.id} className="attendance-item">
-                  <span className="student-name">
-                    {student.firstName} {student.lastName}
-                  </span>
-                  <div className="attendance-buttons">
-                    <button
-                      className={`btn-status ${record?.status === 'present' ? 'active-present' : ''}`}
-                      onClick={() => markAttendance(student.id, 'present')}
-                    >
-                      ✓ Present
-                    </button>
-                    <button
-                      className={`btn-status ${record?.status === 'absent' ? 'active-absent' : ''}`}
-                      onClick={() => markAttendance(student.id, 'absent')}
-                    >
-                      ✗ Absent
-                    </button>
-                    <button
-                      className={`btn-status ${record?.status === 'late' ? 'active-late' : ''}`}
-                      onClick={() => markAttendance(student.id, 'late')}
-                    >
-                      ⏰ Late
-                    </button>
-                  </div>
+        {showBulkImport && (
+          <BulkImportModal
+            title="Attendance"
+            templateHeaders={attendanceTemplateHeaders}
+            mapRowToPayload={mapAttendanceRow}
+            createItem={(payload) => apiClient.createAttendance(payload)}
+            onClose={() => setShowBulkImport(false)}
+            onDone={handleBulkImportDone}
+          />
+        )}
+
+        {loading ? (
+          <div className="loading-state">Loading attendance...</div>
+        ) : (
+          <>
+            {/* Quick Actions Bar */}
+            {filteredStudents.length > 0 && (
+              <div className="attendance-actions-bar">
+                <span className="attendance-actions-label">Quick Actions:</span>
+                <button className="btn-mark-all present" onClick={() => markAllAs('present')}>
+                  ✓ Mark All Present
+                </button>
+                <button className="btn-mark-all absent" onClick={() => markAllAs('absent')}>
+                  ✗ Mark All Absent
+                </button>
+                {unmarkedCount > 0 && (
+                  <span className="unmarked-badge">{unmarkedCount} unmarked</span>
+                )}
+              </div>
+            )}
+
+            {/* Attendance List */}
+            <div className="attendance-list">
+              {filteredStudents.length === 0 ? (
+                <div className="empty-state" style={{ padding: '3rem', textAlign: 'center' }}>
+                  No students found. Select a class or add students first.
                 </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-      {showBulkImport && (
-        <BulkImportModal
-          title="Attendance"
-          templateHeaders={attendanceTemplateHeaders}
-          mapRowToPayload={mapAttendanceRow}
-          createItem={(payload) => apiClient.createAttendance(payload)}
-          onClose={() => setShowBulkImport(false)}
-          onDone={handleBulkImportDone}
-        />
-      )}
-
-      {showMarkForm && filteredStudents.length === 0 && (
-        <div className="form-card">
-          <p style={{ textAlign: 'center', padding: '2rem' }}>
-            No students found in the selected class/section. Please add students first from the Students page.
-          </p>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="loading-state">Loading attendance...</div>
-      ) : (
-        <div className="data-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Student</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {todayAttendance.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="empty-row">
-                    No attendance marked for {selectedDate}
-                  </td>
-                </tr>
               ) : (
-                todayAttendance.map((record) => {
-                  const student = students.find(s => s.id === record.studentId)
+                filteredStudents.map((student) => {
+                  const record = todayAttendance.find(r => r.studentId === student.id)
+                  const isSaving = saving[student.id]
+                  const cls = classes.find(c => c.id === student.classId)
                   return (
-                    <tr key={record.id}>
-                      <td>{record.date}</td>
-                      <td>{student?.firstName} {student?.lastName}</td>
-                      <td>
-                        <span className={`status-badge ${record.status}`}>
-                          {record.status}
+                    <div key={student.id} className={`attendance-item ${record ? '' : 'unmarked'}`}>
+                      <div className="attendance-student-info">
+                        <span className="student-name">
+                          {student.firstName} {student.lastName}
                         </span>
-                      </td>
-                      <td>
-                        <button className="btn-icon danger" onClick={() => deleteAttendance(record.id)} aria-label="Delete attendance">
-                          <Trash2 size={16} />
+                        <span className="student-meta">
+                          {cls?.name || ''}{student.rollNumber ? ` • Roll: ${student.rollNumber}` : ''}
+                        </span>
+                      </div>
+                      <div className="attendance-buttons">
+                        <button
+                          className={`btn-status ${record?.status === 'present' ? 'active-present' : ''}`}
+                          onClick={() => markAttendance(student.id, 'present')}
+                          disabled={isSaving}
+                        >
+                          ✓ Present
                         </button>
-                      </td>
-                    </tr>
+                        <button
+                          className={`btn-status ${record?.status === 'absent' ? 'active-absent' : ''}`}
+                          onClick={() => markAttendance(student.id, 'absent')}
+                          disabled={isSaving}
+                        >
+                          ✗ Absent
+                        </button>
+                        <button
+                          className={`btn-status ${record?.status === 'late' ? 'active-late' : ''}`}
+                          onClick={() => markAttendance(student.id, 'late')}
+                          disabled={isSaving}
+                        >
+                          ⏰ Late
+                        </button>
+                      </div>
+                    </div>
                   )
                 })
               )}
-            </tbody>
-          </table>
-        </div>
-      )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )

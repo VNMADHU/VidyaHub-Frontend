@@ -22,6 +22,7 @@ const SchoolPortalLayout = () => {
     { path: '/portal/exam-management', icon: '📋', label: 'Exams' },
     { path: '/portal/exams', icon: '📝', label: 'Marks' },
     { path: '/portal/attendance', icon: '✓', label: 'Attendance' },
+    { path: '/portal/fees', icon: '💰', label: 'Fees' },
     { path: '/portal/events', icon: '🎉', label: 'Events' },
     { path: '/portal/announcements', icon: '📣', label: 'Announcements' },
     { path: '/portal/achievements', icon: '🏆', label: 'Awards' },

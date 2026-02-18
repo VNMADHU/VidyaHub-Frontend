@@ -7,6 +7,34 @@ import BulkImportModal from '../components/BulkImportModal'
 import useAuthStore from '../store/useAuthStore'
 import SearchBar from '../components/SearchBar'
 
+// Validation helpers
+const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const TODAY = new Date().toISOString().split('T')[0]
+
+const validateStudentForm = (data) => {
+  const errors = []
+  if (data.dateOfBirth && data.dateOfBirth > TODAY) {
+    errors.push('Date of Birth cannot be a future date.')
+  }
+  if (data.email && !EMAIL_REGEX.test(data.email)) {
+    errors.push('Please enter a valid email address.')
+  }
+  if (data.parentEmail && !EMAIL_REGEX.test(data.parentEmail)) {
+    errors.push('Please enter a valid parent email address.')
+  }
+  if (data.fatherContact && !INDIAN_PHONE_REGEX.test(data.fatherContact)) {
+    errors.push('Father Contact must be a valid 10-digit Indian mobile number.')
+  }
+  if (data.motherContact && !INDIAN_PHONE_REGEX.test(data.motherContact)) {
+    errors.push('Mother Contact must be a valid 10-digit Indian mobile number.')
+  }
+  if (data.guardianContact && !INDIAN_PHONE_REGEX.test(data.guardianContact)) {
+    errors.push('Guardian Contact must be a valid 10-digit Indian mobile number.')
+  }
+  return errors
+}
+
 const StudentsPage = () => {
   const navigate = useNavigate()
   const { confirm } = useConfirm()
@@ -19,6 +47,7 @@ const StudentsPage = () => {
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [formErrors, setFormErrors] = useState([])
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -26,6 +55,8 @@ const StudentsPage = () => {
     dateOfBirth: '',
     gender: 'male',
     admissionNumber: '',
+    rollNumber: '',
+    profilePic: '',
     classId: '',
     sectionId: '',
     fatherName: '',
@@ -74,6 +105,12 @@ const StudentsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateStudentForm(formData)
+    if (errors.length > 0) {
+      setFormErrors(errors)
+      return
+    }
+    setFormErrors([])
     try {
       const dataToSubmit = {
         ...formData,
@@ -95,6 +132,8 @@ const StudentsPage = () => {
         dateOfBirth: '',
         gender: 'male',
         admissionNumber: '',
+        rollNumber: '',
+        profilePic: '',
         classId: '',
         sectionId: '',
         fatherName: '',
@@ -120,6 +159,8 @@ const StudentsPage = () => {
       dateOfBirth: '',
       gender: 'male',
       admissionNumber: '',
+      rollNumber: '',
+      profilePic: '',
       classId: '',
       sectionId: '',
       fatherName: '',
@@ -142,6 +183,8 @@ const StudentsPage = () => {
       dateOfBirth: student.dateOfBirth?.split('T')[0] || student.dateOfBirth || '',
       gender: student.gender || 'male',
       admissionNumber: student.admissionNumber || '',
+      rollNumber: student.rollNumber || '',
+      profilePic: student.profilePic || '',
       classId: student.classId || '',
       sectionId: student.sectionId || '',
       fatherName: student.fatherName || '',
@@ -197,12 +240,30 @@ const StudentsPage = () => {
       return null
     }
 
+    const email = String(row.email).trim()
+    if (!EMAIL_REGEX.test(email)) return null
+
+    const parentEmail = row.parentEmail ? String(row.parentEmail).trim() : ''
+    if (parentEmail && !EMAIL_REGEX.test(parentEmail)) return null
+
+    const fatherContact = row.fatherContact ? String(row.fatherContact).trim() : ''
+    if (fatherContact && !INDIAN_PHONE_REGEX.test(fatherContact)) return null
+
+    const motherContact = row.motherContact ? String(row.motherContact).trim() : ''
+    if (motherContact && !INDIAN_PHONE_REGEX.test(motherContact)) return null
+
+    const guardianContact = row.guardianContact ? String(row.guardianContact).trim() : ''
+    if (guardianContact && !INDIAN_PHONE_REGEX.test(guardianContact)) return null
+
+    const dateOfBirth = row.dateOfBirth ? String(row.dateOfBirth).trim() : ''
+    if (dateOfBirth && dateOfBirth > TODAY) return null
+
     return {
       schoolId: schoolId,
       firstName: String(row.firstName).trim(),
       lastName: String(row.lastName).trim(),
-      email: String(row.email).trim(),
-      dateOfBirth: row.dateOfBirth ? String(row.dateOfBirth).trim() : '',
+      email,
+      dateOfBirth,
       gender: row.gender ? String(row.gender).toLowerCase().trim() : 'male',
       admissionNumber: String(row.admissionNumber).trim(),
       classId: row.classId ? Number(row.classId) : undefined,
@@ -210,10 +271,10 @@ const StudentsPage = () => {
       fatherName: row.fatherName ? String(row.fatherName).trim() : '',
       motherName: row.motherName ? String(row.motherName).trim() : '',
       guardianName: row.guardianName ? String(row.guardianName).trim() : '',
-      fatherContact: row.fatherContact ? String(row.fatherContact).trim() : '',
-      motherContact: row.motherContact ? String(row.motherContact).trim() : '',
-      guardianContact: row.guardianContact ? String(row.guardianContact).trim() : '',
-      parentEmail: row.parentEmail ? String(row.parentEmail).trim() : '',
+      fatherContact,
+      motherContact,
+      guardianContact,
+      parentEmail,
     }
   }
 
@@ -255,6 +316,13 @@ const StudentsPage = () => {
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Student' : 'Add New Student'}</h3>
+          {formErrors.length > 0 && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem' }}>
+              {formErrors.map((err, i) => (
+                <p key={i} style={{ color: '#dc2626', margin: '0.25rem 0', fontSize: '0.875rem' }}>✗ {err}</p>
+              ))}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
@@ -282,6 +350,7 @@ const StudentsPage = () => {
               placeholder="Date of Birth"
               value={formData.dateOfBirth}
               onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+              max={TODAY}
               required
             />
             <select
@@ -298,6 +367,18 @@ const StudentsPage = () => {
               value={formData.admissionNumber}
               onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
               required
+            />
+            <input
+              type="text"
+              placeholder="Roll Number"
+              value={formData.rollNumber}
+              onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
+            />
+            <input
+              type="url"
+              placeholder="Profile Picture URL"
+              value={formData.profilePic}
+              onChange={(e) => setFormData({ ...formData, profilePic: e.target.value })}
             />
             <select
               value={formData.classId}
@@ -344,21 +425,30 @@ const StudentsPage = () => {
             />
             <input
               type="tel"
-              placeholder="Father Contact"
+              placeholder="Father Contact (10 digits)"
               value={formData.fatherContact}
-              onChange={(e) => setFormData({ ...formData, fatherContact: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, fatherContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              pattern="[6-9][0-9]{9}"
+              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+              maxLength={10}
             />
             <input
               type="tel"
-              placeholder="Mother Contact"
+              placeholder="Mother Contact (10 digits)"
               value={formData.motherContact}
-              onChange={(e) => setFormData({ ...formData, motherContact: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, motherContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              pattern="[6-9][0-9]{9}"
+              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+              maxLength={10}
             />
             <input
               type="tel"
-              placeholder="Guardian Contact"
+              placeholder="Guardian Contact (10 digits)"
               value={formData.guardianContact}
-              onChange={(e) => setFormData({ ...formData, guardianContact: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, guardianContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              pattern="[6-9][0-9]{9}"
+              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+              maxLength={10}
             />
             <input
               type="email"
@@ -392,6 +482,7 @@ const StudentsPage = () => {
             <thead>
               <tr>
                 <th>Admission No.</th>
+                <th>Roll No.</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>DOB</th>
@@ -404,7 +495,7 @@ const StudentsPage = () => {
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="empty-row">
+                  <td colSpan="9" className="empty-row">
                     {searchQuery ? 'No students match your search.' : 'No students found. Add your first student!'}
                   </td>
                 </tr>
@@ -416,6 +507,7 @@ const StudentsPage = () => {
                     style={{ cursor: 'pointer' }}
                   >
                     <td>{student.admissionNumber}</td>
+                    <td>{student.rollNumber || '-'}</td>
                     <td>{student.firstName} {student.lastName}</td>
                     <td>{student.email}</td>
                     <td>{student.dateOfBirth}</td>

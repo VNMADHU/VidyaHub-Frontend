@@ -86,6 +86,13 @@ const StudentDetailPage = () => {
       </div>
 
       <div className="page-content-scrollable">
+      {/* Profile Picture */}
+      {student.profilePic && (
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src={student.profilePic} alt="Profile" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border)' }} />
+        </div>
+      )}
+
       {/* Personal Information */}
       <div className="form-card" style={{ marginBottom: '2rem' }}>
         <h2>Personal Information</h2>
@@ -97,6 +104,10 @@ const StudentDetailPage = () => {
           <div>
             <label style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.875rem' }}>Admission Number</label>
             <p style={{ margin: '0.25rem 0 0', fontSize: '1rem' }}>{student.admissionNumber}</p>
+          </div>
+          <div>
+            <label style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.875rem' }}>Roll Number</label>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '1rem' }}>{student.rollNumber || 'N/A'}</p>
           </div>
           <div>
             <label style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.875rem' }}>Email</label>

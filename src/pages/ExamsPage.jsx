@@ -76,6 +76,38 @@ const ExamsPage = () => {
     }
   }
 
+  const filteredStudents = students.filter(student => {
+    if (selectedClass && student.classId !== Number(selectedClass)) return false
+    if (selectedSection && student.sectionId !== Number(selectedSection)) return false
+    return true
+  })
+
+  const filteredExamsList = examsList.filter(exam => {
+    if (selectedClass && exam.classId && exam.classId !== Number(selectedClass)) return false
+    if (selectedSection && exam.sectionId && exam.sectionId !== Number(selectedSection)) return false
+    return true
+  })
+
+  const filteredExams = exams.filter(exam => {
+    const student = students.find(s => s.id === exam.studentId)
+    if (!student) return false
+    if (selectedClass && student.classId !== Number(selectedClass)) return false
+    if (selectedSection && student.sectionId !== Number(selectedSection)) return false
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const studentName = `${student.firstName} ${student.lastName}`.toLowerCase()
+      const examName = exam.exam?.name?.toLowerCase() || ''
+      const subject = exam.subject?.toLowerCase() || ''
+      return (
+        studentName.includes(query) ||
+        examName.includes(query) ||
+        subject.includes(query)
+      )
+    }
+    return true
+  })
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -158,32 +190,6 @@ const ExamsPage = () => {
     }
   }
 
-  const filteredStudents = students.filter(student => {
-    if (selectedClass && student.classId !== Number(selectedClass)) return false
-    if (selectedSection && student.sectionId !== Number(selectedSection)) return false
-    return true
-  })
-
-  const filteredExams = exams.filter(exam => {
-    const student = students.find(s => s.id === exam.studentId)
-    if (!student) return false
-    if (selectedClass && student.classId !== Number(selectedClass)) return false
-    if (selectedSection && student.sectionId !== Number(selectedSection)) return false
-    
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      const studentName = `${student.firstName} ${student.lastName}`.toLowerCase()
-      const examName = exam.exam?.name?.toLowerCase() || ''
-      const subject = exam.subject?.toLowerCase() || ''
-      return (
-        studentName.includes(query) ||
-        examName.includes(query) ||
-        subject.includes(query)
-      )
-    }
-    return true
-  })
-
   return (
     <div className="page">
       <div className="page-header">
@@ -259,9 +265,9 @@ const ExamsPage = () => {
               required
             >
               <option value="">Select Exam</option>
-              {examsList.map((exam) => (
+              {filteredExamsList.map((exam) => (
                 <option key={exam.id} value={exam.id}>
-                  {exam.name}
+                  {exam.name}{exam.class ? ` (${exam.class.name}${exam.section ? ` - ${exam.section.name}` : ''})` : ''}
                 </option>
               ))}
             </select>
@@ -305,6 +311,8 @@ const ExamsPage = () => {
             <thead>
               <tr>
                 <th>Student</th>
+                <th>Class</th>
+                <th>Section</th>
                 <th>Exam</th>
                 <th>Subject</th>
                 <th>Marks</th>
@@ -314,14 +322,22 @@ const ExamsPage = () => {
             <tbody>
               {filteredExams.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-row">
+                  <td colSpan="7" className="empty-row">
                     {searchQuery || selectedClass || selectedSection ? 'No marks match your filters.' : 'No marks recorded. Add your first marks!'}
                   </td>
                 </tr>
               ) : (
-                filteredExams.map((exam) => (
+                filteredExams.map((exam) => {
+                  const student = students.find(s => s.id === exam.studentId)
+                  const cls = student ? classes.find(c => c.id === student.classId) : null
+                  const sec = sections.length > 0 && student
+                    ? sections.find(s => s.id === student.sectionId)
+                    : null
+                  return (
                   <tr key={exam.id}>
                     <td>{exam.student ? `${exam.student.firstName} ${exam.student.lastName}` : exam.studentId}</td>
+                    <td>{cls?.name || '-'}</td>
+                    <td>{sec?.name || '-'}</td>
                     <td>{exam.exam?.name || exam.examId}</td>
                     <td>{exam.subject || '-'}</td>
                     <td>{exam.score ?? exam.marks ?? '-'}</td>
@@ -334,7 +350,8 @@ const ExamsPage = () => {
                       </button>
                     </td>
                   </tr>
-                ))
+                  )
+                })
               )}
             </tbody>
           </table>

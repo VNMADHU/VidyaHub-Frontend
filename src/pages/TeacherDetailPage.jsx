@@ -71,6 +71,13 @@ const TeacherDetailPage = () => {
       </div>
 
       <div className="page-content-scrollable">
+      {/* Profile Picture */}
+      {teacher.profilePic && (
+        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <img src={teacher.profilePic} alt="Profile" style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border)' }} />
+        </div>
+      )}
+
       {/* Personal Information */}
       <div className="form-card" style={{ marginBottom: '2rem' }}>
         <h2>Personal Information</h2>
@@ -82,6 +89,10 @@ const TeacherDetailPage = () => {
           <div>
             <label style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.875rem' }}>Employee ID</label>
             <p style={{ margin: '0.25rem 0 0', fontSize: '1rem' }}>{teacher.employeeId || 'N/A'}</p>
+          </div>
+          <div>
+            <label style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.875rem' }}>Teacher ID (Login)</label>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '1rem' }}>{teacher.teacherId || 'N/A'}</p>
           </div>
           <div>
             <label style={{ fontWeight: 600, color: 'var(--muted)', fontSize: '0.875rem' }}>Email</label>

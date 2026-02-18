@@ -177,8 +177,12 @@ class ApiClient {
   }
 
   // Exam endpoints
-  async listExams() {
-    return this.request('/exams')
+  async listExams(params = {}) {
+    const query = new URLSearchParams()
+    if (params.classId) query.set('classId', params.classId)
+    if (params.sectionId) query.set('sectionId', params.sectionId)
+    const qs = query.toString()
+    return this.request(`/exams${qs ? `?${qs}` : ''}`)
   }
 
   async createExam(data) {
@@ -350,6 +354,66 @@ class ApiClient {
     return this.request(`/sections/${sectionId}`, {
       method: 'DELETE',
     })
+  }
+
+  // Portal endpoints (student/teacher self-service)
+  async studentLogin(rollNumber) {
+    return this.request('/portal/student-login', {
+      method: 'POST',
+      body: JSON.stringify({ rollNumber }),
+    })
+  }
+
+  async teacherLogin(teacherId) {
+    return this.request('/portal/teacher-login', {
+      method: 'POST',
+      body: JSON.stringify({ teacherId }),
+    })
+  }
+
+  async getStudentProfile(studentId) {
+    return this.request(`/portal/student/${studentId}`)
+  }
+
+  async getTeacherProfile(teacherId) {
+    return this.request(`/portal/teacher/${teacherId}`)
+  }
+
+  // Fee endpoints
+  async listFees(studentId = null) {
+    const endpoint = studentId ? `/fees?studentId=${studentId}` : '/fees'
+    return this.request(endpoint)
+  }
+
+  async createFee(data) {
+    return this.request('/fees', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updateFee(feeId, data) {
+    return this.request(`/fees/${feeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async payFee(feeId, data) {
+    return this.request(`/fees/${feeId}/pay`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deleteFee(feeId) {
+    return this.request(`/fees/${feeId}`, {
+      method: 'DELETE',
+    })
+  }
+
+  async getStudentFees(studentId) {
+    return this.request(`/fees/student/${studentId}`)
   }
 }
 

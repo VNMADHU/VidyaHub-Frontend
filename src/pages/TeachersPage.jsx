@@ -6,6 +6,21 @@ import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
 import SearchBar from '../components/SearchBar'
 
+// Validation helpers
+const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const validateTeacherForm = (data) => {
+  const errors = []
+  if (data.email && !EMAIL_REGEX.test(data.email)) {
+    errors.push('Please enter a valid email address.')
+  }
+  if (data.phoneNumber && !INDIAN_PHONE_REGEX.test(data.phoneNumber)) {
+    errors.push('Phone Number must be a valid 10-digit Indian mobile number (starting with 6-9).')
+  }
+  return errors
+}
+
 const TeachersPage = () => {
   const navigate = useNavigate()
   const { confirm } = useConfirm()
@@ -15,6 +30,7 @@ const TeachersPage = () => {
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [formErrors, setFormErrors] = useState([])
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -23,6 +39,8 @@ const TeachersPage = () => {
     subject: '',
     qualification: '',
     experience: '',
+    teacherId: '',
+    profilePic: '',
   })
 
   useEffect(() => {
@@ -42,6 +60,12 @@ const TeachersPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateTeacherForm(formData)
+    if (errors.length > 0) {
+      setFormErrors(errors)
+      return
+    }
+    setFormErrors([])
     try {
       if (editingId) {
         await apiClient.updateTeacher(editingId, formData)
@@ -58,6 +82,8 @@ const TeachersPage = () => {
         subject: '',
         qualification: '',
         experience: '',
+        teacherId: '',
+        profilePic: '',
       })
       loadTeachers()
     } catch (error) {
@@ -75,6 +101,8 @@ const TeachersPage = () => {
       subject: '',
       qualification: '',
       experience: '',
+      teacherId: '',
+      profilePic: '',
     })
     setShowForm(true)
   }
@@ -89,6 +117,8 @@ const TeachersPage = () => {
       subject: teacher.subject || '',
       qualification: teacher.qualification || '',
       experience: teacher.experience || '',
+      teacherId: teacher.teacherId || '',
+      profilePic: teacher.profilePic || '',
     })
     setShowForm(true)
   }
@@ -125,11 +155,17 @@ const TeachersPage = () => {
       return null
     }
 
+    const email = String(row.email).trim()
+    if (!EMAIL_REGEX.test(email)) return null
+
+    const phoneNumber = row.phoneNumber ? String(row.phoneNumber).trim() : ''
+    if (phoneNumber && !INDIAN_PHONE_REGEX.test(phoneNumber)) return null
+
     return {
       firstName: String(row.firstName).trim(),
       lastName: String(row.lastName).trim(),
-      email: String(row.email).trim(),
-      phoneNumber: row.phoneNumber ? String(row.phoneNumber).trim() : '',
+      email,
+      phoneNumber,
       subject: row.subject ? String(row.subject).trim() : '',
       qualification: row.qualification ? String(row.qualification).trim() : '',
       experience: row.experience ? String(row.experience).trim() : '',
@@ -172,6 +208,13 @@ const TeachersPage = () => {
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Teacher' : 'Add New Teacher'}</h3>
+          {formErrors.length > 0 && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem' }}>
+              {formErrors.map((err, i) => (
+                <p key={i} style={{ color: '#dc2626', margin: '0.25rem 0', fontSize: '0.875rem' }}>✗ {err}</p>
+              ))}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
@@ -196,9 +239,12 @@ const TeachersPage = () => {
             />
             <input
               type="tel"
-              placeholder="Phone Number"
+              placeholder="Phone Number (10 digits)"
               value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+              pattern="[6-9][0-9]{9}"
+              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+              maxLength={10}
             />
             <input
               type="text"
@@ -217,6 +263,18 @@ const TeachersPage = () => {
               placeholder="Years of Experience"
               value={formData.experience}
               onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Teacher ID (for teacher login)"
+              value={formData.teacherId}
+              onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+            />
+            <input
+              type="url"
+              placeholder="Profile Picture URL"
+              value={formData.profilePic}
+              onChange={(e) => setFormData({ ...formData, profilePic: e.target.value })}
             />
             <button type="submit" className="btn primary">
               {editingId ? 'Update Teacher' : 'Add Teacher'}
@@ -243,6 +301,7 @@ const TeachersPage = () => {
           <table>
             <thead>
               <tr>
+                <th>Teacher ID</th>
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
@@ -255,7 +314,7 @@ const TeachersPage = () => {
             <tbody>
               {filteredTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="empty-row">
+                  <td colSpan="8" className="empty-row">
                     {searchQuery ? 'No teachers match your search.' : 'No teachers found. Add your first teacher!'}
                   </td>
                 </tr>
@@ -266,6 +325,7 @@ const TeachersPage = () => {
                     onClick={() => navigate(`/portal/teachers/${teacher.id}`)}
                     style={{ cursor: 'pointer' }}
                   >
+                    <td>{teacher.teacherId || '-'}</td>
                     <td>{teacher.firstName} {teacher.lastName}</td>
                     <td>{teacher.email}</td>
                     <td>{teacher.phoneNumber}</td>

@@ -15,14 +15,20 @@ const ExamManagementPage = () => {
   const [editingId, setEditingId] = useState(null)
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
+  const [formSections, setFormSections] = useState([])
   const [formData, setFormData] = useState({
     name: '',
+    classId: '',
+    sectionId: '',
   })
 
   useEffect(() => {
-    loadExams()
     loadClasses()
   }, [])
+
+  useEffect(() => {
+    loadExams()
+  }, [selectedClass, selectedSection])
 
   useEffect(() => {
     if (selectedClass) {
@@ -32,6 +38,15 @@ const ExamManagementPage = () => {
       setSelectedSection('')
     }
   }, [selectedClass])
+
+  useEffect(() => {
+    if (formData.classId) {
+      loadFormSections(formData.classId)
+    } else {
+      setFormSections([])
+      setFormData(prev => ({ ...prev, sectionId: '' }))
+    }
+  }, [formData.classId])
 
   const loadClasses = async () => {
     try {
@@ -51,9 +66,21 @@ const ExamManagementPage = () => {
     }
   }
 
+  const loadFormSections = async (classId) => {
+    try {
+      const response = await apiClient.listSections(classId)
+      setFormSections(response?.data || [])
+    } catch (error) {
+      console.error('Failed to load form sections:', error)
+    }
+  }
+
   const loadExams = async () => {
     try {
-      const response = await apiClient.listExams()
+      const params = {}
+      if (selectedClass) params.classId = selectedClass
+      if (selectedSection) params.sectionId = selectedSection
+      const response = await apiClient.listExams(params)
       setExams(response?.data || [])
     } catch (error) {
       console.error('Failed to load exams:', error)
@@ -65,14 +92,19 @@ const ExamManagementPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      const payload = {
+        name: formData.name,
+        classId: formData.classId ? Number(formData.classId) : null,
+        sectionId: formData.sectionId ? Number(formData.sectionId) : null,
+      }
       if (editingId) {
-        await apiClient.updateExam(editingId, formData)
+        await apiClient.updateExam(editingId, payload)
       } else {
-        await apiClient.createExam(formData)
+        await apiClient.createExam(payload)
       }
       setShowForm(false)
       setEditingId(null)
-      setFormData({ name: '' })
+      setFormData({ name: '', classId: '', sectionId: '' })
       loadExams()
     } catch (error) {
       console.error('Failed to save exam:', error)
@@ -81,13 +113,17 @@ const ExamManagementPage = () => {
 
   const handleAddNew = () => {
     setEditingId(null)
-    setFormData({ name: '' })
+    setFormData({ name: '', classId: '', sectionId: '' })
     setShowForm(true)
   }
 
   const handleEdit = (exam) => {
     setEditingId(exam.id)
-    setFormData({ name: exam.name || '' })
+    setFormData({
+      name: exam.name || '',
+      classId: exam.classId ? String(exam.classId) : '',
+      sectionId: exam.sectionId ? String(exam.sectionId) : '',
+    })
     setShowForm(true)
   }
 
@@ -108,7 +144,7 @@ const ExamManagementPage = () => {
     await loadExams()
   }
 
-  const examTemplateHeaders = ['name']
+  const examTemplateHeaders = ['name', 'classId', 'sectionId']
 
   const mapExamRow = (row) => {
     if (!row.name) {
@@ -117,6 +153,8 @@ const ExamManagementPage = () => {
 
     return {
       name: String(row.name).trim(),
+      classId: row.classId ? Number(row.classId) : null,
+      sectionId: row.sectionId ? Number(row.sectionId) : null,
     }
   }
 
@@ -177,8 +215,26 @@ const ExamManagementPage = () => {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              style={{ gridColumn: '1 / -1' }}
             />
+            <select
+              value={formData.classId}
+              onChange={(e) => setFormData({ ...formData, classId: e.target.value, sectionId: '' })}
+            >
+              <option value="">Select Class (optional)</option>
+              {classes.map(cls => (
+                <option key={cls.id} value={cls.id}>{cls.name}</option>
+              ))}
+            </select>
+            <select
+              value={formData.sectionId}
+              onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+              disabled={!formData.classId}
+            >
+              <option value="">Select Section (optional)</option>
+              {formSections.map(sec => (
+                <option key={sec.id} value={sec.id}>{sec.name}</option>
+              ))}
+            </select>
             <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
               {editingId ? 'Update Exam' : 'Create Exam'}
             </button>
@@ -206,6 +262,8 @@ const ExamManagementPage = () => {
               <tr>
                 <th>ID</th>
                 <th>Exam Name</th>
+                <th>Class</th>
+                <th>Section</th>
                 <th>Total Marks Entries</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -214,7 +272,7 @@ const ExamManagementPage = () => {
             <tbody>
               {exams.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="empty-row">
+                  <td colSpan="7" className="empty-row">
                     No exams found. Create your first exam!
                   </td>
                 </tr>
@@ -223,6 +281,8 @@ const ExamManagementPage = () => {
                   <tr key={exam.id}>
                     <td>{exam.id}</td>
                     <td>{exam.name}</td>
+                    <td>{exam.class?.name || '-'}</td>
+                    <td>{exam.section?.name || '-'}</td>
                     <td>{exam.marks?.length || 0}</td>
                     <td>{exam.createdAt ? new Date(exam.createdAt).toLocaleDateString() : '-'}</td>
                     <td>
