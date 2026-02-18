@@ -1,24 +1,115 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api'
+import logger from '../utils/logger'
+import { API_BASE_URL, API_TIMEOUT, HTTP, STORAGE_KEYS } from '../utils/constants'
 
 class ApiClient {
+  constructor() {
+    this._requestInterceptors = []
+    this._responseInterceptors = []
+  }
+
+  /**
+   * Register a request interceptor (receives and returns config).
+   */
+  onRequest(fn) {
+    this._requestInterceptors.push(fn)
+    return this
+  }
+
+  /**
+   * Register a response interceptor (receives response, can transform).
+   */
+  onResponse(fn) {
+    this._responseInterceptors.push(fn)
+    return this
+  }
+
   async request(endpoint, options = {}) {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-School-Id': localStorage.getItem('schoolId') || 'system',
-      ...options.headers,
-    }
+    const start = performance.now()
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    // Build initial config
+    let config = {
       ...options,
-      headers,
-    })
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}))
-      throw new Error(error.message || `HTTP ${response.status}`)
+      headers: {
+        'Content-Type': 'application/json',
+        'X-School-Id': localStorage.getItem(STORAGE_KEYS.SCHOOL_ID) || 'system',
+        ...options.headers,
+      },
     }
 
-    return response.json()
+    // Inject auth token if available
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.AUTH)
+      if (stored) {
+        const auth = JSON.parse(stored)
+        if (auth?.state?.token) {
+          config.headers['Authorization'] = `Bearer ${auth.state.token}`
+        }
+      }
+    } catch {
+      // ignore malformed storage
+    }
+
+    // Run request interceptors
+    for (const interceptor of this._requestInterceptors) {
+      config = interceptor(config) || config
+    }
+
+    // Abort controller for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT)
+    config.signal = controller.signal
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, config)
+      clearTimeout(timeoutId)
+
+      const duration = Math.round(performance.now() - start)
+      const method = (config.method || 'GET').toUpperCase()
+      logger.api(method, endpoint, response.status, duration)
+
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}))
+
+        // Auto-logout on 401
+        if (response.status === HTTP.UNAUTHORIZED) {
+          logger.warn('Unauthorized — clearing session')
+          localStorage.removeItem(STORAGE_KEYS.AUTH)
+          if (window.location.pathname.startsWith('/portal')) {
+            window.location.href = '/'
+          }
+        }
+
+        const errorMessage =
+          errorBody.message ||
+          errorBody.issues?.map((i) => i.message).join(', ') ||
+          `Request failed (${response.status})`
+
+        throw new Error(errorMessage)
+      }
+
+      let data = await response.json()
+
+      // Run response interceptors
+      for (const interceptor of this._responseInterceptors) {
+        data = interceptor(data) || data
+      }
+
+      return data
+    } catch (error) {
+      clearTimeout(timeoutId)
+
+      if (error.name === 'AbortError') {
+        logger.error('Request timed out', { endpoint })
+        throw new Error('Request timed out. Please check your network connection.')
+      }
+
+      if (!error.message || error.message === 'Failed to fetch') {
+        logger.error('Network error', { endpoint })
+        throw new Error('Unable to connect to the server. Please check your internet connection.')
+      }
+
+      throw error
+    }
   }
 
   // Auth endpoints

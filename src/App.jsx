@@ -1,5 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom'
 import { ConfirmDialogProvider } from './components/ConfirmDialog'
+import ErrorBoundary from './components/ErrorBoundary'
+import ToastContainer from './components/ToastContainer'
 import RootLayout from './layouts/RootLayout'
 import SchoolPortalLayout from './layouts/SchoolPortalLayout'
 import AdminDashboard from './pages/AdminDashboard'
@@ -80,21 +82,14 @@ const router = createBrowserRouter([
 ])
 
 const App = () => {
-  try {
-    return (
+  return (
+    <ErrorBoundary>
       <ConfirmDialogProvider>
         <RouterProvider router={router} />
+        <ToastContainer />
       </ConfirmDialogProvider>
-    )
-  } catch (error) {
-    console.error('App error:', error)
-    return (
-      <div style={{ padding: '2rem', color: 'red', fontFamily: 'monospace' }}>
-        <h1>Error loading app</h1>
-        <pre>{error?.message}</pre>
-      </div>
-    )
-  }
+    </ErrorBoundary>
+  )
 }
 
 export default App

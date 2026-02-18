@@ -2,10 +2,28 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
+import { validateEnv } from './utils/envValidator'
+import logger from './utils/logger'
 
-console.log('main.jsx loaded')
+// Validate environment on startup
+validateEnv()
+
+// Global error handlers
+window.addEventListener('unhandledrejection', (event) => {
+  logger.error('Unhandled promise rejection', {
+    reason: event.reason?.message || String(event.reason),
+  })
+})
+
+window.addEventListener('error', (event) => {
+  logger.error('Uncaught error', {
+    message: event.message,
+    filename: event.filename,
+    line: event.lineno,
+  })
+})
+
 const root = document.getElementById('root')
-console.log('root element:', root)
 
 if (root) {
   createRoot(root).render(
@@ -13,7 +31,7 @@ if (root) {
       <App />
     </StrictMode>,
   )
-  console.log('React app rendered')
+  logger.info('React app mounted')
 } else {
-  console.error('Root element not found!')
+  logger.error('Root element not found!')
 }
