@@ -3,6 +3,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const AnnouncementsPage = () => {
   const { confirm } = useConfirm()
@@ -11,6 +12,7 @@ const AnnouncementsPage = () => {
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     message: '',
@@ -96,6 +98,14 @@ const AnnouncementsPage = () => {
     }
   }
 
+  const filteredAnnouncements = announcements.filter((announcement) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      announcement.title?.toLowerCase().includes(query) ||
+      announcement.message?.toLowerCase().includes(query)
+    )
+  })
+
   return (
     <div className="page">
       <div className="page-header">
@@ -110,6 +120,13 @@ const AnnouncementsPage = () => {
         </div>
       </div>
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search announcements by title or message..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Announcement' : 'Create Announcement'}</h3>
@@ -151,14 +168,14 @@ const AnnouncementsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {announcements.length === 0 ? (
+              {filteredAnnouncements.length === 0 ? (
                 <tr>
                   <td colSpan="4" className="empty-row">
-                    No announcements found. Create your first announcement!
+                    {searchQuery ? 'No announcements match your search.' : 'No announcements found. Create your first announcement!'}
                   </td>
                 </tr>
               ) : (
-                announcements.map((announcement) => (
+                filteredAnnouncements.map((announcement) => (
                   <tr key={announcement.id}>
                     <td>{announcement.title}</td>
                     <td>{announcement.message}</td>
@@ -189,6 +206,7 @@ const AnnouncementsPage = () => {
           onDone={handleBulkImportDone}
         />
       )}
+      </div>
     </div>
   )
 }

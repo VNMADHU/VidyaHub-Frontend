@@ -5,6 +5,7 @@ import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
 import useAuthStore from '../store/useAuthStore'
+import SearchBar from '../components/SearchBar'
 
 const StudentsPage = () => {
   const navigate = useNavigate()
@@ -17,6 +18,7 @@ const StudentsPage = () => {
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -215,6 +217,20 @@ const StudentsPage = () => {
     }
   }
 
+  const filteredStudents = students.filter((student) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      student.firstName?.toLowerCase().includes(query) ||
+      student.lastName?.toLowerCase().includes(query) ||
+      student.email?.toLowerCase().includes(query) ||
+      student.admissionNumber?.toLowerCase().includes(query) ||
+      student.fatherName?.toLowerCase().includes(query) ||
+      student.motherName?.toLowerCase().includes(query) ||
+      student.guardianName?.toLowerCase().includes(query) ||
+      student.parentEmail?.toLowerCase().includes(query)
+    )
+  })
+
   return (
     <div className="page">
       <div className="page-header">
@@ -229,6 +245,13 @@ const StudentsPage = () => {
         </div>
       </div>
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search students by name, email, admission number, or parent details..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Student' : 'Add New Student'}</h3>
@@ -379,14 +402,14 @@ const StudentsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {students.length === 0 ? (
+              {filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="empty-row">
-                    No students found. Add your first student!
+                    {searchQuery ? 'No students match your search.' : 'No students found. Add your first student!'}
                   </td>
                 </tr>
               ) : (
-                students.map((student) => (
+                filteredStudents.map((student) => (
                   <tr 
                     key={student.id} 
                     onClick={() => navigate(`/portal/students/${student.id}`)}
@@ -414,6 +437,7 @@ const StudentsPage = () => {
           </table>
         </div>
       )}
+      </div>
     </div>
   )
 }

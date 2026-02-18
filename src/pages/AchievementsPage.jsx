@@ -3,6 +3,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const AchievementsPage = () => {
   const { confirm } = useConfirm()
@@ -20,6 +21,7 @@ const AchievementsPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showBulkImport, setShowBulkImport] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadData()
@@ -130,6 +132,17 @@ const AchievementsPage = () => {
     return student ? `${student.firstName} ${student.lastName}` : 'Unknown'
   }
 
+  const filteredAchievements = achievements.filter((achievement) => {
+    const query = searchQuery.toLowerCase()
+    const studentName = getStudentName(achievement.studentId).toLowerCase()
+    return (
+      achievement.title?.toLowerCase().includes(query) ||
+      studentName.includes(query) ||
+      achievement.description?.toLowerCase().includes(query) ||
+      achievement.category?.toLowerCase().includes(query)
+    )
+  })
+
   if (loading) return <div className="page">Loading...</div>
 
   return (
@@ -148,6 +161,13 @@ const AchievementsPage = () => {
 
       {error && <div style={{ color: 'red', margin: '1rem 0' }}>{error}</div>}
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search achievements by title, student name, description, or category..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Achievement' : 'Add New Achievement'}</h3>
@@ -211,8 +231,13 @@ const AchievementsPage = () => {
         />
       )}
 
-      <div className="achievements-grid">
-        {achievements.map((achievement) => (
+      {filteredAchievements.length === 0 ? (
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+          {searchQuery ? 'No achievements match your search.' : 'No achievements found. Add your first achievement!'}
+        </div>
+      ) : (
+        <div className="achievements-grid">
+          {filteredAchievements.map((achievement) => (
           <div key={achievement.id} className="achievement-card">
             <div className="achievement-icon">🏆</div>
             <h3>{achievement.title}</h3>
@@ -234,6 +259,8 @@ const AchievementsPage = () => {
             </div>
           </div>
         ))}
+        </div>
+      )}
       </div>
     </div>
   )

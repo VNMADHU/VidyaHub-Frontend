@@ -3,6 +3,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const ExamsPage = () => {
   const { confirm } = useConfirm()
@@ -17,6 +18,7 @@ const ExamsPage = () => {
   const [editingId, setEditingId] = useState(null)
   const [selectedClass, setSelectedClass] = useState('')
   const [selectedSection, setSelectedSection] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
   const [formData, setFormData] = useState({
     studentId: '',
     examId: '',
@@ -162,6 +164,26 @@ const ExamsPage = () => {
     return true
   })
 
+  const filteredExams = exams.filter(exam => {
+    const student = students.find(s => s.id === exam.studentId)
+    if (!student) return false
+    if (selectedClass && student.classId !== Number(selectedClass)) return false
+    if (selectedSection && student.sectionId !== Number(selectedSection)) return false
+    
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const studentName = `${student.firstName} ${student.lastName}`.toLowerCase()
+      const examName = exam.exam?.name?.toLowerCase() || ''
+      const subject = exam.subject?.toLowerCase() || ''
+      return (
+        studentName.includes(query) ||
+        examName.includes(query) ||
+        subject.includes(query)
+      )
+    }
+    return true
+  })
+
   return (
     <div className="page">
       <div className="page-header">
@@ -208,6 +230,13 @@ const ExamsPage = () => {
         </div>
       </div>
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search by student name, exam, or subject..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Marks' : 'Add Marks'}</h3>
@@ -283,26 +312,14 @@ const ExamsPage = () => {
               </tr>
             </thead>
             <tbody>
-              {exams.filter(exam => {
-                const student = students.find(s => s.id === exam.studentId)
-                if (!student) return false
-                if (selectedClass && student.classId !== Number(selectedClass)) return false
-                if (selectedSection && student.sectionId !== Number(selectedSection)) return false
-                return true
-              }).length === 0 ? (
+              {filteredExams.length === 0 ? (
                 <tr>
                   <td colSpan="5" className="empty-row">
-                    No marks recorded. Add your first marks!
+                    {searchQuery || selectedClass || selectedSection ? 'No marks match your filters.' : 'No marks recorded. Add your first marks!'}
                   </td>
                 </tr>
               ) : (
-                exams.filter(exam => {
-                  const student = students.find(s => s.id === exam.studentId)
-                  if (!student) return false
-                  if (selectedClass && student.classId !== Number(selectedClass)) return false
-                  if (selectedSection && student.sectionId !== Number(selectedSection)) return false
-                  return true
-                }).map((exam) => (
+                filteredExams.map((exam) => (
                   <tr key={exam.id}>
                     <td>{exam.student ? `${exam.student.firstName} ${exam.student.lastName}` : exam.studentId}</td>
                     <td>{exam.exam?.name || exam.examId}</td>
@@ -323,6 +340,7 @@ const ExamsPage = () => {
           </table>
         </div>
       )}
+      </div>
     </div>
   )
 }

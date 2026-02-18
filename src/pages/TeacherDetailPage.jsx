@@ -70,6 +70,7 @@ const TeacherDetailPage = () => {
         </div>
       </div>
 
+      <div className="page-content-scrollable">
       {/* Personal Information */}
       <div className="form-card" style={{ marginBottom: '2rem' }}>
         <h2>Personal Information</h2>
@@ -188,6 +189,7 @@ const TeacherDetailPage = () => {
         ) : (
           <p style={{ margin: '1rem 0', color: 'var(--muted)' }}>No classes assigned yet</p>
         )}
+      </div>
       </div>
     </div>
   )

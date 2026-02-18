@@ -193,6 +193,7 @@ const AttendancePage = () => {
         </div>
       </div>
 
+      <div className="page-content-scrollable">
       {showMarkForm && filteredStudents.length > 0 && (
         <div className="form-card">
           <h3>Mark Attendance for {selectedDate}</h3>
@@ -294,6 +295,7 @@ const AttendancePage = () => {
           </table>
         </div>
       )}
+      </div>
     </div>
   )
 }

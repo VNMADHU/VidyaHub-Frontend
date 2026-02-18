@@ -4,6 +4,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const TeachersPage = () => {
   const navigate = useNavigate()
@@ -13,6 +14,7 @@ const TeachersPage = () => {
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -134,6 +136,18 @@ const TeachersPage = () => {
     }
   }
 
+  const filteredTeachers = teachers.filter((teacher) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      teacher.firstName?.toLowerCase().includes(query) ||
+      teacher.lastName?.toLowerCase().includes(query) ||
+      teacher.email?.toLowerCase().includes(query) ||
+      teacher.phoneNumber?.toLowerCase().includes(query) ||
+      teacher.subject?.toLowerCase().includes(query) ||
+      teacher.qualification?.toLowerCase().includes(query)
+    )
+  })
+
   return (
     <div className="page">
       <div className="page-header">
@@ -148,6 +162,13 @@ const TeachersPage = () => {
         </div>
       </div>
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search teachers by name, email, phone, subject, or qualification..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Teacher' : 'Add New Teacher'}</h3>
@@ -232,14 +253,14 @@ const TeachersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {teachers.length === 0 ? (
+              {filteredTeachers.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="empty-row">
-                    No teachers found. Add your first teacher!
+                    {searchQuery ? 'No teachers match your search.' : 'No teachers found. Add your first teacher!'}
                   </td>
                 </tr>
               ) : (
-                teachers.map((teacher) => (
+                filteredTeachers.map((teacher) => (
                   <tr 
                     key={teacher.id}
                     onClick={() => navigate(`/portal/teachers/${teacher.id}`)}
@@ -266,6 +287,7 @@ const TeachersPage = () => {
           </table>
         </div>
       )}
+      </div>
     </div>
   )
 }

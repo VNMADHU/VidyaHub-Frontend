@@ -3,6 +3,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const SportsPage = () => {
   const { confirm } = useConfirm()
@@ -18,6 +19,7 @@ const SportsPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showBulkImport, setShowBulkImport] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadData()
@@ -110,6 +112,16 @@ const SportsPage = () => {
     }
   }
 
+  const filteredSports = sports.filter((sport) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      sport.name?.toLowerCase().includes(query) ||
+      sport.coachName?.toLowerCase().includes(query) ||
+      sport.schedule?.toLowerCase().includes(query) ||
+      sport.description?.toLowerCase().includes(query)
+    )
+  })
+
   if (loading) return <div className="page">Loading...</div>
 
   return (
@@ -128,6 +140,13 @@ const SportsPage = () => {
 
       {error && <div style={{ color: 'red', margin: '1rem 0' }}>{error}</div>}
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search sports by name, coach, schedule, or description..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Sport' : 'Add New Sport'}</h3>
@@ -176,8 +195,13 @@ const SportsPage = () => {
         />
       )}
 
-      <div className="sports-grid">
-        {sports.map((sport) => (
+      {filteredSports.length === 0 ? (
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+          {searchQuery ? 'No sports match your search.' : 'No sports found. Add your first sport!'}
+        </div>
+      ) : (
+        <div className="sports-grid">
+          {filteredSports.map((sport) => (
           <div key={sport.id} className="sport-card">
             <div className="sport-icon">⚽</div>
             <h3>{sport.name}</h3>
@@ -196,6 +220,8 @@ const SportsPage = () => {
             </div>
           </div>
         ))}
+        </div>
+      )}
       </div>
     </div>
   )

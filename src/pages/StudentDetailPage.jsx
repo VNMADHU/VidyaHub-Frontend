@@ -85,6 +85,7 @@ const StudentDetailPage = () => {
         </div>
       </div>
 
+      <div className="page-content-scrollable">
       {/* Personal Information */}
       <div className="form-card" style={{ marginBottom: '2rem' }}>
         <h2>Personal Information</h2>
@@ -256,6 +257,7 @@ const StudentDetailPage = () => {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   )

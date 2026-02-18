@@ -166,6 +166,7 @@ const ExamManagementPage = () => {
         </div>
       </div>
 
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Exam' : 'Create New Exam'}</h3>
@@ -239,6 +240,7 @@ const ExamManagementPage = () => {
           </table>
         </div>
       )}
+      </div>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const EventsPage = () => {
   const { confirm } = useConfirm()
@@ -11,6 +12,7 @@ const EventsPage = () => {
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -126,6 +128,16 @@ const EventsPage = () => {
     }
   }
 
+  const filteredEvents = events.filter((event) => {
+    const query = searchQuery.toLowerCase()
+    return (
+      event.title?.toLowerCase().includes(query) ||
+      event.description?.toLowerCase().includes(query) ||
+      event.location?.toLowerCase().includes(query) ||
+      event.category?.toLowerCase().includes(query)
+    )
+  })
+
   return (
     <div className="page">
       <div className="page-header">
@@ -140,6 +152,13 @@ const EventsPage = () => {
         </div>
       </div>
 
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search events by title, description, location, or category..."
+      />
+
+      <div className="page-content-scrollable">
       {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Event' : 'Create New Event'}</h3>
@@ -209,12 +228,12 @@ const EventsPage = () => {
         <div className="loading-state">Loading events...</div>
       ) : (
         <div className="events-grid">
-          {events.length === 0 ? (
+          {filteredEvents.length === 0 ? (
             <div className="empty-state-card">
-              No events scheduled. Create your first event!
+              {searchQuery ? 'No events match your search.' : 'No events scheduled. Create your first event!'}
             </div>
           ) : (
-            events.map((event) => (
+            filteredEvents.map((event) => (
               <div key={event.id} className="event-card">
                 <div className="event-header">
                   <h3>{event.title}</h3>
@@ -243,6 +262,7 @@ const EventsPage = () => {
           )}
         </div>
       )}
+      </div>
     </div>
   )
 }

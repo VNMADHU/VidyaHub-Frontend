@@ -3,6 +3,7 @@ import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '../services/apiClient'
 import { useConfirm } from '../components/ConfirmDialog'
 import BulkImportModal from '../components/BulkImportModal'
+import SearchBar from '../components/SearchBar'
 
 const ClassesPage = () => {
   const { confirm } = useConfirm()
@@ -17,6 +18,7 @@ const ClassesPage = () => {
   const [editingSectionId, setEditingSectionId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadData()
@@ -96,6 +98,17 @@ const ClassesPage = () => {
     }
   }
 
+  const filteredClasses = classes.filter((cls) => {
+    const query = searchQuery.toLowerCase()
+    const hasSectionMatch = sections[cls.id]?.some(section => 
+      section.name?.toLowerCase().includes(query)
+    )
+    return (
+      cls.name?.toLowerCase().includes(query) ||
+      hasSectionMatch
+    )
+  })
+
   const handleEditClass = (cls) => {
     setFormData({ name: cls.name })
     setEditingId(cls.id)
@@ -160,7 +173,14 @@ const ClassesPage = () => {
 
       {error && <div style={{ color: 'red', margin: '1rem 0' }}>{error}</div>}
 
-      {showForm && (
+      <SearchBar 
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search classes or sections..."
+      />
+
+      <div className="page-content-scrollable">
+        {showForm && (
         <div className="form-card">
           <h3>{editingId ? 'Edit Class' : 'Add New Class'}</h3>
           <form onSubmit={handleSubmitClass} className="form-grid">
@@ -230,8 +250,13 @@ const ClassesPage = () => {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
-        {classes.map((cls) => (
+      {filteredClasses.length === 0 ? (
+        <div style={{ padding: '2rem', textAlign: 'center', color: '#666' }}>
+          {searchQuery ? 'No classes or sections match your search.' : 'No classes found. Add your first class!'}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginTop: '2rem' }}>
+          {filteredClasses.map((cls) => (
           <div key={cls.id} className="form-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0 }}>Class {cls.name}</h3>
@@ -277,6 +302,8 @@ const ClassesPage = () => {
             </button>
           </div>
         ))}
+        </div>
+      )}
       </div>
     </div>
   )
