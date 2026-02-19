@@ -594,7 +594,9 @@ const EMPTY_STUDENT_FORM = {
 
       {loading ? (
         <div className="loading-state">Loading students...</div>
-      ) : (
+      ) :
+       (
+           <>
         <div className="data-table">
           <table>
             <thead>
@@ -645,8 +647,10 @@ const EMPTY_STUDENT_FORM = {
               )}
             </tbody>
           </table>
-          <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
+
         </div>
+                  <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
+           </>
       )}
       </div>
     </div>

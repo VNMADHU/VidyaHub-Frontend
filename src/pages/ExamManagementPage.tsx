@@ -5,6 +5,8 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 const ExamManagementPage = () => {
@@ -164,6 +166,8 @@ const ExamManagementPage = () => {
     }
   }
 
+  const { paginatedItems: paginatedExams, currentPage, totalPages, totalItems, goToPage } = usePagination(exams)
+
   const examExportColumns = [
     { key: 'name', label: 'Exam Name' },
     { key: 'className', label: 'Class' },
@@ -288,6 +292,7 @@ const ExamManagementPage = () => {
       {loading ? (
         <div className="loading-state">Loading exams...</div>
       ) : (
+        <>
         <div className="data-table">
           <table>
             <thead>
@@ -309,7 +314,7 @@ const ExamManagementPage = () => {
                   </td>
                 </tr>
               ) : (
-                exams.map((exam) => (
+                paginatedExams.map((exam) => (
                   <tr key={exam.id}>
                     <td>{exam.id}</td>
                     <td>{exam.name}</td>
@@ -331,6 +336,8 @@ const ExamManagementPage = () => {
             </tbody>
           </table>
         </div>
+        <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
+        </>
       )}
       </div>
     </div>

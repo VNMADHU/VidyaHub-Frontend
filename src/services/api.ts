@@ -277,12 +277,21 @@ export const feeApi = {
 
 // Timetables
 export const timetableApi = {
-  list: (classId?: string | null) =>
-    api.get('/timetables', { params: classId ? { classId } : {} }).then((r) => r.data),
+  list: (classId?: string | null, date?: string | null) =>
+    api.get('/timetables', { params: { ...(classId ? { classId } : {}), ...(date ? { date } : {}) } }).then((r) => r.data),
   create: (data: Record<string, unknown>) => api.post('/timetables', data).then((r) => r.data),
   update: (id: string, data: Record<string, unknown>) =>
     api.patch(`/timetables/${id}`, data).then((r) => r.data),
   delete: (id: string) => api.delete(`/timetables/${id}`).then((r) => r.data),
+}
+
+// Periods
+export const periodApi = {
+  list: () => api.get('/periods').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/periods', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/periods/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/periods/${id}`).then((r) => r.data),
 }
 
 // Subjects
@@ -403,6 +412,11 @@ const apiClient = {
   createTimetable: timetableApi.create,
   updateTimetable: timetableApi.update,
   deleteTimetable: timetableApi.delete,
+  // Periods
+  listPeriods: periodApi.list,
+  createPeriod: periodApi.create,
+  updatePeriod: periodApi.update,
+  deletePeriod: periodApi.delete,
   // Subjects
   listSubjects: subjectApi.list,
   createSubject: subjectApi.create,

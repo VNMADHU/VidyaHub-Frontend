@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, SquarePen } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useToast } from '@/components/ToastContainer'
 import { useConfirm } from '@/components/ConfirmDialog'
@@ -24,11 +24,19 @@ const SettingsPage = () => {
   // Subject management
   const [subjects, setSubjects] = useState([])
   const [newSubject, setNewSubject] = useState({ name: '', code: '' })
+  const [editingSubjectId, setEditingSubjectId] = useState(null)
   const [subjectMsg, setSubjectMsg] = useState('')
+
+  // Period management
+  const [periods, setPeriods] = useState([])
+  const [newPeriod, setNewPeriod] = useState({ name: '', startTime: '', endTime: '', sortOrder: 0, isBreak: false })
+  const [editingPeriodId, setEditingPeriodId] = useState(null)
+  const [periodMsg, setPeriodMsg] = useState('')
 
   useEffect(() => {
     loadSchool()
     loadSubjects()
+    loadPeriods()
   }, [])
 
   const loadSchool = async () => {
@@ -93,14 +101,25 @@ const SettingsPage = () => {
     e.preventDefault()
     if (!newSubject.name || !newSubject.code) return
     try {
-      await apiClient.createSubject(newSubject)
+      if (editingSubjectId) {
+        await apiClient.updateSubject(String(editingSubjectId), newSubject)
+        setSubjectMsg('✅ Subject updated!')
+        setEditingSubjectId(null)
+      } else {
+        await apiClient.createSubject(newSubject)
+        setSubjectMsg('✅ Subject added!')
+      }
       setNewSubject({ name: '', code: '' })
-      setSubjectMsg('✅ Subject added!')
       loadSubjects()
       setTimeout(() => setSubjectMsg(''), 3000)
     } catch (error) {
-      setSubjectMsg('❌ ' + (error?.response?.data?.message || 'Failed to add subject'))
+      setSubjectMsg('❌ ' + (error?.message || 'Failed to save subject'))
     }
+  }
+
+  const handleEditSubject = (s) => {
+    setEditingSubjectId(s.id)
+    setNewSubject({ name: s.name, code: s.code })
   }
 
   const handleDeleteSubject = async (id) => {
@@ -114,6 +133,52 @@ const SettingsPage = () => {
     }
   }
 
+  // ── Periods ──
+  const loadPeriods = async () => {
+    try {
+      const res = await apiClient.listPeriods()
+      setPeriods(res?.data || [])
+    } catch (error) {
+      console.error('Failed to load periods:', error)
+    }
+  }
+
+  const handleAddPeriod = async (e) => {
+    e.preventDefault()
+    if (!newPeriod.name || !newPeriod.startTime || !newPeriod.endTime) return
+    try {
+      if (editingPeriodId) {
+        await apiClient.updatePeriod(String(editingPeriodId), newPeriod)
+        setPeriodMsg('✅ Period updated!')
+        setEditingPeriodId(null)
+      } else {
+        await apiClient.createPeriod(newPeriod)
+        setPeriodMsg('✅ Period added!')
+      }
+      setNewPeriod({ name: '', startTime: '', endTime: '', sortOrder: periods.length + 1, isBreak: false })
+      loadPeriods()
+      setTimeout(() => setPeriodMsg(''), 3000)
+    } catch (error) {
+      setPeriodMsg('❌ ' + (error?.response?.data?.message || error?.message || 'Failed to save period'))
+    }
+  }
+
+  const handleEditPeriod = (p) => {
+    setEditingPeriodId(p.id)
+    setNewPeriod({ name: p.name, startTime: p.startTime, endTime: p.endTime, sortOrder: p.sortOrder, isBreak: p.isBreak })
+  }
+
+  const handleDeletePeriod = async (id) => {
+    const ok = await confirm('Delete this period?')
+    if (!ok) return
+    try {
+      await apiClient.deletePeriod(String(id))
+      loadPeriods()
+    } catch (error) {
+      toast.error('Failed to delete: ' + (error?.response?.data?.message || error.message))
+    }
+  }
+
   return (
     <div className="page">
       <div className="page-header">
@@ -121,13 +186,13 @@ const SettingsPage = () => {
       </div>
 
       <div className="settings-tabs">
-        {['school', 'subjects', 'security'].map((tab) => (
+        {['school', 'subjects', 'periods', 'security'].map((tab) => (
           <button
             key={tab}
             className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
           >
-            {tab === 'school' ? '🏫 School' : tab === 'subjects' ? '📚 Subjects' : '🔒 Security'}
+            {tab === 'school' ? '🏫 School' : tab === 'subjects' ? '📚 Subjects' : tab === 'periods' ? '🕐 Periods' : '🔒 Security'}
           </button>
         ))}
       </div>
@@ -138,7 +203,8 @@ const SettingsPage = () => {
           <div className="settings-card">
             <h3>School Information</h3>
             {schoolMsg && <div style={{ padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', background: schoolMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2' }}>{schoolMsg}</div>}
-            <form className="form-grid" onSubmit={handleSchoolUpdate}>
+            <form onSubmit={handleSchoolUpdate}>
+            <div className="form-grid">
               <label>
                 School Name
                 <input
@@ -179,9 +245,10 @@ const SettingsPage = () => {
                   placeholder="e.g. 2025-26"
                 />
               </label>
-              <div>
-                <button type="submit" className="btn primary">Update School</button>
-              </div>
+            </div>
+            <div style={{ marginTop: '1.25rem' }}>
+              <button type="submit" className="btn primary">Update School</button>
+            </div>
             </form>
 
             <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--surface)', borderRadius: '8px' }}>
@@ -219,7 +286,10 @@ const SettingsPage = () => {
                 required
                 style={{ width: '120px' }}
               />
-              <button type="submit" className="btn primary">+ Add Subject</button>
+              <button type="submit" className="btn primary">{editingSubjectId ? '✓ Update' : '+ Add Subject'}</button>
+              {editingSubjectId && (
+                <button type="button" className="btn outline" onClick={() => { setEditingSubjectId(null); setNewSubject({ name: '', code: '' }) }}>Cancel</button>
+              )}
             </form>
 
             <div className="data-table">
@@ -241,8 +311,118 @@ const SettingsPage = () => {
                         <td>{idx + 1}</td>
                         <td>{s.name}</td>
                         <td><code>{s.code}</code></td>
-                        <td>
+                        <td style={{ display: 'flex', gap: '0.35rem' }}>
+                          <button className="btn-icon edit" onClick={() => handleEditSubject(s)} aria-label="Edit subject" style={{ padding: '4px' }}>
+                            <SquarePen size={16} />
+                          </button>
                           <button className="btn-icon danger" onClick={() => handleDeleteSubject(s.id)} aria-label="Delete subject">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── Period Management ── */}
+        {activeTab === 'periods' && (
+          <div className="settings-card">
+            <h3>🕐 Period / Time Slots</h3>
+            <p style={{ color: 'var(--muted)', marginBottom: '1rem' }}>
+              Define periods with times for your school. These are used in the Timetable. Mark breaks like Lunch/Recess.
+            </p>
+
+            {periodMsg && <div style={{ padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', background: periodMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2' }}>{periodMsg}</div>}
+
+            <form onSubmit={handleAddPeriod} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1, minWidth: '120px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Period 1"
+                  value={newPeriod.name}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, name: e.target.value })}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ width: '110px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Start Time *</label>
+                <input
+                  type="time"
+                  value={newPeriod.startTime}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, startTime: e.target.value })}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ width: '110px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>End Time *</label>
+                <input
+                  type="time"
+                  value={newPeriod.endTime}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, endTime: e.target.value })}
+                  required
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ width: '80px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Order</label>
+                <input
+                  type="number"
+                  value={newPeriod.sortOrder}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, sortOrder: parseInt(e.target.value) || 0 })}
+                  min="0"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', paddingBottom: '0.35rem' }}>
+                <input
+                  type="checkbox"
+                  id="isBreak"
+                  checked={newPeriod.isBreak}
+                  onChange={(e) => setNewPeriod({ ...newPeriod, isBreak: e.target.checked })}
+                />
+                <label htmlFor="isBreak" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Break</label>
+              </div>
+              <button type="submit" className="btn primary">{editingPeriodId ? '✓ Update' : '+ Add Period'}</button>
+              {editingPeriodId && (
+                <button type="button" className="btn outline" onClick={() => { setEditingPeriodId(null); setNewPeriod({ name: '', startTime: '', endTime: '', sortOrder: periods.length + 1, isBreak: false }) }}>Cancel</button>
+              )}
+            </form>
+
+            <div className="data-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Name</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {periods.length === 0 ? (
+                    <tr><td colSpan="6" className="empty-row">No periods defined. Add your school periods above!</td></tr>
+                  ) : (
+                    periods.map((p) => (
+                      <tr key={p.id} style={p.isBreak ? { background: '#fef3c7' } : {}}>
+                        <td style={{ textAlign: 'center', fontWeight: 600 }}>{p.sortOrder}</td>
+                        <td>{p.name}</td>
+                        <td>{p.startTime}</td>
+                        <td>{p.endTime}</td>
+                        <td>{p.isBreak ? <span style={{ color: '#d97706', fontWeight: 600 }}>☕ Break</span> : 'Class'}</td>
+                        <td style={{ display: 'flex', gap: '0.35rem' }}>
+                          <button className="btn-icon edit" onClick={() => handleEditPeriod(p)} aria-label="Edit period" style={{ padding: '4px' }}>
+                            ✏️
+                          </button>
+                          <button className="btn-icon danger" onClick={() => handleDeletePeriod(p.id)} aria-label="Delete period">
                             <Trash2 size={16} />
                           </button>
                         </td>
@@ -260,7 +440,8 @@ const SettingsPage = () => {
           <div className="settings-card">
             <h3>🔒 Change Password</h3>
             {passwordMsg && <div style={{ padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', background: passwordMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2' }}>{passwordMsg}</div>}
-            <form className="form-grid" onSubmit={handlePasswordChange}>
+            <form onSubmit={handlePasswordChange}>
+            <div className="form-grid">
               <label>
                 Current Password
                 <input
@@ -290,9 +471,10 @@ const SettingsPage = () => {
                   minLength={8}
                 />
               </label>
-              <div>
-                <button type="submit" className="btn primary">Change Password</button>
-              </div>
+            </div>
+            <div style={{ marginTop: '1.25rem' }}>
+              <button type="submit" className="btn primary">Change Password</button>
+            </div>
             </form>
           </div>
         )}

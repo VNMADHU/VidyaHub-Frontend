@@ -345,6 +345,7 @@ const ExamsPage = () => {
       {loading ? (
         <div className="loading-state">Loading exams...</div>
       ) : (
+        <>
         <div className="data-table">
           <table>
             <thead>
@@ -402,8 +403,9 @@ const ExamsPage = () => {
               )}
             </tbody>
           </table>
-          <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
         </div>
+        <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
+        </>
       )}
       </div>
     </div>
