@@ -19,11 +19,11 @@ const TeacherDetailPage = () => {
     try {
       setLoading(true)
       const [teacherRes, classesRes] = await Promise.all([
-        apiClient.request(`/teachers/${teacherId}`),
+        apiClient.getTeacher(teacherId),
         apiClient.listClasses(),
       ])
 
-      setTeacher(teacherRes)
+      setTeacher(teacherRes?.data || teacherRes)
       
       // Filter classes assigned to this teacher
       const teacherClasses = (classesRes?.data || []).filter(

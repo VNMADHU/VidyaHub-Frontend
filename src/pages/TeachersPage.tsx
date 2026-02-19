@@ -271,12 +271,6 @@ const TeachersPage = () => {
               value={formData.teacherId}
               onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
             />
-            <input
-              type="url"
-              placeholder="Profile Picture URL"
-              value={formData.profilePic}
-              onChange={(e) => setFormData({ ...formData, profilePic: e.target.value })}
-            />
             <button type="submit" className="btn primary">
               {editingId ? 'Update Teacher' : 'Add Teacher'}
             </button>

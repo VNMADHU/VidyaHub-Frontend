@@ -9,6 +9,7 @@ const StudentLoginPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const [rollNumber, setRollNumber] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -18,7 +19,7 @@ const StudentLoginPage = () => {
     setLoading(true)
 
     try {
-      const response = await apiClient.studentLogin(rollNumber.trim())
+      const response = await apiClient.studentLogin(rollNumber.trim(), dateOfBirth)
 
       // Store JWT token in Redux auth store (same as admin login)
       dispatch(
@@ -48,7 +49,7 @@ const StudentLoginPage = () => {
       <div className="portal-login-card">
         <div className="portal-login-icon">🎓</div>
         <h1>Student Portal</h1>
-        <p className="portal-login-subtitle">Enter your Roll Number to view your profile</p>
+        <p className="portal-login-subtitle">Enter your Roll Number and Date of Birth to access your profile</p>
 
         <form onSubmit={handleLogin} className="portal-login-form">
           <div className="portal-input-group">
@@ -62,6 +63,17 @@ const StudentLoginPage = () => {
               required
               autoFocus
               autoComplete="off"
+            />
+          </div>
+
+          <div className="portal-input-group">
+            <label htmlFor="dateOfBirth">Date of Birth</label>
+            <input
+              id="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              required
             />
           </div>
 

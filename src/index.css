@@ -166,7 +166,7 @@ a {
 }
 
 .section.alt {
-  background: var(--surface-alt);
+  background: transparent;
 }
 
 .section h2 {
@@ -223,6 +223,119 @@ a {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
+}
+
+/* Registration card styling */
+.auth-grid .register-card {
+  background: linear-gradient(135deg, #f0f3ff 0%, #e8f5e9 50%, #f0f3ff 100%);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.auth-grid .register-card h3 {
+  color: var(--primary);
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem;
+}
+
+.auth-grid .register-card > p {
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0 0 1.25rem;
+  line-height: 1.5;
+}
+
+.auth-grid .register-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  width: 100%;
+  text-align: left;
+}
+
+.auth-grid .register-card ul li {
+  padding: 0.5rem 0;
+  padding-left: 2rem;
+  position: relative;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.auth-grid .register-card ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0.25rem;
+  color: #10b981;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.auth-grid .register-card .btn.outline {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  border: 2px solid var(--primary);
+  transition: all 0.25s;
+}
+
+.auth-grid .register-card .btn.outline:hover {
+  background: var(--primary);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(58, 102, 255, 0.35);
+}
+
+/* Registration form inside the card */
+.register-form {
+  width: 100%;
+  text-align: left;
+  margin-top: 1rem;
+}
+
+.register-form label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.register-form input {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font: inherit;
+}
+
+.register-form input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(58, 102, 255, 0.1);
+}
+
+.register-form .btn {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.register-form .register-cancel {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  padding: 0.5rem;
+}
+
+.register-form .register-cancel:hover {
+  color: var(--text);
 }
 
 label {
@@ -1085,7 +1198,7 @@ select {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .data-table table {
@@ -1104,6 +1217,7 @@ select {
   color: var(--text);
   font-size: 0.9rem;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
 }
 
 .data-table td {
@@ -1111,6 +1225,26 @@ select {
   border-bottom: 1px solid var(--border);
   color: var(--text);
   font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+/* Sticky Actions column */
+.data-table th:last-child,
+.data-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: var(--surface);
+  z-index: 1;
+  box-shadow: -2px 0 4px rgba(0, 0, 0, 0.05);
+}
+
+.data-table thead th:last-child {
+  background: var(--surface-alt);
+  z-index: 2;
+}
+
+.data-table tbody tr:hover td:last-child {
+  background: var(--surface-alt);
 }
 
 .data-table tbody tr:last-child td {
@@ -1991,17 +2125,31 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0f3ff 0%, #e8f5e9 100%);
+  background: url('./assets/pexels-iriser-1366957.jpg') center/cover no-repeat fixed;
   padding: 1rem;
+  position: relative;
+}
+
+.portal-login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 0;
 }
 
 .portal-login-card {
-  background: white;
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 24px;
   padding: 3rem 2.5rem;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
   text-align: center;
 }
 
@@ -2013,11 +2161,11 @@ select {
 .portal-login-card h1 {
   margin: 0 0 0.5rem;
   font-size: 1.75rem;
-  color: var(--text);
+  color: #ffffff;
 }
 
 .portal-login-subtitle {
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.8);
   margin: 0 0 2rem;
   font-size: 0.95rem;
 }
@@ -2034,35 +2182,43 @@ select {
   display: block;
   font-weight: 600;
   margin-bottom: 0.5rem;
-  color: var(--text);
+  color: #ffffff;
   font-size: 0.9rem;
 }
 
 .portal-input-group input {
   width: 100%;
   padding: 0.9rem 1rem;
-  border: 2px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 12px;
   font-size: 1.1rem;
   text-align: center;
   letter-spacing: 1px;
-  transition: border-color 0.2s;
+  color: #ffffff;
+  transition: border-color 0.2s, background 0.2s;
   outline: none;
 }
 
+.portal-input-group input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 .portal-input-group input:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(58, 102, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
 
 .portal-login-error {
-  background: #fef2f2;
-  color: #dc2626;
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   margin-bottom: 1rem;
   font-size: 0.9rem;
-  border: 1px solid #fecaca;
+  border: 1px solid rgba(220, 38, 38, 0.4);
+  backdrop-filter: blur(8px);
 }
 
 .portal-login-btn {
@@ -2075,7 +2231,7 @@ select {
 .portal-login-back {
   background: none;
   border: none;
-  color: var(--muted);
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
   margin-top: 1.5rem;
   font-size: 0.9rem;
@@ -2083,7 +2239,13 @@ select {
 }
 
 .portal-login-back:hover {
-  color: var(--primary);
+  color: #ffffff;
+}
+
+/* Date input calendar icon color for glassmorphism */
+.portal-input-group input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
 }
 
 /* ============================================

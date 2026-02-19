@@ -375,12 +375,6 @@ const StudentsPage = () => {
               value={formData.rollNumber}
               onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
             />
-            <input
-              type="url"
-              placeholder="Profile Picture URL"
-              value={formData.profilePic}
-              onChange={(e) => setFormData({ ...formData, profilePic: e.target.value })}
-            />
             <select
               value={formData.classId}
               onChange={(e) => {

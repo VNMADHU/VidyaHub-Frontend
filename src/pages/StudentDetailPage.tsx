@@ -21,13 +21,13 @@ const StudentDetailPage = () => {
     try {
       setLoading(true)
       const [studentRes, attendanceRes, marksRes, achievementsRes] = await Promise.all([
-        apiClient.request(`/students/${studentId}`),
+        apiClient.getStudent(studentId),
         apiClient.listAttendance(),
         apiClient.listMarks(),
         apiClient.listAchievements(),
       ])
 
-      setStudent(studentRes)
+      setStudent(studentRes?.data || studentRes)
       
       // Filter data for this student
       setAttendance((attendanceRes?.data || []).filter(a => a.studentId === parseInt(studentId)))

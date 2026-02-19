@@ -9,6 +9,7 @@ const TeacherLoginPage = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
   const [teacherId, setTeacherId] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -18,7 +19,7 @@ const TeacherLoginPage = () => {
     setLoading(true)
 
     try {
-      const response = await apiClient.teacherLogin(teacherId.trim())
+      const response = await apiClient.teacherLogin(teacherId.trim(), dateOfBirth)
 
       // Store JWT token in Redux auth store (same as admin login)
       dispatch(
@@ -48,7 +49,7 @@ const TeacherLoginPage = () => {
       <div className="portal-login-card">
         <div className="portal-login-icon">👨‍🏫</div>
         <h1>Teacher Portal</h1>
-        <p className="portal-login-subtitle">Enter your Teacher ID to view your profile</p>
+        <p className="portal-login-subtitle">Enter your Teacher ID and Date of Birth to access your profile</p>
 
         <form onSubmit={handleLogin} className="portal-login-form">
           <div className="portal-input-group">
@@ -62,6 +63,17 @@ const TeacherLoginPage = () => {
               required
               autoFocus
               autoComplete="off"
+            />
+          </div>
+
+          <div className="portal-input-group">
+            <label htmlFor="dateOfBirth">Date of Birth</label>
+            <input
+              id="dateOfBirth"
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              required
             />
           </div>
 

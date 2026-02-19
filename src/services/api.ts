@@ -135,6 +135,7 @@ export const schoolApi = {
 // Students
 export const studentApi = {
   list: () => api.get<Student[]>('/students').then((r) => r.data),
+  getById: (id: string) => api.get<Student>(`/students/${id}`).then((r) => r.data),
   create: (data: Partial<Student>) =>
     api.post<Student>('/students', data).then((r) => r.data),
   update: (id: string, data: Partial<Student>) =>
@@ -145,6 +146,7 @@ export const studentApi = {
 // Teachers
 export const teacherApi = {
   list: () => api.get<Teacher[]>('/teachers').then((r) => r.data),
+  getById: (id: string) => api.get<Teacher>(`/teachers/${id}`).then((r) => r.data),
   create: (data: Partial<Teacher>) =>
     api.post<Teacher>('/teachers', data).then((r) => r.data),
   update: (id: string, data: Partial<Teacher>) =>
@@ -246,10 +248,10 @@ export const sectionApi = {
 
 // Portal (student/teacher self-service)
 export const portalApi = {
-  studentLogin: (rollNumber: string) =>
-    api.post('/portal/student-login', { rollNumber }).then((r) => r.data),
-  teacherLogin: (teacherId: string) =>
-    api.post('/portal/teacher-login', { teacherId }).then((r) => r.data),
+  studentLogin: (rollNumber: string, dateOfBirth: string) =>
+    api.post('/portal/student-login', { rollNumber, dateOfBirth }).then((r) => r.data),
+  teacherLogin: (teacherId: string, dateOfBirth: string) =>
+    api.post('/portal/teacher-login', { teacherId, dateOfBirth }).then((r) => r.data),
   getStudentProfile: (studentId: string) =>
     api.get<Student>(`/portal/student/${studentId}`).then((r) => r.data),
   getTeacherProfile: (teacherId: string) =>
@@ -283,11 +285,13 @@ const apiClient = {
   deleteSchool: schoolApi.delete,
   // Students
   listStudents: studentApi.list,
+  getStudent: studentApi.getById,
   createStudent: studentApi.create,
   updateStudent: studentApi.update,
   deleteStudent: studentApi.delete,
   // Teachers
   listTeachers: teacherApi.list,
+  getTeacher: teacherApi.getById,
   createTeacher: teacherApi.create,
   updateTeacher: teacherApi.update,
   deleteTeacher: teacherApi.delete,

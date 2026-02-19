@@ -13,6 +13,12 @@ const AuthSection = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
 
+  // Registration state
+  const [showRegister, setShowRegister] = useState(false)
+  const [regData, setRegData] = useState({ schoolName: '', email: '', password: '' })
+  const [regLoading, setRegLoading] = useState(false)
+  const [regMessage, setRegMessage] = useState('')
+
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target
     setFormData((prev) => ({ ...prev, [name]: value }))
@@ -48,6 +54,27 @@ const AuthSection = () => {
       setMessage(`✗ ${msg}`)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleRegister = async (event: FormEvent) => {
+    event.preventDefault()
+    setRegLoading(true)
+    setRegMessage('')
+
+    try {
+      await apiClient.register(regData.email, regData.password, regData.schoolName)
+      setRegMessage('✓ Registration successful! You can now sign in.')
+      setRegData({ schoolName: '', email: '', password: '' })
+      setTimeout(() => {
+        setShowRegister(false)
+        setRegMessage('')
+      }, 2000)
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Registration failed. Please try again.'
+      setRegMessage(`✗ ${msg}`)
+    } finally {
+      setRegLoading(false)
     }
   }
 
@@ -111,20 +138,81 @@ const AuthSection = () => {
             )}
             <p className="helper">Test: admin@vidyahub.edu / password123</p>
           </form>
-          <div className="card">
-            <h3>New School Registration</h3>
-            <p>
-              Is your school new to Vidya Hub? Contact us to register your
-              institution!
-            </p>
-            <ul>
-              <li>Fill registration form</li>
-              <li>Admin account created</li>
-              <li>Start managing your school</li>
-            </ul>
-            <button className="btn outline" type="button">
-              Register School
-            </button>
+          <div className="card register-card">
+            <h3>🏫 New School Registration</h3>
+            {!showRegister ? (
+              <>
+                <p>
+                  Is your school new to Vidya Hub? Register your institution
+                  and start managing it in minutes!
+                </p>
+                <ul>
+                  <li>Fill registration form</li>
+                  <li>Admin account created</li>
+                  <li>Start managing your school</li>
+                </ul>
+                <button
+                  className="btn outline"
+                  type="button"
+                  onClick={() => setShowRegister(true)}
+                >
+                  Register School
+                </button>
+              </>
+            ) : (
+              <form className="register-form" onSubmit={handleRegister}>
+                <label>
+                  School Name
+                  <input
+                    type="text"
+                    placeholder="e.g. Sunrise International School"
+                    value={regData.schoolName}
+                    onChange={(e) => setRegData((p) => ({ ...p, schoolName: e.target.value }))}
+                    required
+                    minLength={2}
+                  />
+                </label>
+                <label>
+                  Admin Email
+                  <input
+                    type="email"
+                    placeholder="admin@yourschool.edu"
+                    value={regData.email}
+                    onChange={(e) => setRegData((p) => ({ ...p, email: e.target.value }))}
+                    required
+                  />
+                </label>
+                <label>
+                  Password
+                  <input
+                    type="password"
+                    placeholder="Min 8 characters"
+                    value={regData.password}
+                    onChange={(e) => setRegData((p) => ({ ...p, password: e.target.value }))}
+                    required
+                    minLength={8}
+                  />
+                </label>
+                {regMessage && (
+                  <p
+                    className="helper"
+                    style={{ color: regMessage.includes('✓') ? '#10b981' : '#ef4444', textAlign: 'center' }}
+                  >
+                    {regMessage}
+                  </p>
+                )}
+                <button className="btn primary" type="submit" disabled={regLoading}>
+                  {regLoading ? 'Registering...' : 'Create Account'}
+                </button>
+                <button
+                  className="register-cancel"
+                  type="button"
+                  onClick={() => { setShowRegister(false); setRegMessage('') }}
+                >
+                  ← Back
+                </button>
+              </form>
+            )}
           </div>
         </div>
       </div>
