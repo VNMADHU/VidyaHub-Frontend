@@ -3,10 +3,13 @@ import { useEffect, useState } from 'react'
 import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
+import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
+import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 const ExamManagementPage = () => {
   const { confirm } = useConfirm()
+  const toast = useToast()
   const [exams, setExams] = useState([])
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
@@ -109,6 +112,7 @@ const ExamManagementPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to save exam:', error)
+      toast.error('Failed to save exam. Please try again.')
     }
   }
 
@@ -138,6 +142,7 @@ const ExamManagementPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to delete exam:', error)
+      toast.error('Failed to delete exam. Please try again.')
     }
   }
 
@@ -159,11 +164,37 @@ const ExamManagementPage = () => {
     }
   }
 
+  const examExportColumns = [
+    { key: 'name', label: 'Exam Name' },
+    { key: 'className', label: 'Class' },
+    { key: 'sectionName', label: 'Section' },
+  ]
+
+  const mapExamsForExport = (data) => data.map(exam => ({
+    name: exam.name,
+    className: exam.class?.name || '',
+    sectionName: exam.section?.name || '',
+  }))
+
+  const handleExportCSV = () => {
+    exportToCSV(mapExamsForExport(exams), 'Exams', examExportColumns)
+  }
+
+  const handleExportPDF = () => {
+    exportToPDF(mapExamsForExport(exams), 'Exams', examExportColumns, 'Exam List')
+  }
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Exam Management</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">
+            📄 CSV
+          </button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
+            📥 PDF
+          </button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>

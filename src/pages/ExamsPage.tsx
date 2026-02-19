@@ -3,16 +3,34 @@ import { useEffect, useState } from 'react'
 import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
+import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
+
+// CBSE-style grade calculation
+const getGrade = (score, maxScore = 100) => {
+  const pct = (score / maxScore) * 100
+  if (pct >= 91) return { grade: 'A1', color: '#059669' }
+  if (pct >= 81) return { grade: 'A2', color: '#10b981' }
+  if (pct >= 71) return { grade: 'B1', color: '#3b82f6' }
+  if (pct >= 61) return { grade: 'B2', color: '#6366f1' }
+  if (pct >= 51) return { grade: 'C1', color: '#f59e0b' }
+  if (pct >= 41) return { grade: 'C2', color: '#f97316' }
+  if (pct >= 33) return { grade: 'D', color: '#ef4444' }
+  return { grade: 'Fail', color: '#dc2626' }
+}
 
 const ExamsPage = () => {
   const { confirm } = useConfirm()
+  const toast = useToast()
   const [exams, setExams] = useState([])
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
   const [examsList, setExamsList] = useState([])
+  const [subjects, setSubjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
@@ -24,6 +42,7 @@ const ExamsPage = () => {
     studentId: '',
     examId: '',
     marks: '',
+    maxScore: '100',
     subject: '',
   })
 
@@ -42,16 +61,18 @@ const ExamsPage = () => {
 
   const loadData = async () => {
     try {
-      const [marksResponse, studentsResponse, examsResponse, classesResponse] = await Promise.all([
+      const [marksResponse, studentsResponse, examsResponse, classesResponse, subjectsResponse] = await Promise.all([
         apiClient.listMarks(),
         apiClient.listStudents(),
         apiClient.listExams(),
         apiClient.listClasses(),
+        apiClient.listSubjects(),
       ])
       setExams(marksResponse?.data || [])
       setStudents(studentsResponse?.data || [])
       setExamsList(examsResponse?.data || [])
       setClasses(classesResponse?.data || [])
+      setSubjects(subjectsResponse?.data || [])
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -109,6 +130,8 @@ const ExamsPage = () => {
     return true
   })
 
+  const { paginatedItems: paginatedExams, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredExams)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
@@ -116,6 +139,7 @@ const ExamsPage = () => {
         studentId: Number(formData.studentId),
         examId: Number(formData.examId),
         marks: Number(formData.marks),
+        maxScore: Number(formData.maxScore) || 100,
         subject: formData.subject,
       }
       if (editingId) {
@@ -129,11 +153,13 @@ const ExamsPage = () => {
         studentId: '',
         examId: '',
         marks: '',
+        maxScore: '100',
         subject: '',
       })
       loadExams()
     } catch (error) {
       console.error('Failed to create exam:', error)
+      toast.error('Failed to save marks. Please try again.')
     }
   }
 
@@ -143,6 +169,7 @@ const ExamsPage = () => {
       studentId: '',
       examId: '',
       marks: '',
+      maxScore: '100',
       subject: '',
     })
     setShowForm(true)
@@ -154,6 +181,7 @@ const ExamsPage = () => {
       studentId: String(mark.studentId || ''),
       examId: String(mark.examId || ''),
       marks: String(mark.score ?? mark.marks ?? ''),
+      maxScore: String(mark.maxScore || 100),
       subject: mark.subject || '',
     })
     setShowForm(true)
@@ -169,6 +197,7 @@ const ExamsPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to delete marks:', error)
+      toast.error('Failed to delete marks. Please try again.')
     }
   }
 
@@ -280,12 +309,21 @@ const ExamsPage = () => {
               required
             />
             <input
-              type="text"
-              placeholder="Subject"
+              type="number"
+              placeholder="Max Score (default 100)"
+              value={formData.maxScore}
+              onChange={(e) => setFormData({ ...formData, maxScore: e.target.value })}
+            />
+            <select
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               required
-            />
+            >
+              <option value="">-- Select Subject --</option>
+              {subjects.map((s) => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
             <button type="submit" className="btn primary">
               {editingId ? 'Update Marks' : 'Add Marks'}
             </button>
@@ -317,23 +355,29 @@ const ExamsPage = () => {
                 <th>Exam</th>
                 <th>Subject</th>
                 <th>Marks</th>
+                <th>%</th>
+                <th>Grade</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredExams.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="empty-row">
+                  <td colSpan="9" className="empty-row">
                     {searchQuery || selectedClass || selectedSection ? 'No marks match your filters.' : 'No marks recorded. Add your first marks!'}
                   </td>
                 </tr>
               ) : (
-                filteredExams.map((exam) => {
+                paginatedExams.map((exam) => {
                   const student = students.find(s => s.id === exam.studentId)
                   const cls = student ? classes.find(c => c.id === student.classId) : null
                   const sec = sections.length > 0 && student
                     ? sections.find(s => s.id === student.sectionId)
                     : null
+                  const score = exam.score ?? exam.marks ?? 0
+                  const maxScore = exam.maxScore || 100
+                  const pct = maxScore > 0 ? ((score / maxScore) * 100).toFixed(1) : 0
+                  const { grade, color } = getGrade(score, maxScore)
                   return (
                   <tr key={exam.id}>
                     <td>{exam.student ? `${exam.student.firstName} ${exam.student.lastName}` : exam.studentId}</td>
@@ -341,7 +385,9 @@ const ExamsPage = () => {
                     <td>{sec?.name || '-'}</td>
                     <td>{exam.exam?.name || exam.examId}</td>
                     <td>{exam.subject || '-'}</td>
-                    <td>{exam.score ?? exam.marks ?? '-'}</td>
+                    <td>{score}/{maxScore}</td>
+                    <td>{pct}%</td>
+                    <td><span style={{ color, fontWeight: 600 }}>{grade}</span></td>
                     <td>
                       <button className="btn-icon edit" onClick={() => handleEdit(exam)} aria-label="Edit marks">
                         <SquarePen size={16} />
@@ -356,6 +402,7 @@ const ExamsPage = () => {
               )}
             </tbody>
           </table>
+          <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
         </div>
       )}
       </div>

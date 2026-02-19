@@ -1,9 +1,13 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
 import apiClient from '@/services/api'
+import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
 
 const AttendancePage = () => {
+  const toast = useToast()
   const [attendance, setAttendance] = useState([])
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
@@ -74,6 +78,7 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('Failed to mark attendance:', error)
+      toast.error('Failed to mark attendance. Please try again.')
       loadData() // Reload on error to get accurate state
     } finally {
       setSaving(prev => ({ ...prev, [studentId]: false }))
@@ -114,6 +119,7 @@ const AttendancePage = () => {
       await loadData()
     } catch (error) {
       console.error('Failed to mark all:', error)
+      toast.error('Failed to mark all attendance. Please try again.')
       await loadData()
     } finally {
       setSaving({})
@@ -145,6 +151,8 @@ const AttendancePage = () => {
     if (selectedSection && student.sectionId !== Number(selectedSection)) return false
     return true
   })
+
+  const { paginatedItems: paginatedStudents, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredStudents, 20)
 
   const presentCount = todayAttendance.filter(r => r.status === 'present').length
   const absentCount = todayAttendance.filter(r => r.status === 'absent').length
@@ -260,7 +268,7 @@ const AttendancePage = () => {
                   No students found. Select a class or add students first.
                 </div>
               ) : (
-                filteredStudents.map((student) => {
+                paginatedStudents.map((student) => {
                   const record = todayAttendance.find(r => r.studentId === student.id)
                   const isSaving = saving[student.id]
                   const cls = classes.find(c => c.id === student.classId)
@@ -302,6 +310,7 @@ const AttendancePage = () => {
                 })
               )}
             </div>
+            <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
           </>
         )}
       </div>

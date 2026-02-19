@@ -3,11 +3,16 @@ import { useEffect, useState } from 'react'
 import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
+import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
+import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 const AnnouncementsPage = () => {
   const { confirm } = useConfirm()
+  const toast = useToast()
   const [announcements, setAnnouncements] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -48,6 +53,7 @@ const AnnouncementsPage = () => {
       loadAnnouncements()
     } catch (error) {
       console.error('Failed to save announcement:', error)
+      toast.error('Failed to save announcement. Please try again.')
     }
   }
 
@@ -79,6 +85,7 @@ const AnnouncementsPage = () => {
       loadAnnouncements()
     } catch (error) {
       console.error('Failed to delete announcement:', error)
+      toast.error('Failed to delete announcement. Please try again.')
     }
   }
 
@@ -99,6 +106,20 @@ const AnnouncementsPage = () => {
     }
   }
 
+  const announcementExportColumns = [
+    { key: 'title', label: 'Title' },
+    { key: 'message', label: 'Message' },
+    { key: 'createdAt', label: 'Date' },
+  ]
+
+  const handleExportCSV = () => {
+    exportToCSV(filteredAnnouncements, 'Announcements', announcementExportColumns)
+  }
+
+  const handleExportPDF = () => {
+    exportToPDF(filteredAnnouncements, 'Announcements', announcementExportColumns, 'Announcements')
+  }
+
   const filteredAnnouncements = announcements.filter((announcement) => {
     const query = searchQuery.toLowerCase()
     return (
@@ -107,11 +128,19 @@ const AnnouncementsPage = () => {
     )
   })
 
+  const { paginatedItems: paginatedAnnouncements, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredAnnouncements)
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Announcements</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">
+            📄 CSV
+          </button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
+            📥 PDF
+          </button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -176,7 +205,7 @@ const AnnouncementsPage = () => {
                   </td>
                 </tr>
               ) : (
-                filteredAnnouncements.map((announcement) => (
+                paginatedAnnouncements.map((announcement) => (
                   <tr key={announcement.id}>
                     <td>{announcement.title}</td>
                     <td>{announcement.message}</td>
@@ -194,6 +223,7 @@ const AnnouncementsPage = () => {
               )}
             </tbody>
           </table>
+          <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
         </div>
       )}
 

@@ -7,6 +7,10 @@ import { useConfirm } from '@/components/ConfirmDialog'
 import BulkImportModal from '@/components/BulkImportModal'
 import { useAppSelector } from '@/store'
 import SearchBar from '@/components/SearchBar'
+import { useToast } from '@/components/ToastContainer'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
+import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 // Validation helpers
 const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
@@ -39,6 +43,7 @@ const validateStudentForm = (data) => {
 const StudentsPage = () => {
   const navigate = useNavigate()
   const { confirm } = useConfirm()
+  const toast = useToast()
   const { schoolId } = useAppSelector((state) => state.auth.user) || {}
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
@@ -49,7 +54,7 @@ const StudentsPage = () => {
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [formErrors, setFormErrors] = useState([])
-  const [formData, setFormData] = useState({
+const EMPTY_STUDENT_FORM = {
     firstName: '',
     lastName: '',
     email: '',
@@ -60,6 +65,19 @@ const StudentsPage = () => {
     profilePic: '',
     classId: '',
     sectionId: '',
+    // Indian school fields
+    aadhaarNumber: '',
+    bloodGroup: '',
+    category: '',
+    religion: '',
+    nationality: 'Indian',
+    address: '',
+    permanentAddress: '',
+    transportMode: '',
+    busRoute: '',
+    previousSchool: '',
+    tcNumber: '',
+    // Parent/Guardian
     fatherName: '',
     motherName: '',
     guardianName: '',
@@ -67,7 +85,8 @@ const StudentsPage = () => {
     motherContact: '',
     guardianContact: '',
     parentEmail: '',
-  })
+  }
+  const [formData, setFormData] = useState(EMPTY_STUDENT_FORM)
 
   useEffect(() => {
     loadData()
@@ -126,52 +145,17 @@ const StudentsPage = () => {
       }
       setShowForm(false)
       setEditingId(null)
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        dateOfBirth: '',
-        gender: 'male',
-        admissionNumber: '',
-        rollNumber: '',
-        profilePic: '',
-        classId: '',
-        sectionId: '',
-        fatherName: '',
-        motherName: '',
-        guardianName: '',
-        fatherContact: '',
-        motherContact: '',
-        guardianContact: '',
-        parentEmail: '',
-      })
+      setFormData(EMPTY_STUDENT_FORM)
       loadData()
     } catch (error) {
       console.error('Failed to create student:', error)
+      toast.error('Failed to save student. Please try again.')
     }
   }
 
   const handleAddNew = () => {
     setEditingId(null)
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      dateOfBirth: '',
-      gender: 'male',
-      admissionNumber: '',
-      rollNumber: '',
-      profilePic: '',
-      classId: '',
-      sectionId: '',
-      fatherName: '',
-      motherName: '',
-      guardianName: '',
-      fatherContact: '',
-      motherContact: '',
-      guardianContact: '',
-      parentEmail: '',
-    })
+    setFormData(EMPTY_STUDENT_FORM)
     setShowForm(true)
   }
 
@@ -188,6 +172,17 @@ const StudentsPage = () => {
       profilePic: student.profilePic || '',
       classId: student.classId || '',
       sectionId: student.sectionId || '',
+      aadhaarNumber: student.aadhaarNumber || '',
+      bloodGroup: student.bloodGroup || '',
+      category: student.category || '',
+      religion: student.religion || '',
+      nationality: student.nationality || 'Indian',
+      address: student.address || '',
+      permanentAddress: student.permanentAddress || '',
+      transportMode: student.transportMode || '',
+      busRoute: student.busRoute || '',
+      previousSchool: student.previousSchool || '',
+      tcNumber: student.tcNumber || '',
       fatherName: student.fatherName || '',
       motherName: student.motherName || '',
       guardianName: student.guardianName || '',
@@ -210,7 +205,7 @@ const StudentsPage = () => {
       await loadData()
     } catch (error) {
       console.error('Failed to delete student:', error)
-      alert(`Failed to delete student: ${error.message}`)
+      toast.error(`Failed to delete student: ${error.message}`)
     }
   }
 
@@ -279,6 +274,27 @@ const StudentsPage = () => {
     }
   }
 
+  const studentExportColumns = [
+    { key: 'rollNumber', label: 'Roll No' },
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'admissionNumber', label: 'Admission No' },
+    { key: 'dateOfBirth', label: 'DOB' },
+    { key: 'fatherName', label: 'Father' },
+    { key: 'motherName', label: 'Mother' },
+    { key: 'category', label: 'Category' },
+  ]
+
+  const handleExportCSV = () => {
+    exportToCSV(filteredStudents, 'Students', studentExportColumns)
+  }
+
+  const handleExportPDF = () => {
+    exportToPDF(filteredStudents, 'Students', studentExportColumns, 'Students List', 'landscape')
+  }
+
   const filteredStudents = students.filter((student) => {
     const query = searchQuery.toLowerCase()
     return (
@@ -293,11 +309,19 @@ const StudentsPage = () => {
     )
   })
 
+  const { paginatedItems: paginatedStudents, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredStudents)
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Students</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">
+            📄 CSV
+          </button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
+            📥 PDF
+          </button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -400,6 +424,105 @@ const StudentsPage = () => {
                 </option>
               ))}
             </select>
+
+            {/* Indian School Fields */}
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              📋 Additional Details
+            </h4>
+            <input
+              type="text"
+              placeholder="Aadhaar Number (12 digits)"
+              value={formData.aadhaarNumber}
+              onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+              maxLength={12}
+              pattern="\d{12}"
+              title="Enter 12-digit Aadhaar number"
+            />
+            <select
+              value={formData.bloodGroup}
+              onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+            >
+              <option value="">Blood Group</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            >
+              <option value="">Category</option>
+              <option value="General">General</option>
+              <option value="OBC">OBC</option>
+              <option value="SC">SC</option>
+              <option value="ST">ST</option>
+              <option value="EWS">EWS</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Religion"
+              value={formData.religion}
+              onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Nationality"
+              value={formData.nationality}
+              onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+            />
+            <textarea
+              placeholder="Current Address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              rows="2"
+              style={{ gridColumn: '1 / -1' }}
+            />
+            <textarea
+              placeholder="Permanent Address"
+              value={formData.permanentAddress}
+              onChange={(e) => setFormData({ ...formData, permanentAddress: e.target.value })}
+              rows="2"
+              style={{ gridColumn: '1 / -1' }}
+            />
+            <select
+              value={formData.transportMode}
+              onChange={(e) => setFormData({ ...formData, transportMode: e.target.value })}
+            >
+              <option value="">Transport Mode</option>
+              <option value="School Bus">School Bus</option>
+              <option value="Auto">Auto</option>
+              <option value="Walk">Walk</option>
+              <option value="Private Vehicle">Private Vehicle</option>
+              <option value="Bicycle">Bicycle</option>
+              <option value="Public Transport">Public Transport</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Bus Route (if applicable)"
+              value={formData.busRoute}
+              onChange={(e) => setFormData({ ...formData, busRoute: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="Previous School"
+              value={formData.previousSchool}
+              onChange={(e) => setFormData({ ...formData, previousSchool: e.target.value })}
+            />
+            <input
+              type="text"
+              placeholder="TC Number (Transfer Certificate)"
+              value={formData.tcNumber}
+              onChange={(e) => setFormData({ ...formData, tcNumber: e.target.value })}
+            />
+
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              👨‍👩‍👧 Parent / Guardian Details
+            </h4>
             <input
               type="text"
               placeholder="Father Name"
@@ -495,7 +618,7 @@ const StudentsPage = () => {
                   </td>
                 </tr>
               ) : (
-                filteredStudents.map((student) => (
+                paginatedStudents.map((student) => (
                   <tr 
                     key={student.id} 
                     onClick={() => navigate(`/portal/students/${student.id}`)}
@@ -505,7 +628,7 @@ const StudentsPage = () => {
                     <td>{student.rollNumber || '-'}</td>
                     <td>{student.firstName} {student.lastName}</td>
                     <td>{student.email}</td>
-                    <td>{student.dateOfBirth}</td>
+                    <td>{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                     <td>{student.gender}</td>
                     <td>{student.fatherContact || student.motherContact || student.guardianContact || '-'}</td>
                     <td>{student.parentEmail || '-'}</td>
@@ -522,6 +645,7 @@ const StudentsPage = () => {
               )}
             </tbody>
           </table>
+          <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
         </div>
       )}
       </div>

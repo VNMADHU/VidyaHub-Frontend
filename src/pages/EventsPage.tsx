@@ -3,11 +3,16 @@ import { useEffect, useState } from 'react'
 import { SquarePen, Trash2 } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
+import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
+import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 const EventsPage = () => {
   const { confirm } = useConfirm()
+  const toast = useToast()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -59,6 +64,7 @@ const EventsPage = () => {
       loadEvents()
     } catch (error) {
       console.error('Failed to create event:', error)
+      toast.error('Failed to save event. Please try again.')
     }
   }
 
@@ -80,8 +86,8 @@ const EventsPage = () => {
     setFormData({
       title: event.title || '',
       description: event.description || '',
-      eventDate: event.eventDate?.split('T')[0] || event.eventDate || '',
-      eventTime: event.eventTime || '',
+      eventDate: (event.date || event.eventDate)?.split('T')[0] || '',
+      eventTime: event.eventTime || (event.date ? new Date(event.date).toTimeString().slice(0,5) : ''),
       location: event.location || '',
       category: event.category || 'academic',
     })
@@ -98,6 +104,7 @@ const EventsPage = () => {
       loadEvents()
     } catch (error) {
       console.error('Failed to delete event:', error)
+      toast.error('Failed to delete event. Please try again.')
     }
   }
 
@@ -129,6 +136,22 @@ const EventsPage = () => {
     }
   }
 
+  const eventExportColumns = [
+    { key: 'title', label: 'Title' },
+    { key: 'eventDate', label: 'Date' },
+    { key: 'location', label: 'Location' },
+    { key: 'category', label: 'Category' },
+    { key: 'description', label: 'Description' },
+  ]
+
+  const handleExportCSV = () => {
+    exportToCSV(filteredEvents, 'Events', eventExportColumns)
+  }
+
+  const handleExportPDF = () => {
+    exportToPDF(filteredEvents, 'Events', eventExportColumns, 'Events List')
+  }
+
   const filteredEvents = events.filter((event) => {
     const query = searchQuery.toLowerCase()
     return (
@@ -139,11 +162,19 @@ const EventsPage = () => {
     )
   })
 
+  const { paginatedItems: paginatedEvents, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredEvents)
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Events</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">
+            📄 CSV
+          </button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
+            📥 PDF
+          </button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -234,7 +265,7 @@ const EventsPage = () => {
               {searchQuery ? 'No events match your search.' : 'No events scheduled. Create your first event!'}
             </div>
           ) : (
-            filteredEvents.map((event) => (
+            paginatedEvents.map((event) => (
               <div key={event.id} className="event-card">
                 <div className="event-header">
                   <h3>{event.title}</h3>
@@ -245,8 +276,8 @@ const EventsPage = () => {
                 <p className="event-description">{event.description}</p>
                 <div className="event-details">
                   <div className="event-info">
-                    <span>📅 {event.eventDate}</span>
-                    {event.eventTime && <span>🕐 {event.eventTime}</span>}
+                    <span>📅 {(event.date || event.eventDate) ? new Date(event.date || event.eventDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</span>
+                    {(event.eventTime || event.date) && <span>🕐 {event.eventTime || new Date(event.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
                     {event.location && <span>📍 {event.location}</span>}
                   </div>
                   <div className="event-actions">
@@ -263,6 +294,7 @@ const EventsPage = () => {
           )}
         </div>
       )}
+      <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
       </div>
     </div>
   )

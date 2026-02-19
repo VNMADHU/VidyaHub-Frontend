@@ -4,12 +4,17 @@ import { Trash2, SquarePen, CreditCard } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import SearchBar from '@/components/SearchBar'
+import { useToast } from '@/components/ToastContainer'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
+import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 const FEE_TYPES = ['tuition', 'exam', 'transport', 'library', 'sports', 'lab', 'other']
 const TERMS = ['Term 1', 'Term 2', 'Term 3', 'Annual']
 
 const FeesPage = () => {
   const { confirm } = useConfirm()
+  const toast = useToast()
   const [fees, setFees] = useState([])
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -62,7 +67,7 @@ const FeesPage = () => {
       loadData()
     } catch (error) {
       console.error('Failed to save fee:', error)
-      alert(`Failed to save: ${error.message}`)
+      toast.error(`Failed to save: ${error.message}`)
     }
   }
 
@@ -110,7 +115,7 @@ const FeesPage = () => {
       loadData()
     } catch (error) {
       console.error('Failed to delete fee:', error)
-      alert(`Failed to delete: ${error.message}`)
+      toast.error(`Failed to delete: ${error.message}`)
     }
   }
 
@@ -127,7 +132,7 @@ const FeesPage = () => {
       loadData()
     } catch (error) {
       console.error('Failed to process payment:', error)
-      alert(`Payment failed: ${error.message}`)
+      toast.error(`Payment failed: ${error.message}`)
     }
   }
 
@@ -145,6 +150,34 @@ const FeesPage = () => {
   const totalPaid = fees.reduce((sum, f) => sum + (f.paidAmount || 0), 0)
   const totalPending = totalFees - totalPaid
 
+  const feeExportColumns = [
+    { key: 'studentName', label: 'Student Name' },
+    { key: 'feeType', label: 'Fee Type' },
+    { key: 'amount', label: 'Amount (₹)' },
+    { key: 'dueDate', label: 'Due Date' },
+    { key: 'status', label: 'Status' },
+    { key: 'paidAmount', label: 'Paid (₹)' },
+    { key: 'paymentMode', label: 'Payment Mode' },
+  ]
+
+  const mapFeesForExport = (data) => data.map(fee => ({
+    studentName: `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.trim(),
+    feeType: fee.feeType,
+    amount: fee.amount,
+    dueDate: fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN') : '',
+    status: fee.status,
+    paidAmount: fee.paidAmount || 0,
+    paymentMode: fee.paymentMode || '',
+  }))
+
+  const handleExportCSV = () => {
+    exportToCSV(mapFeesForExport(filteredFees), 'Fees', feeExportColumns)
+  }
+
+  const handleExportPDF = () => {
+    exportToPDF(mapFeesForExport(filteredFees), 'Fees', feeExportColumns, 'Fee Records', 'landscape')
+  }
+
   const filteredFees = fees.filter((fee) => {
     const query = searchQuery.toLowerCase()
     const studentName = `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.toLowerCase()
@@ -159,13 +192,23 @@ const FeesPage = () => {
     )
   })
 
+  const { paginatedItems: paginatedFees, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredFees)
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>💰 Fee Management</h1>
-        <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-          {showForm ? 'Cancel' : '+ Assign Fee'}
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">
+            📄 CSV
+          </button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
+            📥 PDF
+          </button>
+          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
+            {showForm ? 'Cancel' : '+ Assign Fee'}
+          </button>
+        </div>
       </div>
 
       {/* Summary Stats */}
@@ -339,7 +382,7 @@ const FeesPage = () => {
                     </td>
                   </tr>
                 ) : (
-                  filteredFees.map((fee) => (
+                  paginatedFees.map((fee) => (
                     <tr key={fee.id}>
                       <td>{fee.student?.firstName} {fee.student?.lastName}</td>
                       <td>{fee.student?.rollNumber || '-'}</td>
@@ -393,6 +436,7 @@ const FeesPage = () => {
                 )}
               </tbody>
             </table>
+            <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
           </div>
         )}
       </div>

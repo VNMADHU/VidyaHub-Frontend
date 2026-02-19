@@ -121,6 +121,9 @@ export const authApi = {
 
   requestOtp: (email: string) =>
     api.post('/auth/otp', { email }).then((r) => r.data),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api.post('/auth/change-password', { currentPassword, newPassword }).then((r) => r.data),
 }
 
 // Schools
@@ -272,12 +275,53 @@ export const feeApi = {
     api.get<Fee[]>(`/fees/student/${studentId}`).then((r) => r.data),
 }
 
+// Timetables
+export const timetableApi = {
+  list: (classId?: string | null) =>
+    api.get('/timetables', { params: classId ? { classId } : {} }).then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/timetables', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/timetables/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/timetables/${id}`).then((r) => r.data),
+}
+
+// Subjects
+export const subjectApi = {
+  list: () => api.get('/subjects').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/subjects', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/subjects/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/subjects/${id}`).then((r) => r.data),
+}
+
+// Report Card
+export const reportCardApi = {
+  get: (studentId: string) => api.get(`/report-card/${studentId}`).then((r) => r.data),
+}
+
+// Attendance Report
+export const attendanceReportApi = {
+  get: (classId: string, month: string, year: string) =>
+    api.get('/attendance-report', { params: { classId, month, year } }).then((r) => r.data),
+}
+
+// Homework
+export const homeworkApi = {
+  list: (classId?: string | null) =>
+    api.get('/homework', { params: classId ? { classId } : {} }).then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/homework', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/homework/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/homework/${id}`).then((r) => r.data),
+}
+
 // Legacy-compatible default export (class-like singleton that wraps the new API)
 const apiClient = {
   // Auth
   login: authApi.login,
   register: authApi.register,
   requestOtp: authApi.requestOtp,
+  changePassword: authApi.changePassword,
   // Schools
   listSchools: schoolApi.list,
   createSchool: schoolApi.create,
@@ -354,6 +398,25 @@ const apiClient = {
   payFee: feeApi.pay,
   deleteFee: feeApi.delete,
   getStudentFees: feeApi.getStudentFees,
+  // Timetables
+  listTimetables: timetableApi.list,
+  createTimetable: timetableApi.create,
+  updateTimetable: timetableApi.update,
+  deleteTimetable: timetableApi.delete,
+  // Subjects
+  listSubjects: subjectApi.list,
+  createSubject: subjectApi.create,
+  updateSubject: subjectApi.update,
+  deleteSubject: subjectApi.delete,
+  // Report Card
+  getReportCard: reportCardApi.get,
+  // Attendance Report
+  getAttendanceReport: attendanceReportApi.get,
+  // Homework
+  listHomework: homeworkApi.list,
+  createHomework: homeworkApi.create,
+  updateHomework: homeworkApi.update,
+  deleteHomework: homeworkApi.delete,
 }
 
 export default apiClient

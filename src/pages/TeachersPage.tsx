@@ -6,6 +6,10 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Pagination from '@/components/Pagination'
+import { usePagination } from '@/hooks/usePagination'
+import { useToast } from '@/components/ToastContainer'
+import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 // Validation helpers
 const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
@@ -25,6 +29,7 @@ const validateTeacherForm = (data) => {
 const TeachersPage = () => {
   const navigate = useNavigate()
   const { confirm } = useConfirm()
+  const toast = useToast()
   const [teachers, setTeachers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -32,7 +37,7 @@ const TeachersPage = () => {
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [formErrors, setFormErrors] = useState([])
-  const [formData, setFormData] = useState({
+  const EMPTY_TEACHER_FORM = {
     firstName: '',
     lastName: '',
     email: '',
@@ -42,7 +47,18 @@ const TeachersPage = () => {
     experience: '',
     teacherId: '',
     profilePic: '',
-  })
+    dateOfBirth: '',
+    designation: '',
+    department: '',
+    joiningDate: '',
+    address: '',
+    aadhaarNumber: '',
+    panNumber: '',
+    gender: '',
+    bloodGroup: '',
+  }
+  const [formData, setFormData] = useState(EMPTY_TEACHER_FORM)
+  const [subjects, setSubjects] = useState([])
 
   useEffect(() => {
     loadTeachers()
@@ -50,8 +66,12 @@ const TeachersPage = () => {
 
   const loadTeachers = async () => {
     try {
-      const response = await apiClient.listTeachers()
+      const [response, subjectsRes] = await Promise.all([
+        apiClient.listTeachers(),
+        apiClient.listSubjects(),
+      ])
       setTeachers(response?.data || [])
+      setSubjects(subjectsRes?.data || [])
     } catch (error) {
       console.error('Failed to load teachers:', error)
     } finally {
@@ -75,36 +95,17 @@ const TeachersPage = () => {
       }
       setShowForm(false)
       setEditingId(null)
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        phoneNumber: '',
-        subject: '',
-        qualification: '',
-        experience: '',
-        teacherId: '',
-        profilePic: '',
-      })
+      setFormData(EMPTY_TEACHER_FORM)
       loadTeachers()
     } catch (error) {
       console.error('Failed to create teacher:', error)
+      toast.error('Failed to save teacher. Please try again.')
     }
   }
 
   const handleAddNew = () => {
     setEditingId(null)
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: '',
-      phoneNumber: '',
-      subject: '',
-      qualification: '',
-      experience: '',
-      teacherId: '',
-      profilePic: '',
-    })
+    setFormData(EMPTY_TEACHER_FORM)
     setShowForm(true)
   }
 
@@ -120,6 +121,15 @@ const TeachersPage = () => {
       experience: teacher.experience || '',
       teacherId: teacher.teacherId || '',
       profilePic: teacher.profilePic || '',
+      dateOfBirth: teacher.dateOfBirth?.split('T')[0] || '',
+      designation: teacher.designation || '',
+      department: teacher.department || '',
+      joiningDate: teacher.joiningDate?.split('T')[0] || '',
+      address: teacher.address || '',
+      aadhaarNumber: teacher.aadhaarNumber || '',
+      panNumber: teacher.panNumber || '',
+      gender: teacher.gender || '',
+      bloodGroup: teacher.bloodGroup || '',
     })
     setShowForm(true)
   }
@@ -134,6 +144,7 @@ const TeachersPage = () => {
       loadTeachers()
     } catch (error) {
       console.error('Failed to delete teacher:', error)
+      toast.error('Failed to delete teacher. Please try again.')
     }
   }
 
@@ -173,6 +184,24 @@ const TeachersPage = () => {
     }
   }
 
+  const teacherExportColumns = [
+    { key: 'firstName', label: 'First Name' },
+    { key: 'lastName', label: 'Last Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'subject', label: 'Subject' },
+    { key: 'designation', label: 'Designation' },
+    { key: 'department', label: 'Department' },
+    { key: 'phoneNumber', label: 'Phone' },
+  ]
+
+  const handleExportCSV = () => {
+    exportToCSV(filteredTeachers, 'Teachers', teacherExportColumns)
+  }
+
+  const handleExportPDF = () => {
+    exportToPDF(filteredTeachers, 'Teachers', teacherExportColumns, 'Teachers List')
+  }
+
   const filteredTeachers = teachers.filter((teacher) => {
     const query = searchQuery.toLowerCase()
     return (
@@ -185,11 +214,19 @@ const TeachersPage = () => {
     )
   })
 
+  const { paginatedItems: paginatedTeachers, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredTeachers)
+
   return (
     <div className="page">
       <div className="page-header">
         <h1>Teachers</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">
+            📄 CSV
+          </button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
+            📥 PDF
+          </button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -247,12 +284,15 @@ const TeachersPage = () => {
               title="Enter a valid 10-digit Indian mobile number starting with 6-9"
               maxLength={10}
             />
-            <input
-              type="text"
-              placeholder="Subject"
+            <select
               value={formData.subject}
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-            />
+            >
+              <option value="">-- Select Subject --</option>
+              {subjects.map((s) => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
             <input
               type="text"
               placeholder="Qualification"
@@ -271,7 +311,81 @@ const TeachersPage = () => {
               value={formData.teacherId}
               onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
             />
-            <button type="submit" className="btn primary">
+            <input
+              type="date"
+              placeholder="Date of Birth"
+              value={formData.dateOfBirth}
+              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+            />
+            <select
+              value={formData.gender}
+              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+            >
+              <option value="">Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+            <select
+              value={formData.designation}
+              onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+            >
+              <option value="">Designation</option>
+              <option value="PRT">PRT (Primary Teacher)</option>
+              <option value="TGT">TGT (Trained Graduate Teacher)</option>
+              <option value="PGT">PGT (Post Graduate Teacher)</option>
+              <option value="HOD">HOD (Head of Department)</option>
+              <option value="Vice Principal">Vice Principal</option>
+              <option value="Principal">Principal</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Department (Science, Commerce, Arts...)"
+              value={formData.department}
+              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+            />
+            <input
+              type="date"
+              placeholder="Joining Date"
+              value={formData.joiningDate}
+              onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+            />
+            <select
+              value={formData.bloodGroup}
+              onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+            >
+              <option value="">Blood Group</option>
+              <option value="A+">A+</option>
+              <option value="A-">A-</option>
+              <option value="B+">B+</option>
+              <option value="B-">B-</option>
+              <option value="AB+">AB+</option>
+              <option value="AB-">AB-</option>
+              <option value="O+">O+</option>
+              <option value="O-">O-</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Aadhaar Number (12 digits)"
+              value={formData.aadhaarNumber}
+              onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+              maxLength={12}
+            />
+            <input
+              type="text"
+              placeholder="PAN Number (e.g., ABCDE1234F)"
+              value={formData.panNumber}
+              onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase().slice(0, 10) })}
+              maxLength={10}
+            />
+            <textarea
+              placeholder="Address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              rows="2"
+              style={{ gridColumn: '1 / -1' }}
+            />
+            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
               {editingId ? 'Update Teacher' : 'Add Teacher'}
             </button>
           </form>
@@ -300,6 +414,7 @@ const TeachersPage = () => {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Phone</th>
+                <th>Designation</th>
                 <th>Subject</th>
                 <th>Qualification</th>
                 <th>Experience</th>
@@ -309,12 +424,12 @@ const TeachersPage = () => {
             <tbody>
               {filteredTeachers.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="empty-row">
+                  <td colSpan="10" className="empty-row">
                     {searchQuery ? 'No teachers match your search.' : 'No teachers found. Add your first teacher!'}
                   </td>
                 </tr>
               ) : (
-                filteredTeachers.map((teacher) => (
+                paginatedTeachers.map((teacher) => (
                   <tr 
                     key={teacher.id}
                     onClick={() => navigate(`/portal/teachers/${teacher.id}`)}
@@ -323,8 +438,9 @@ const TeachersPage = () => {
                     <td>{teacher.teacherId || '-'}</td>
                     <td>{teacher.firstName} {teacher.lastName}</td>
                     <td>{teacher.email}</td>
-                    <td>{teacher.phoneNumber}</td>
-                    <td>{teacher.subject}</td>
+                    <td>{teacher.phoneNumber || '-'}</td>
+                    <td>{teacher.designation || '-'}</td>
+                    <td>{teacher.subject || '-'}</td>
                     <td>{teacher.qualification}</td>
                     <td>{teacher.experience} years</td>
                     <td onClick={(e) => e.stopPropagation()}>
@@ -340,6 +456,7 @@ const TeachersPage = () => {
               )}
             </tbody>
           </table>
+          <Pagination currentPage={currentPage} totalPages={totalPages} totalItems={totalItems} onPageChange={goToPage} />
         </div>
       )}
       </div>

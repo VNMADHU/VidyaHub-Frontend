@@ -2,10 +2,12 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import apiClient from '@/services/api'
+import { useToast } from '@/components/ToastContainer'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 
 const MyStudentProfile = () => {
+  const toast = useToast()
   const { studentId } = useParams()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
@@ -125,7 +127,7 @@ const MyStudentProfile = () => {
       setCardDetails({ number: '', expiry: '', cvv: '', name: '' })
       loadFees()
     } catch (err) {
-      alert(`Payment failed: ${err.message}`)
+      toast.error(`Payment failed: ${err.message}`)
     } finally {
       setPaymentProcessing(false)
     }
