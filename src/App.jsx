@@ -32,6 +32,7 @@ import ReportCardPage from './pages/ReportCardPage'
 import AttendanceReportPage from './pages/AttendanceReportPage'
 import TransferCertificatePage from './pages/TransferCertificatePage'
 import HomeworkPage from './pages/HomeworkPage'
+import NotificationsPage from './pages/NotificationsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import StudentLoginPage from './pages/StudentLoginPage'
 import TeacherLoginPage from './pages/TeacherLoginPage'
@@ -131,6 +132,7 @@ const router = createBrowserRouter([
       { path: 'attendance-report', element: <AttendanceReportPage /> },
       { path: 'transfer-certificate', element: <TransferCertificatePage /> },
       { path: 'homework', element: <HomeworkPage /> },
+      { path: 'notifications', element: <NotificationsPage /> },
       { path: 'events', element: <EventsPage /> },
       { path: 'announcements', element: <AnnouncementsPage /> },
       { path: 'achievements', element: <AchievementsPage /> },

@@ -324,6 +324,14 @@ export const homeworkApi = {
   delete: (id: string) => api.delete(`/homework/${id}`).then((r) => r.data),
 }
 
+// Notifications
+export const notificationApi = {
+  list: () => api.get('/notifications').then((r) => r.data),
+  send: (data: Record<string, unknown>) => api.post('/notifications/send', data).then((r) => r.data),
+  recipientsCount: (audience: string) => api.get('/notifications/recipients-count', { params: { audience } }).then((r) => r.data),
+  delete: (id: string) => api.delete(`/notifications/${id}`).then((r) => r.data),
+}
+
 // Legacy-compatible default export (class-like singleton that wraps the new API)
 const apiClient = {
   // Auth
@@ -431,6 +439,11 @@ const apiClient = {
   createHomework: homeworkApi.create,
   updateHomework: homeworkApi.update,
   deleteHomework: homeworkApi.delete,
+  // Notifications
+  listNotifications: notificationApi.list,
+  sendNotification: notificationApi.send,
+  getRecipientsCount: notificationApi.recipientsCount,
+  deleteNotification: notificationApi.delete,
 }
 
 export default apiClient

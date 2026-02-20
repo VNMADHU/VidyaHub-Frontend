@@ -28,6 +28,7 @@ const SchoolPortalLayout = () => {
     { path: '/portal/fees', icon: '💰', label: 'Fees' },
     { path: '/portal/timetable', icon: '📅', label: 'Timetable' },
     { path: '/portal/homework', icon: '📝', label: 'Homework' },
+    { path: '/portal/notifications', icon: '📨', label: 'Notifications' },
     { path: '/portal/events', icon: '🎉', label: 'Events' },
     { path: '/portal/announcements', icon: '📣', label: 'Announcements' },
     { path: '/portal/achievements', icon: '🏆', label: 'Awards' },
