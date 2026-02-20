@@ -613,6 +613,7 @@ select {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -681,6 +682,7 @@ select {
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 /* Mobile Bottom Navigation - Hidden on Desktop */
@@ -719,7 +721,6 @@ select {
   /* Adjust main content */
   .portal-main {
     margin-left: 0;
-    padding-bottom: 70px; /* Space for bottom nav */
   }
 
   /* Show mobile menu toggle */
@@ -805,7 +806,10 @@ select {
    ============================================ */
 
 .dashboard {
+  display: flex;
+  flex-direction: column;
   animation: fadeIn 0.3s ease;
+  flex: 1;
 }
 
 @keyframes fadeIn {
@@ -820,7 +824,7 @@ select {
 }
 
 .dashboard-header {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .dashboard-header h1 {
@@ -844,42 +848,10 @@ select {
 }
 
 /* Statistics Grid */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr 1fr;
-  gap: 2rem;
-  margin-bottom: 2rem;
-}
-
-.dashboard-column {
-  display: flex;
-  flex-direction: column;
-}
-
-.dashboard-section {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
-.section-title {
-  margin-bottom: 1.5rem;
-}
-
-.section-title h2 {
-  margin: 0;
-  font-size: 1.375rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
   margin-bottom: 2rem;
 }
 
@@ -889,8 +861,10 @@ select {
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 1.25rem;
+  text-align: center;
+  gap: 0.75rem;
   transition: all 0.3s ease;
   cursor: pointer;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
@@ -935,13 +909,29 @@ select {
   color: var(--text);
 }
 
-/* Section Header */
-.section-header {
-  margin: 3rem 0 1rem;
-  clear: both;
+/* Dashboard Bottom Grid */
+.dashboard-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  flex: 1;
 }
 
-.section-header h2 {
+.dashboard-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  margin-bottom: 1.25rem;
+}
+
+.section-title h2 {
   margin: 0;
   font-size: 1.25rem;
   font-weight: 600;
@@ -951,20 +941,19 @@ select {
 /* Quick Actions */
 .quick-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 1.25rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
 }
 
 .action-btn {
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 12px;
-  padding: 1.5rem 1rem;
+  padding: 1.25rem 0.75rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   transition: all 0.3s ease;
   cursor: pointer;
   text-decoration: none;
@@ -982,12 +971,12 @@ select {
 }
 
 .action-icon {
-  font-size: 1.875rem;
+  font-size: 1.5rem;
   display: block;
 }
 
 .action-label {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: center;
   line-height: 1.3;
@@ -995,11 +984,15 @@ select {
 
 /* Activity Card */
 .activity-card {
-  background: var(--surface);
+  background: var(--surface-alt, #f8fafc);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 2rem;
-  margin-bottom: 2rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
 }
 
 .empty-state {
@@ -1009,7 +1002,7 @@ select {
   font-size: 0.95rem;
 }
 
-/* Responsive Dashboard */
+/* ── Dashboard Responsive — Tablet ─────────────── */
 @media (max-width: 900px) {
   .dashboard {
     overflow-x: hidden;
@@ -1023,23 +1016,12 @@ select {
     font-size: 0.85rem;
   }
 
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-
-  .dashboard-section {
-    padding: 1.25rem;
-  }
-
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 1rem;
   }
 
   .stat-card {
-    flex-direction: column;
-    text-align: center;
     padding: 1.25rem 0.75rem;
   }
 
@@ -1053,13 +1035,18 @@ select {
     font-size: 1.75rem;
   }
 
+  .dashboard-bottom-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
   .quick-actions {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.75rem;
   }
 
   .action-btn {
-    padding: 1rem 0.75rem;
+    padding: 1rem 0.5rem;
   }
 
   .action-icon {
@@ -1067,11 +1054,16 @@ select {
   }
 
   .action-label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
   }
 }
 
+/* ── Dashboard Responsive — Small Mobile ───────── */
 @media (max-width: 480px) {
+  .dashboard-header {
+    margin-bottom: 1rem;
+  }
+
   .dashboard-header h1 {
     font-size: 1.25rem;
   }
@@ -1896,7 +1888,26 @@ select {
   .page-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 1rem;
+    gap: 0.75rem;
+    padding-bottom: 1rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .page-container {
+    overflow-x: hidden;
+  }
+
+  .form-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-card h3 {
+    font-size: 1.05rem;
+    margin-bottom: 1rem;
   }
 
   .form-grid {
@@ -1905,6 +1916,17 @@ select {
 
   .data-table {
     overflow-x: auto;
+    border-radius: 8px;
+  }
+
+  .data-table th {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .data-table td {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
   }
 
   .events-grid,
@@ -1947,11 +1969,33 @@ select {
 
   .settings-tabs {
     gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .tab-btn {
     padding: 0.75rem 1rem;
     font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  /* Filter row (search + dropdowns) */
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  /* Buttons row */
+  .btn {
+    font-size: 0.85rem;
+    padding: 0.6rem 1rem;
+  }
+
+  /* Page-level grids */
+  .page-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 }
 /* Modal Styles */
