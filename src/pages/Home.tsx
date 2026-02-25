@@ -1,17 +1,13 @@
 // @ts-nocheck
 import AuthSection from '@/components/AuthSection'
 import Contact from '@/components/Contact'
-import Dashboard from '@/components/Dashboard'
-import Features from '@/components/Features'
 import Hero from '@/components/Hero'
-import Roles from '@/components/Roles'
+import LandingShowcase from '@/components/LandingShowcase'
 
 const Home = () => (
   <>
     <Hero />
-    <Features />
-    <Roles />
-    <Dashboard />
+    <LandingShowcase />
     <AuthSection />
     <Contact />
   </>

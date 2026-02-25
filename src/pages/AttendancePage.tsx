@@ -206,6 +206,7 @@ const AttendancePage = () => {
           <span className="stat-label">Date</span>
           <input
             type="date"
+            title="Attendance Date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="date-input"

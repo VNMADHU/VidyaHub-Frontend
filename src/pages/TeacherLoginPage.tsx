@@ -71,6 +71,7 @@ const TeacherLoginPage = () => {
             <input
               id="dateOfBirth"
               type="date"
+              title="Date of Birth"
               value={dateOfBirth}
               onChange={(e) => setDateOfBirth(e.target.value)}
               required

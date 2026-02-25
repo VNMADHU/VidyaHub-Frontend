@@ -314,6 +314,7 @@ const TeachersPage = () => {
             <input
               type="date"
               placeholder="Date of Birth"
+              title="Date of Birth"
               value={formData.dateOfBirth}
               onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
             />
@@ -347,6 +348,7 @@ const TeachersPage = () => {
             <input
               type="date"
               placeholder="Joining Date"
+              title="Joining Date"
               value={formData.joiningDate}
               onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
             />
@@ -443,7 +445,7 @@ const TeachersPage = () => {
                     <td>{teacher.designation || '-'}</td>
                     <td>{teacher.subject || '-'}</td>
                     <td>{teacher.qualification}</td>
-                    <td>{teacher.experience} years</td>
+                    <td>{teacher.experience ? `${String(teacher.experience).replace(/\s*years?$/i, '')} years` : '-'}</td>
                     <td onClick={(e) => e.stopPropagation()}>
                       <button className="btn-icon edit" onClick={() => handleEdit(teacher)} aria-label="Edit teacher">
                         <SquarePen size={16} />

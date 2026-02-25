@@ -236,6 +236,7 @@ const TimetablePage = () => {
           <Calendar size={18} style={{ color: 'var(--primary)' }} />
           <input
             type="date"
+            title="Effective Date"
             value={effectiveDate}
             onChange={(e) => setEffectiveDate(e.target.value)}
             style={{ padding: '0.4rem', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '0.9rem' }}
@@ -378,6 +379,7 @@ const TimetablePage = () => {
                   <label style={labelStyle}>Effective From</label>
                   <input
                     type="date"
+                    title="Effective From"
                     value={formData.effectiveFrom}
                     onChange={(e) => setFormData({ ...formData, effectiveFrom: e.target.value })}
                     style={inputStyle}

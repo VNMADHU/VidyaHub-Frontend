@@ -1,8 +1,6 @@
 export const navLinks = [
   { label: 'Home', href: '/' },
-  { label: 'Features', href: '/#features' },
-  { label: 'Roles', href: '/#roles' },
-  { label: 'Dashboard', href: '/#dashboard' },
+  { label: 'Features', href: '/#features-detail' },
   { label: 'Login', href: '/#auth' },
   { label: 'Contact', href: '/#contact' },
 ] as const
@@ -84,9 +82,9 @@ export const quickActions = [
 ] as const
 
 export const heroStats = [
-  { label: 'Total Students', value: '1,248' },
-  { label: 'Attendance', value: '96%' },
-  { label: 'Announcements', value: '12' },
+  { label: 'Total Schools', value: '150' },
+  { label: 'Total Teachers', value: '1,627' },
+  { label: 'Total Students', value: '12,366' },
 ] as const
 
 export const contactInfo = {

@@ -203,6 +203,7 @@ const AchievementsPage = () => {
             </select>
             <input
               type="date"
+              title="Achievement Date"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
               required

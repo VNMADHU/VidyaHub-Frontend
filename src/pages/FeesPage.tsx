@@ -274,6 +274,7 @@ const FeesPage = () => {
               <input
                 type="date"
                 placeholder="Due Date"
+                title="Due Date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                 required

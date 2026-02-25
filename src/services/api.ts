@@ -44,9 +44,19 @@ api.interceptors.request.use(
       // ignore malformed storage
     }
 
-    // Inject school ID
-    const schoolId = localStorage.getItem(STORAGE_KEYS.SCHOOL_ID) || 'system'
-    config.headers['X-School-Id'] = schoolId
+    // Inject school ID from auth state
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.AUTH)
+      if (stored) {
+        const auth = JSON.parse(stored)
+        const schoolId = auth?.state?.user?.schoolId || auth?.state?.schoolId
+        if (schoolId) {
+          config.headers['X-School-Id'] = String(schoolId)
+        }
+      }
+    } catch {
+      // ignore
+    }
 
     return config
   },
@@ -72,18 +82,20 @@ api.interceptors.response.use(
 
       logger.api((method || 'GET').toUpperCase(), url || '', status, 0)
 
-      // Auto-logout on 401
+      // Auto-logout on 401 (but not on login pages — let those show inline errors)
       if (status === HTTP.UNAUTHORIZED) {
-        logger.warn('Unauthorized — clearing session')
-        localStorage.removeItem(STORAGE_KEYS.AUTH)
-        // Redirect to appropriate login page based on current path
         const path = window.location.pathname
-        if (path.startsWith('/my/student')) {
-          window.location.href = '/student-login'
-        } else if (path.startsWith('/my/teacher')) {
-          window.location.href = '/teacher-login'
-        } else if (path !== '/') {
-          window.location.href = '/'
+        const isLoginPage = path === '/student-login' || path === '/teacher-login' || path === '/'
+        if (!isLoginPage) {
+          logger.warn('Unauthorized — clearing session')
+          localStorage.removeItem(STORAGE_KEYS.AUTH)
+          if (path.startsWith('/my/student')) {
+            window.location.href = '/student-login'
+          } else if (path.startsWith('/my/teacher')) {
+            window.location.href = '/teacher-login'
+          } else {
+            window.location.href = '/'
+          }
         }
       }
 

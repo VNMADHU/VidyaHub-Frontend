@@ -1,19 +1,34 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 import usePreventBackNavigation from '../hooks/usePreventBackNavigation'
+import apiClient from '@/services/api'
 
 const SchoolPortalLayout = () => {
   const dispatch = useAppDispatch()
   const user = useAppSelector((state) => state.auth.user)
   const role = useAppSelector((state) => state.auth.role)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [schoolName, setSchoolName] = useState('')
   const location = useLocation()
   const navigate = useNavigate()
 
   // Prevent back navigation when logged in
   usePreventBackNavigation()
+
+  useEffect(() => {
+    const loadSchoolName = async () => {
+      try {
+        const response = await apiClient.listSchools()
+        const school = response?.data?.[0]
+        if (school?.name) setSchoolName(school.name)
+      } catch {
+        // fallback stays empty
+      }
+    }
+    loadSchoolName()
+  }, [])
 
   const menuItems = [
     { path: '/portal/dashboard', icon: '📊', label: 'Dashboard' },
@@ -100,7 +115,7 @@ const SchoolPortalLayout = () => {
           >
             ☰
           </button>
-          <h1 className="portal-title">School Portal</h1>
+          <h1 className="portal-title">{schoolName ? `${schoolName} Portal` : 'School Portal'}</h1>
           <div className="header-user">
             <span className="header-email">{user?.email}</span>
             <div className="header-avatar">

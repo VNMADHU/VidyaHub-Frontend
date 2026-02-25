@@ -213,6 +213,7 @@ const EventsPage = () => {
             <input
               type="date"
               placeholder="Event Date"
+              title="Event Date"
               value={formData.eventDate}
               onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
               required

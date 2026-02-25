@@ -148,14 +148,17 @@ const MyStudentProfile = () => {
     </div>
   )
 
-  const { student, attendance, marks, achievements, events, announcements, sports } = data
+  const { student, attendance, marks, achievements, events, announcements, sports, timetable, periods, homework } = data
   const attStats = getAttendanceStats()
   const monthlyAtt = getMonthlyAttendance()
 
   const tabs = [
     { id: 'profile', icon: '👤', label: 'Profile' },
     { id: 'academics', icon: '📊', label: 'Academics' },
+    { id: 'timetable', icon: '🕐', label: 'Timetable' },
+    { id: 'homework', icon: '📝', label: 'Homework' },
     { id: 'attendance', icon: '📅', label: 'Attendance' },
+    { id: 'reportcard', icon: '📄', label: 'Report Card' },
     { id: 'fees', icon: '💰', label: 'Fees' },
     { id: 'sports', icon: '⚽', label: 'Sports' },
     { id: 'events', icon: '🎉', label: 'Events' },
@@ -310,6 +313,294 @@ const MyStudentProfile = () => {
             </div>
           </div>
         )}
+
+        {/* TIMETABLE */}
+        {activeTab === 'timetable' && (() => {
+          const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+          const activePeriods = (periods || []).filter(p => !p.isBreak).sort((a, b) => a.sortOrder - b.sortOrder)
+          const breakPeriods = (periods || []).filter(p => p.isBreak)
+          const allSlots = (periods || []).sort((a, b) => a.sortOrder - b.sortOrder)
+          const ttMap = {}
+          ;(timetable || []).forEach(t => {
+            const key = `${t.day}-${t.periodId}`
+            ttMap[key] = t
+          })
+
+          return (
+            <div className="sp-section">
+              <div className="sp-card">
+                <h3>🕐 Weekly Timetable — {student.class?.name || 'My Class'}</h3>
+                {allSlots.length === 0 ? (
+                  <p className="sp-empty">No timetable configured yet. Check back later!</p>
+                ) : (
+                  <div className="sp-table-wrap">
+                    <table className="sp-table sp-timetable-table">
+                      <thead>
+                        <tr>
+                          <th>Period</th>
+                          <th>Time</th>
+                          {days.map(d => <th key={d}>{d.slice(0, 3)}</th>)}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {allSlots.map(slot => (
+                          <tr key={slot.id} className={slot.isBreak ? 'sp-tt-break-row' : ''}>
+                            <td className="sp-tt-period-name">
+                              {slot.isBreak ? `☕ ${slot.name}` : slot.name}
+                            </td>
+                            <td className="sp-tt-time">{slot.startTime} – {slot.endTime}</td>
+                            {days.map(day => {
+                              if (slot.isBreak) {
+                                return <td key={day} className="sp-tt-break-cell">—</td>
+                              }
+                              const entry = ttMap[`${day}-${slot.id}`]
+                              return (
+                                <td key={day} className={entry ? 'sp-tt-filled' : 'sp-tt-empty'}>
+                                  {entry ? (
+                                    <div className="sp-tt-cell">
+                                      <span className="sp-tt-subject">{entry.subject}</span>
+                                      <span className="sp-tt-teacher">{entry.teacher}</span>
+                                    </div>
+                                  ) : '—'}
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })()}
+
+        {/* HOMEWORK */}
+        {activeTab === 'homework' && (() => {
+          const now = new Date()
+          const activeHw = (homework || []).filter(h => h.status === 'active' && new Date(h.dueDate) >= now)
+          const pastHw = (homework || []).filter(h => h.status !== 'active' || new Date(h.dueDate) < now)
+
+          const getDaysLeft = (dueDate) => {
+            const due = new Date(dueDate)
+            const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
+            if (diff === 0) return 'Due today'
+            if (diff === 1) return 'Due tomorrow'
+            if (diff < 0) return `${Math.abs(diff)} day${Math.abs(diff) > 1 ? 's' : ''} overdue`
+            return `${diff} days left`
+          }
+
+          return (
+            <div className="sp-section">
+              {/* Active Homework */}
+              <div className="sp-card">
+                <h3>📝 Active Homework</h3>
+                {activeHw.length === 0 ? (
+                  <p className="sp-empty">No pending homework. Enjoy your free time! 🎉</p>
+                ) : (
+                  <div className="sp-homework-list">
+                    {activeHw.map(hw => {
+                      const daysLeft = getDaysLeft(hw.dueDate)
+                      const isUrgent = new Date(hw.dueDate) - now < 2 * 24 * 60 * 60 * 1000
+                      return (
+                        <div key={hw.id} className={`sp-hw-card ${isUrgent ? 'urgent' : ''}`}>
+                          <div className="sp-hw-header">
+                            <span className="sp-hw-subject">{hw.subject}</span>
+                            <span className={`sp-hw-due ${isUrgent ? 'urgent' : ''}`}>{daysLeft}</span>
+                          </div>
+                          <h4 className="sp-hw-title">{hw.title}</h4>
+                          {hw.description && <p className="sp-hw-desc">{hw.description}</p>}
+                          <div className="sp-hw-meta">
+                            <span>📅 Due: {new Date(hw.dueDate).toLocaleDateString()}</span>
+                            {hw.assignedBy && <span>🧑‍🏫 {hw.assignedBy}</span>}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Past / Completed Homework */}
+              {pastHw.length > 0 && (
+                <div className="sp-card">
+                  <h3>✅ Past Homework</h3>
+                  <div className="sp-homework-list">
+                    {pastHw.map(hw => (
+                      <div key={hw.id} className="sp-hw-card past">
+                        <div className="sp-hw-header">
+                          <span className="sp-hw-subject">{hw.subject}</span>
+                          <span className={`sp-hw-status ${hw.status}`}>
+                            {hw.status === 'completed' ? '✅ Done' : hw.status === 'cancelled' ? '❌ Cancelled' : '⏰ Expired'}
+                          </span>
+                        </div>
+                        <h4 className="sp-hw-title">{hw.title}</h4>
+                        <div className="sp-hw-meta">
+                          <span>📅 Was due: {new Date(hw.dueDate).toLocaleDateString()}</span>
+                          {hw.assignedBy && <span>🧑‍🏫 {hw.assignedBy}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+        {/* REPORT CARD */}
+        {activeTab === 'reportcard' && (() => {
+          // Group marks by exam
+          const examGroups = {}
+          ;(marks || []).forEach(m => {
+            const examName = m.exam?.name || 'Unknown Exam'
+            if (!examGroups[examName]) examGroups[examName] = []
+            examGroups[examName].push(m)
+          })
+          const examNames = Object.keys(examGroups)
+          const getGrade = (pct) => pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 35 ? 'D' : 'F'
+          const getGradeColor = (grade) => {
+            if (grade === 'A+' || grade === 'A') return '#059669'
+            if (grade === 'B+' || grade === 'B') return '#2563eb'
+            if (grade === 'C') return '#d97706'
+            return '#dc2626'
+          }
+
+          return (
+            <div className="sp-section">
+              <div className="sp-rc-header-card">
+                <div className="sp-rc-school-info">
+                  <span className="sp-rc-school-logo">🎓</span>
+                  <div>
+                    <h3>{student.school?.name || 'Vidya Hub'}</h3>
+                    <p>Academic Report Card</p>
+                  </div>
+                </div>
+                <div className="sp-rc-student-info">
+                  <div className="sp-rc-info-row">
+                    <span>Student:</span><strong>{student.firstName} {student.lastName}</strong>
+                  </div>
+                  <div className="sp-rc-info-row">
+                    <span>Class:</span><strong>{student.class?.name || 'N/A'} {student.section?.name ? `- ${student.section.name}` : ''}</strong>
+                  </div>
+                  <div className="sp-rc-info-row">
+                    <span>Roll No:</span><strong>{student.rollNumber || 'N/A'}</strong>
+                  </div>
+                  <div className="sp-rc-info-row">
+                    <span>Adm No:</span><strong>{student.admissionNumber || 'N/A'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {examNames.length === 0 ? (
+                <div className="sp-card">
+                  <p className="sp-empty">No exam results available for report card generation.</p>
+                </div>
+              ) : (
+                examNames.map(examName => {
+                  const examMarks = examGroups[examName]
+                  const totalScore = examMarks.reduce((s, m) => s + (m.score || 0), 0)
+                  const totalMax = examMarks.reduce((s, m) => s + (m.maxScore || 0), 0)
+                  const overallPct = totalMax > 0 ? Math.round((totalScore / totalMax) * 100) : 0
+                  const overallGrade = getGrade(overallPct)
+
+                  return (
+                    <div key={examName} className="sp-card sp-rc-exam-card">
+                      <div className="sp-rc-exam-header">
+                        <h3>📋 {examName}</h3>
+                        <div className="sp-rc-overall">
+                          <span className="sp-rc-overall-pct" style={{ color: getGradeColor(overallGrade) }}>{overallPct}%</span>
+                          <span className="sp-rc-overall-grade" style={{ background: getGradeColor(overallGrade) }}>{overallGrade}</span>
+                        </div>
+                      </div>
+                      <div className="sp-table-wrap">
+                        <table className="sp-table">
+                          <thead>
+                            <tr>
+                              <th>Subject</th>
+                              <th>Marks Obtained</th>
+                              <th>Maximum Marks</th>
+                              <th>Percentage</th>
+                              <th>Grade</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {examMarks.map(m => {
+                              const pct = Math.round((m.score / m.maxScore) * 100)
+                              const grade = getGrade(pct)
+                              return (
+                                <tr key={m.id}>
+                                  <td><strong>{m.subject}</strong></td>
+                                  <td>{m.score}</td>
+                                  <td>{m.maxScore}</td>
+                                  <td><span className={`sp-pct-badge ${pct >= 60 ? 'good' : pct >= 35 ? 'avg' : 'low'}`}>{pct}%</span></td>
+                                  <td><span className={`sp-grade-badge grade-${grade.replace('+', 'plus')}`}>{grade}</span></td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                          <tfoot>
+                            <tr className="sp-rc-total-row">
+                              <td><strong>Total</strong></td>
+                              <td><strong>{totalScore}</strong></td>
+                              <td><strong>{totalMax}</strong></td>
+                              <td><strong>{overallPct}%</strong></td>
+                              <td><span className={`sp-grade-badge grade-${overallGrade.replace('+', 'plus')}`}>{overallGrade}</span></td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+
+                      {/* Performance Bars */}
+                      <div className="sp-rc-bars">
+                        {examMarks.map(m => {
+                          const pct = Math.round((m.score / m.maxScore) * 100)
+                          return (
+                            <div key={m.id} className="sp-rc-bar-row">
+                              <span className="sp-rc-bar-label">{m.subject}</span>
+                              <div className="sp-rc-bar-wrap">
+                                <div className="sp-rc-bar-fill" style={{ width: `${pct}%`, background: getGradeColor(getGrade(pct)) }} />
+                              </div>
+                              <span className="sp-rc-bar-pct">{pct}%</span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+
+              {/* Attendance Summary for Report Card */}
+              {attendance.length > 0 && (
+                <div className="sp-card">
+                  <h3>📅 Attendance Summary</h3>
+                  <div className="sp-rc-att-summary">
+                    <div className="sp-rc-att-item">
+                      <span className="sp-rc-att-num">{attStats.total}</span>
+                      <span>Working Days</span>
+                    </div>
+                    <div className="sp-rc-att-item present">
+                      <span className="sp-rc-att-num">{attStats.present}</span>
+                      <span>Days Present</span>
+                    </div>
+                    <div className="sp-rc-att-item">
+                      <span className="sp-rc-att-num">{attStats.rate}%</span>
+                      <span>Attendance Rate</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="sp-rc-print-area">
+                <button className="sp-rc-print-btn" onClick={() => window.print()}>
+                  🖨️ Print Report Card
+                </button>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ATTENDANCE */}
         {activeTab === 'attendance' && (
@@ -724,19 +1015,6 @@ const MyStudentProfile = () => {
         </div>
       </main>
 
-      {/* Bottom Tab Bar (Mobile) */}
-      <nav className="sp-bottom-nav">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`sp-bottom-item ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => switchTab(tab.id)}
-          >
-            <span className="sp-bottom-icon">{tab.icon}</span>
-            <span className="sp-bottom-label">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
     </div>
   )
 }

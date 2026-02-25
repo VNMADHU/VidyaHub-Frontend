@@ -373,6 +373,7 @@ const EMPTY_STUDENT_FORM = {
             <input
               type="date"
               placeholder="Date of Birth"
+              title="Date of Birth"
               value={formData.dateOfBirth}
               onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
               max={TODAY}

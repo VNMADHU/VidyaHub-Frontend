@@ -17,7 +17,7 @@ const Header = () => {
         <nav className={`nav ${navOpen ? 'open' : ''}`}>
           {navLinks.map((link) =>
             link.href === '/' ? (
-              <Link key={link.href} to={link.href} onClick={() => dispatch(closeNav())}>
+              <Link key={link.href} to={link.href} onClick={() => { dispatch(closeNav()); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>
                 {link.label}
               </Link>
             ) : (

@@ -220,7 +220,7 @@ const HomeworkPage = () => {
             </div>
             <div>
               <label style={labelStyle}>Due Date *</label>
-              <input type="date" value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} style={inputStyle} required />
+              <input type="date" title="Due Date" value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} style={inputStyle} required />
             </div>
             <div>
               <label style={labelStyle}>Assigned By</label>

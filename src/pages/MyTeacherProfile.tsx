@@ -69,12 +69,17 @@ const MyTeacherProfile = () => {
     </div>
   )
 
-  const { teacher, events, announcements, sports } = data
+  const { teacher, events, announcements, sports, timetable, periods, homework, attendance } = data
 
   const tabs = [
     { id: 'profile', icon: '👤', label: 'Profile' },
     { id: 'classes', icon: '🏫', label: 'Classes' },
-    { id: 'events', icon: '📣', label: 'Updates' },
+    { id: 'timetable', icon: '🕐', label: 'Timetable' },
+    { id: 'homework', icon: '📝', label: 'Homework' },
+    { id: 'attendance', icon: '📅', label: 'Attendance' },
+    { id: 'events', icon: '🎉', label: 'Events' },
+    { id: 'announcements', icon: '📢', label: 'News' },
+    { id: 'sports', icon: '⚽', label: 'Sports' },
   ]
 
   const switchTab = (id) => {
@@ -238,10 +243,267 @@ const MyTeacherProfile = () => {
               </div>
             )}
 
+            {/* TIMETABLE */}
+            {activeTab === 'timetable' && (() => {
+              const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+              const allSlots = (periods || []).sort((a, b) => a.sortOrder - b.sortOrder)
+              const ttMap = {}
+              ;(timetable || []).forEach(t => {
+                const key = `${t.day}-${t.periodId}`
+                if (!ttMap[key]) ttMap[key] = []
+                ttMap[key].push(t)
+              })
+
+              // Group by class for teacher view
+              const classIds = [...new Set((timetable || []).map(t => t.classId))]
+              const classNames = {}
+              ;(timetable || []).forEach(t => {
+                if (t.class?.name) classNames[t.classId] = t.class.name
+              })
+              ;(teacher.classes || []).forEach(c => { classNames[c.id] = c.name })
+
+              return (
+                <div className="tp-section">
+                  <div className="tp-card">
+                    <h3>🕐 My Teaching Schedule</h3>
+                    {allSlots.length === 0 ? (
+                      <p className="tp-empty">No timetable configured yet.</p>
+                    ) : (
+                      <div className="tp-table-wrap">
+                        <table className="tp-table tp-timetable-table">
+                          <thead>
+                            <tr>
+                              <th>Period</th>
+                              <th>Time</th>
+                              {days.map(d => <th key={d}>{d.slice(0, 3)}</th>)}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {allSlots.map(slot => (
+                              <tr key={slot.id} className={slot.isBreak ? 'tp-tt-break-row' : ''}>
+                                <td className="tp-tt-period-name">
+                                  {slot.isBreak ? `☕ ${slot.name}` : slot.name}
+                                </td>
+                                <td className="tp-tt-time">{slot.startTime} – {slot.endTime}</td>
+                                {days.map(day => {
+                                  if (slot.isBreak) {
+                                    return <td key={day} className="tp-tt-break-cell">—</td>
+                                  }
+                                  const entries = ttMap[`${day}-${slot.id}`] || []
+                                  // Show entries this teacher is involved in
+                                  const teacherName = `${teacher.firstName} ${teacher.lastName}`
+                                  const myEntries = entries.filter(e =>
+                                    e.teacher?.toLowerCase().includes(teacher.firstName?.toLowerCase()) ||
+                                    e.teacher?.toLowerCase().includes(teacher.lastName?.toLowerCase())
+                                  )
+                                  const showEntries = myEntries.length > 0 ? myEntries : entries
+                                  return (
+                                    <td key={day} className={showEntries.length > 0 ? 'tp-tt-filled' : 'tp-tt-empty'}>
+                                      {showEntries.length > 0 ? showEntries.map((entry, i) => (
+                                        <div key={i} className="tp-tt-cell">
+                                          <span className="tp-tt-subject">{entry.subject}</span>
+                                          <span className="tp-tt-class">{classNames[entry.classId] || ''}</span>
+                                        </div>
+                                      )) : '—'}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* HOMEWORK */}
+            {activeTab === 'homework' && (() => {
+              const now = new Date()
+              const activeHw = (homework || []).filter(h => h.status === 'active' && new Date(h.dueDate) >= now)
+              const pastHw = (homework || []).filter(h => h.status !== 'active' || new Date(h.dueDate) < now)
+
+              return (
+                <div className="tp-section">
+                  <div className="tp-card">
+                    <h3>📝 Active Homework Assignments</h3>
+                    {activeHw.length === 0 ? (
+                      <p className="tp-empty">No active homework assignments.</p>
+                    ) : (
+                      <div className="tp-hw-list">
+                        {activeHw.map(hw => {
+                          const due = new Date(hw.dueDate)
+                          const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
+                          const isUrgent = diff <= 2
+                          return (
+                            <div key={hw.id} className={`tp-hw-card ${isUrgent ? 'urgent' : ''}`}>
+                              <div className="tp-hw-header">
+                                <span className="tp-hw-subject">{hw.subject}</span>
+                                <span className="tp-hw-class">{hw.class?.name || ''} {hw.section?.name ? `- ${hw.section.name}` : ''}</span>
+                              </div>
+                              <h4 className="tp-hw-title">{hw.title}</h4>
+                              {hw.description && <p className="tp-hw-desc">{hw.description}</p>}
+                              <div className="tp-hw-meta">
+                                <span>📅 Due: {due.toLocaleDateString()}</span>
+                                <span className={`tp-hw-days ${isUrgent ? 'urgent' : ''}`}>
+                                  {diff === 0 ? 'Due today' : diff === 1 ? 'Due tomorrow' : `${diff} days left`}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {pastHw.length > 0 && (
+                    <div className="tp-card">
+                      <h3>✅ Past Homework</h3>
+                      <div className="tp-hw-list">
+                        {pastHw.slice(0, 20).map(hw => (
+                          <div key={hw.id} className="tp-hw-card past">
+                            <div className="tp-hw-header">
+                              <span className="tp-hw-subject">{hw.subject}</span>
+                              <span className="tp-hw-class">{hw.class?.name || ''}</span>
+                            </div>
+                            <h4 className="tp-hw-title">{hw.title}</h4>
+                            <div className="tp-hw-meta">
+                              <span>📅 Was due: {new Date(hw.dueDate).toLocaleDateString()}</span>
+                              <span className={`tp-hw-status ${hw.status}`}>
+                                {hw.status === 'completed' ? '✅ Done' : hw.status === 'cancelled' ? '❌ Cancelled' : '⏰ Expired'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* ATTENDANCE */}
+            {activeTab === 'attendance' && (() => {
+              // Group attendance by date and class
+              const attByDate = {}
+              ;(attendance || []).forEach(a => {
+                const dateKey = new Date(a.date).toLocaleDateString()
+                if (!attByDate[dateKey]) attByDate[dateKey] = []
+                attByDate[dateKey].push(a)
+              })
+              const dateKeys = Object.keys(attByDate).sort((a, b) => new Date(b) - new Date(a))
+
+              // Overall stats
+              const totalRecords = (attendance || []).length
+              const presentCount = (attendance || []).filter(a => a.status === 'present').length
+              const absentCount = (attendance || []).filter(a => a.status === 'absent').length
+              const lateCount = (attendance || []).filter(a => a.status === 'late').length
+              const overallRate = totalRecords > 0 ? Math.round((presentCount / totalRecords) * 100) : 0
+
+              return (
+                <div className="tp-section">
+                  {/* Stats */}
+                  <div className="tp-att-stats">
+                    <div className="tp-att-stat total">
+                      <span className="tp-att-stat-icon">📋</span>
+                      <span className="tp-att-stat-num">{totalRecords}</span>
+                      <span className="tp-att-stat-label">Records</span>
+                    </div>
+                    <div className="tp-att-stat present">
+                      <span className="tp-att-stat-icon">✅</span>
+                      <span className="tp-att-stat-num">{presentCount}</span>
+                      <span className="tp-att-stat-label">Present</span>
+                    </div>
+                    <div className="tp-att-stat absent">
+                      <span className="tp-att-stat-icon">❌</span>
+                      <span className="tp-att-stat-num">{absentCount}</span>
+                      <span className="tp-att-stat-label">Absent</span>
+                    </div>
+                    <div className="tp-att-stat rate">
+                      <span className="tp-att-stat-icon">📊</span>
+                      <span className="tp-att-stat-num">{overallRate}%</span>
+                      <span className="tp-att-stat-label">Rate</span>
+                    </div>
+                  </div>
+
+                  <div className="tp-card">
+                    <h3>📅 Recent Attendance (Last 30 Days)</h3>
+                    {dateKeys.length === 0 ? (
+                      <p className="tp-empty">No attendance records for your classes yet.</p>
+                    ) : (
+                      <div className="tp-att-dates">
+                        {dateKeys.slice(0, 15).map(dateKey => {
+                          const records = attByDate[dateKey]
+                          const p = records.filter(r => r.status === 'present').length
+                          const a = records.filter(r => r.status === 'absent').length
+                          const l = records.filter(r => r.status === 'late').length
+                          return (
+                            <div key={dateKey} className="tp-att-date-row">
+                              <div className="tp-att-date-label">
+                                <strong>{dateKey}</strong>
+                                <span>{records.length} student{records.length !== 1 ? 's' : ''}</span>
+                              </div>
+                              <div className="tp-att-date-stats">
+                                <span className="tp-att-pill present">✅ {p}</span>
+                                <span className="tp-att-pill absent">❌ {a}</span>
+                                {l > 0 && <span className="tp-att-pill late">⏰ {l}</span>}
+                              </div>
+                              <div className="tp-att-bar">
+                                <div className="tp-att-bar-fill present" style={{ width: `${(p / records.length) * 100}%` }} />
+                                <div className="tp-att-bar-fill absent" style={{ width: `${(a / records.length) * 100}%` }} />
+                                {l > 0 && <div className="tp-att-bar-fill late" style={{ width: `${(l / records.length) * 100}%` }} />}
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* EVENTS */}
             {activeTab === 'events' && (
               <div className="tp-section">
                 <div className="tp-card">
-                  <h3>📣 Announcements</h3>
+                  <h3>🎉 School Events</h3>
+                  {events.length === 0 ? (
+                    <p className="tp-empty">No events scheduled.</p>
+                  ) : (
+                    <div className="tp-events-list">
+                      {events.map(event => {
+                        const eventDate = new Date(event.date)
+                        const isPast = eventDate < new Date()
+                        return (
+                          <div key={event.id} className={`tp-event-card ${isPast ? 'past' : 'upcoming'}`}>
+                            <div className="tp-event-date-box">
+                              <span className="tp-event-day">{eventDate.getDate()}</span>
+                              <span className="tp-event-month">{eventDate.toLocaleString('default', { month: 'short' })}</span>
+                            </div>
+                            <div className="tp-event-info">
+                              <h4>{event.title}</h4>
+                              <p>{event.description}</p>
+                              <span className={`tp-event-status ${isPast ? 'past' : 'upcoming'}`}>
+                                {isPast ? '✓ Completed' : '📌 Upcoming'}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ANNOUNCEMENTS */}
+            {activeTab === 'announcements' && (
+              <div className="tp-section">
+                <div className="tp-card">
+                  <h3>📢 Announcements</h3>
                   {announcements.length === 0 ? (
                     <p className="tp-empty">No announcements yet.</p>
                   ) : (
@@ -256,56 +518,45 @@ const MyTeacherProfile = () => {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
 
+            {/* SPORTS */}
+            {activeTab === 'sports' && (
+              <div className="tp-section">
                 <div className="tp-card">
-                  <h3>🎉 Upcoming Events</h3>
-                  {events.length === 0 ? (
-                    <p className="tp-empty">No events scheduled.</p>
+                  <h3>⚽ Sports & Activities</h3>
+                  {sports.length === 0 ? (
+                    <p className="tp-empty">No sports activities registered.</p>
                   ) : (
-                    <div className="tp-list">
-                      {events.map(e => (
-                        <div key={e.id} className="tp-list-item">
-                          <h4>{e.title}</h4>
-                          <p>{e.description}</p>
-                          <span className="tp-list-date">{new Date(e.date).toLocaleDateString()}</span>
+                    <div className="tp-sports-grid">
+                      {sports.map(sport => (
+                        <div key={sport.id} className="tp-sport-card">
+                          <div className="tp-sport-icon">
+                            {sport.name.toLowerCase().includes('cricket') ? '🏏' :
+                             sport.name.toLowerCase().includes('football') ? '⚽' :
+                             sport.name.toLowerCase().includes('basketball') ? '🏀' :
+                             sport.name.toLowerCase().includes('tennis') ? '🎾' :
+                             sport.name.toLowerCase().includes('badminton') ? '🏸' :
+                             sport.name.toLowerCase().includes('swim') ? '🏊' : '🏅'}
+                          </div>
+                          <div className="tp-sport-info">
+                            <h4>{sport.name}</h4>
+                            <p>🧑‍🏫 Coach: {sport.coachName}</p>
+                            <p>🕐 {sport.schedule}</p>
+                            {sport.description && <p className="tp-sport-desc">{sport.description}</p>}
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
                 </div>
-
-                {sports.length > 0 && (
-                  <div className="tp-card">
-                    <h3>⚽ Sports</h3>
-                    <div className="tp-list">
-                      {sports.map(s => (
-                        <div key={s.id} className="tp-list-item">
-                          <h4>{s.name}</h4>
-                          <p>Coach: {s.coachName} • {s.schedule}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
         </div>
       </main>
 
-      {/* Bottom Tab Bar (Mobile) */}
-      <nav className="tp-bottom-nav">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            className={`tp-bottom-item ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => switchTab(tab.id)}
-          >
-            <span className="tp-bottom-icon">{tab.icon}</span>
-            <span className="tp-bottom-label">{tab.label}</span>
-          </button>
-        ))}
-      </nav>
     </div>
   )
 }

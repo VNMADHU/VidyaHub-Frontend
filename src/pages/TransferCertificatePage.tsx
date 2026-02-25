@@ -240,11 +240,11 @@ const TransferCertificatePage = () => {
             </div>
             <div>
               <label style={labelStyle}>Issue Date</label>
-              <input type="date" value={tcDetails.issueDate} onChange={e => setTcDetails({...tcDetails, issueDate: e.target.value})} style={inputStyle} />
+              <input type="date" title="Issue Date" value={tcDetails.issueDate} onChange={e => setTcDetails({...tcDetails, issueDate: e.target.value})} style={inputStyle} />
             </div>
             <div>
               <label style={labelStyle}>Last Attendance Date</label>
-              <input type="date" value={tcDetails.lastAttendanceDate} onChange={e => setTcDetails({...tcDetails, lastAttendanceDate: e.target.value})} style={inputStyle} />
+              <input type="date" title="Last Attendance Date" value={tcDetails.lastAttendanceDate} onChange={e => setTcDetails({...tcDetails, lastAttendanceDate: e.target.value})} style={inputStyle} />
             </div>
             <div>
               <label style={labelStyle}>Reason for Leaving</label>
