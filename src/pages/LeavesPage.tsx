@@ -137,6 +137,7 @@ const LeavesPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (leave) => {
@@ -322,9 +323,9 @@ const LeavesPage = () => {
                 ))}
               </select>
 
-              <input type="date" title="From Date" placeholder="From Date" value={formData.fromDate} onChange={(e) => handleDateChange('fromDate', e.target.value)} required />
-              <input type="date" title="To Date" placeholder="To Date" value={formData.toDate} onChange={(e) => handleDateChange('toDate', e.target.value)} required />
-              <input type="number" placeholder="Days" value={formData.days} onChange={(e) => setFormData({ ...formData, days: e.target.value })} min="1" required />
+              <input type="date" title="From Date" placeholder="From Date *" value={formData.fromDate} onChange={(e) => handleDateChange('fromDate', e.target.value)} required />
+              <input type="date" title="To Date" placeholder="To Date *" value={formData.toDate} onChange={(e) => handleDateChange('toDate', e.target.value)} required />
+              <input type="number" placeholder="Days *" value={formData.days} onChange={(e) => setFormData({ ...formData, days: e.target.value })} min="1" required />
 
               <textarea placeholder="Reason *" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} rows="2" required style={{ gridColumn: '1 / -1' }} />
 

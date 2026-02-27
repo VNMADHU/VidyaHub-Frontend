@@ -96,6 +96,7 @@ const HomeworkPage = () => {
     if (h.classId) loadSections(String(h.classId))
     setEditingId(h.id)
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async (e) => {

@@ -173,6 +173,7 @@ const ExamsPage = () => {
       subject: '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (mark) => {
@@ -185,6 +186,7 @@ const ExamsPage = () => {
       subject: mark.subject || '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (markId) => {
@@ -282,7 +284,7 @@ const ExamsPage = () => {
               onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
               required
             >
-              <option value="">Select Student</option>
+              <option value="">Select Student *</option>
               {filteredStudents.map((student) => (
                 <option key={student.id} value={student.id}>
                   {student.firstName} {student.lastName} ({student.admissionNumber})
@@ -294,7 +296,7 @@ const ExamsPage = () => {
               onChange={(e) => setFormData({ ...formData, examId: e.target.value })}
               required
             >
-              <option value="">Select Exam</option>
+              <option value="">Select Exam *</option>
               {filteredExamsList.map((exam) => (
                 <option key={exam.id} value={exam.id}>
                   {exam.name}{exam.class ? ` (${exam.class.name}${exam.section ? ` - ${exam.section.name}` : ''})` : ''}
@@ -303,7 +305,7 @@ const ExamsPage = () => {
             </select>
             <input
               type="number"
-              placeholder="Marks"
+              placeholder="Marks *"
               value={formData.marks}
               onChange={(e) => setFormData({ ...formData, marks: e.target.value })}
               required
@@ -319,7 +321,7 @@ const ExamsPage = () => {
               onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
               required
             >
-              <option value="">-- Select Subject --</option>
+              <option value="">-- Select Subject * --</option>
               {subjects.map((s) => (
                 <option key={s.id} value={s.name}>{s.name}</option>
               ))}

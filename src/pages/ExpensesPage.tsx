@@ -71,6 +71,7 @@ const ExpensesPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (expense) => {

@@ -79,6 +79,7 @@ const HolidaysPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (holiday) => {
@@ -190,7 +191,7 @@ const HolidaysPage = () => {
                   <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                 ))}
               </select>
-              <input type="date" title="From Date" placeholder="From Date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+              <input type="date" title="From Date" placeholder="From Date *" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
               <input type="date" title="To Date (optional)" placeholder="To Date" value={formData.toDate} onChange={(e) => setFormData({ ...formData, toDate: e.target.value })} />
               <textarea placeholder="Description (optional)" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
               <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>

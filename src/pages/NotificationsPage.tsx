@@ -323,7 +323,7 @@ const NotificationsPage = () => {
           {/* Subject & Message */}
           <div style={cardStyle}>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={labelStyle}>Subject</label>
+              <label style={labelStyle}>Subject *</label>
               <input
                 type="text"
                 style={inputStyle}
@@ -333,7 +333,7 @@ const NotificationsPage = () => {
               />
             </div>
             <div>
-              <label style={labelStyle}>Message</label>
+              <label style={labelStyle}>Message *</label>
               <textarea
                 style={{ ...inputStyle, minHeight: '140px', resize: 'vertical', fontFamily: 'inherit' }}
                 placeholder="Dear {{name}},&#10;&#10;Write your message here...&#10;&#10;Use {{name}} to personalize with parent's name."

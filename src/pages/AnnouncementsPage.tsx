@@ -64,6 +64,7 @@ const AnnouncementsPage = () => {
       message: '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (announcement) => {
@@ -73,6 +74,7 @@ const AnnouncementsPage = () => {
       message: announcement.message || '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (announcementId) => {
@@ -163,14 +165,14 @@ const AnnouncementsPage = () => {
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
-              placeholder="Title"
+              placeholder="Title *"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
               style={{ gridColumn: '1 / -1' }}
             />
             <textarea
-              placeholder="Message"
+              placeholder="Message *"
               value={formData.message}
               onChange={(e) => setFormData({ ...formData, message: e.target.value })}
               rows="4"

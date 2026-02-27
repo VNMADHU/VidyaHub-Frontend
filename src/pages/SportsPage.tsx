@@ -67,6 +67,7 @@ const SportsPage = () => {
       description: '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (sport) => {
@@ -78,6 +79,7 @@ const SportsPage = () => {
     })
     setEditingId(sport.id)
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -154,7 +156,7 @@ const SportsPage = () => {
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
-              placeholder="Sport Name"
+              placeholder="Sport Name *"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required

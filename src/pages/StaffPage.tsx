@@ -171,7 +171,7 @@ const StaffPage = () => {
             className="btn primary"
             onClick={() => {
               if (showForm && !editingId) { setShowForm(false) }
-              else { setFormData(EMPTY_FORM); setEditingId(null); setShowForm(true) }
+              else { setFormData(EMPTY_FORM); setEditingId(null); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
             }}
           >
             {showForm && !editingId ? 'Cancel' : '+ Add Staff'}

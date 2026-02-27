@@ -187,7 +187,7 @@ const ClassesPage = () => {
           <form onSubmit={handleSubmitClass} className="form-grid">
             <input
               type="text"
-              placeholder="Class Name (e.g., LKG, UKG, 1, 2, etc.)"
+              placeholder="Class Name * (e.g., LKG, UKG, 1, 2, etc.)"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -224,7 +224,7 @@ const ClassesPage = () => {
                 required
                 disabled={editingSectionId}
               >
-                <option value="">Select Class</option>
+                <option value="">Select Class *</option>
                 {classes.map(cls => (
                   <option key={cls.id} value={cls.id}>
                     Class {cls.name}
@@ -233,7 +233,7 @@ const ClassesPage = () => {
               </select>
               <input
                 type="text"
-                placeholder="Section Name (e.g., A, B, C)"
+              placeholder="Section Name * (e.g., A, B, C)"
                 value={sectionForm.name}
                 onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })}
                 required

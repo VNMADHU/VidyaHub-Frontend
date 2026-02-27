@@ -4271,3 +4271,450 @@ select {
   margin: 0.25rem 0;
   font-size: 0.875rem;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   VALUE PROPOSITION — Benefits, Roles, Testimonials,
+   Pricing, Contact
+═══════════════════════════════════════════════════════════ */
+
+/* ── Shared section header ── */
+.vp-section-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.vp-section-header {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 3rem;
+}
+
+.vp-section-header h2 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  margin: 0.25rem 0 0.75rem;
+  line-height: 1.25;
+}
+
+.vp-section-header p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* ── Stats strip ── */
+.vp-stats-strip {
+  background: var(--primary);
+  padding: 2rem 0;
+}
+
+.vp-stats-row {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.vp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #fff;
+  gap: 0.2rem;
+}
+
+.vp-stat strong {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.vp-stat span {
+  font-size: 0.82rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+/* ── Benefits grid ── */
+.vp-benefits-section {
+  background: var(--bg);
+}
+
+.vp-benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.vp-benefit-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 1.75rem;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.vp-benefit-card:hover {
+  box-shadow: 0 8px 28px rgba(58, 102, 255, 0.1);
+  transform: translateY(-3px);
+}
+
+.vp-benefit-icon {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.vp-benefit-card h4 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.vp-benefit-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* ── Roles section ── */
+.vp-roles-section {
+  background: var(--surface-alt);
+}
+
+.vp-roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.vp-role-card {
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 2rem;
+  border: 2px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.vp-role-card.admin  { border-top: 4px solid #3a66ff; }
+.vp-role-card.teacher{ border-top: 4px solid #10b981; }
+.vp-role-card.student{ border-top: 4px solid #f59e0b; }
+.vp-role-card.parent { border-top: 4px solid #8b5cf6; }
+
+.vp-role-icon {
+  font-size: 2.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.vp-role-card h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.vp-role-card > p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+.vp-role-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.vp-role-card ul li {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* ── Testimonials ── */
+.vp-testimonials-section {
+  background: var(--bg);
+}
+
+.vp-testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.vp-testimonial-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+}
+
+.vp-testimonial-stars {
+  color: #f59e0b;
+  font-size: 1rem;
+  letter-spacing: 2px;
+}
+
+.vp-testimonial-card > p {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.7;
+  margin: 0;
+  font-style: italic;
+  flex: 1;
+}
+
+.vp-testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.vp-testimonial-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #10b981);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.8rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.vp-testimonial-author strong {
+  display: block;
+  font-size: 0.9rem;
+}
+
+.vp-testimonial-author span {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ── Pricing ── */
+.vp-pricing-section {
+  background: var(--surface-alt);
+}
+
+.vp-pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 780px;
+  margin: 0 auto 1.5rem;
+}
+
+.vp-pricing-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  padding: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+}
+
+.vp-pricing-card.featured {
+  border-color: var(--primary);
+  box-shadow: 0 8px 32px rgba(58, 102, 255, 0.15);
+}
+
+.vp-pricing-badge {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 1rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.vp-pricing-tier {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vp-pricing-price {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.vp-pricing-price span {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.vp-pricing-desc {
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.vp-pricing-features {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.vp-pricing-features li {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.vp-pricing-btn {
+  width: 100%;
+  text-align: center;
+  padding: 0.85rem !important;
+}
+
+.vp-pricing-note {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.vp-pricing-note a {
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* ── Contact ── */
+.vp-contact-section {
+  background: var(--bg);
+}
+
+.vp-contact-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+
+.vp-contact-left h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  margin: 0.25rem 0 0.75rem;
+}
+
+.vp-contact-left > p {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0 0 2rem;
+}
+
+.vp-contact-items {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.vp-contact-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.vp-contact-item-icon {
+  font-size: 1.4rem;
+  margin-top: 0.1rem;
+}
+
+.vp-contact-item strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.2rem;
+}
+
+.vp-contact-item span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.vp-contact-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 2.25rem;
+  box-shadow: var(--shadow);
+}
+
+.vp-contact-form-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+}
+
+.vp-contact-form-card > p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 1.5rem;
+}
+
+.vp-form-group {
+  margin-bottom: 0.85rem;
+}
+
+.vp-form-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.vp-form-input:focus {
+  border-color: var(--primary);
+}
+
+.vp-form-note {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0.75rem 0 0;
+}
+
+/* ── Responsive overrides ── */
+@media (max-width: 768px) {
+  .vp-stats-row { justify-content: center; }
+  .vp-roles-grid { grid-template-columns: 1fr 1fr; }
+  .vp-contact-inner { grid-template-columns: 1fr; gap: 2rem; }
+  .vp-pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+}
+
+@media (max-width: 480px) {
+  .vp-roles-grid { grid-template-columns: 1fr; }
+}
+

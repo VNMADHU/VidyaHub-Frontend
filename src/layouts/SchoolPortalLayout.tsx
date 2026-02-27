@@ -45,7 +45,8 @@ const SchoolPortalLayout = () => {
     const loadSchoolName = async () => {
       try {
         const response = await apiClient.listSchools()
-        const school = response?.data?.[0]
+        const schools = Array.isArray(response) ? response : (response as any)?.data
+        const school = Array.isArray(schools) ? schools[0] : schools?.[0]
         if (school?.name) setSchoolName(school.name)
       } catch {
         // fallback stays empty

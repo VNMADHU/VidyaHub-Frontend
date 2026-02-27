@@ -122,6 +122,7 @@ const ExamManagementPage = () => {
     setEditingId(null)
     setFormData({ name: '', classId: '', sectionId: '' })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (exam) => {
@@ -132,6 +133,7 @@ const ExamManagementPage = () => {
       sectionId: exam.sectionId ? String(exam.sectionId) : '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (examId) => {
@@ -247,7 +249,7 @@ const ExamManagementPage = () => {
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
-              placeholder="Exam Name (e.g., Mid-Term 2026, Final Exam, Unit Test 1)"
+              placeholder="Exam Name * (e.g., Mid-Term 2026, Final Exam, Unit Test 1)"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required

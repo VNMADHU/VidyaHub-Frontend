@@ -85,6 +85,7 @@ const TransportPage = () => {
       status: v.status || 'active',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteVehicle = async (id) => {
@@ -123,6 +124,7 @@ const TransportPage = () => {
       bloodGroup: d.bloodGroup || '', emergencyContact: d.emergencyContact || '', status: d.status || 'active',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteDriver = async (id) => {
@@ -136,6 +138,7 @@ const TransportPage = () => {
     if (activeTab === 'vehicles') setVehicleForm(emptyVehicleForm)
     else setDriverForm(emptyDriverForm)
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // ── Filtering ───────────────────────────────────────────

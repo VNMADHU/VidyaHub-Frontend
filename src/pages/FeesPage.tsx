@@ -88,6 +88,7 @@ const FeesPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (fee) => {
@@ -248,7 +249,7 @@ const FeesPage = () => {
                 onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
                 required
               >
-                <option value="">Select Student</option>
+                <option value="">Select Student *</option>
                 {students.map(s => (
                   <option key={s.id} value={s.id}>
                     {s.firstName} {s.lastName} ({s.admissionNumber}{s.rollNumber ? ` / Roll: ${s.rollNumber}` : ''})
@@ -266,7 +267,7 @@ const FeesPage = () => {
               </select>
               <input
                 type="number"
-                placeholder="Amount (₹)"
+                placeholder="Amount (₹) *"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 required
@@ -274,7 +275,7 @@ const FeesPage = () => {
               />
               <input
                 type="date"
-                placeholder="Due Date"
+                placeholder="Due Date *"
                 title="Due Date"
                 value={formData.dueDate}
                 onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}

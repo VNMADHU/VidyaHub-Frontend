@@ -157,6 +157,7 @@ const EMPTY_STUDENT_FORM = {
     setEditingId(null)
     setFormData(EMPTY_STUDENT_FORM)
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (student) => {
@@ -192,6 +193,7 @@ const EMPTY_STUDENT_FORM = {
       parentEmail: student.parentEmail || '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (studentId) => {
@@ -352,28 +354,28 @@ const EMPTY_STUDENT_FORM = {
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
-              placeholder="First Name"
+              placeholder="First Name *"
               value={formData.firstName}
               onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
               required
             />
             <input
               type="text"
-              placeholder="Last Name"
+              placeholder="Last Name *"
               value={formData.lastName}
               onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
               required
             />
             <input
               type="email"
-              placeholder="Email"
+              placeholder="Email *"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               required
             />
             <input
               type="date"
-              placeholder="Date of Birth"
+              placeholder="Date of Birth *"
               title="Date of Birth"
               value={formData.dateOfBirth}
               onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
@@ -390,7 +392,7 @@ const EMPTY_STUDENT_FORM = {
             </select>
             <input
               type="text"
-              placeholder="Admission Number"
+              placeholder="Admission Number *"
               value={formData.admissionNumber}
               onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
               required

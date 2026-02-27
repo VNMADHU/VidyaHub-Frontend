@@ -89,6 +89,7 @@ const LibraryPage = () => {
     setEditingId(null)
     resetBookForm()
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEditBook = (book) => {
@@ -105,6 +106,7 @@ const LibraryPage = () => {
       shelfLocation: book.shelfLocation || '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteBook = async (bookId) => {

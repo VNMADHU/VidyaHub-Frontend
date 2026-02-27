@@ -74,6 +74,7 @@ const AchievementsPage = () => {
       description: '',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (achievement) => {
@@ -86,6 +87,7 @@ const AchievementsPage = () => {
     })
     setEditingId(achievement.id)
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -178,7 +180,7 @@ const AchievementsPage = () => {
               onChange={(e) => setFormData({ ...formData, studentId: Number(e.target.value) })}
               required
             >
-              <option value="">Select Student</option>
+              <option value="">Select Student *</option>
               {students.map(student => (
                 <option key={student.id} value={student.id}>
                   {student.firstName} {student.lastName}
@@ -187,7 +189,7 @@ const AchievementsPage = () => {
             </select>
             <input
               type="text"
-              placeholder="Achievement Title"
+              placeholder="Achievement Title *"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required

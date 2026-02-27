@@ -79,6 +79,7 @@ const EventsPage = () => {
       category: 'academic',
     })
     setShowForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (event) => {
@@ -198,7 +199,7 @@ const EventsPage = () => {
           <form onSubmit={handleSubmit} className="form-grid">
             <input
               type="text"
-              placeholder="Event Title"
+              placeholder="Event Title *"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
@@ -213,7 +214,7 @@ const EventsPage = () => {
             />
             <input
               type="date"
-              placeholder="Event Date"
+              placeholder="Event Date *"
               title="Event Date"
               value={formData.eventDate}
               onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
