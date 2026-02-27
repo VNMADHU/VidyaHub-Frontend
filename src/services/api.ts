@@ -344,6 +344,68 @@ export const notificationApi = {
   delete: (id: string) => api.delete(`/notifications/${id}`).then((r) => r.data),
 }
 
+export const libraryApi = {
+  listBooks: () => api.get('/library/books').then((r) => r.data),
+  createBook: (data: Record<string, unknown>) => api.post('/library/books', data).then((r) => r.data),
+  updateBook: (id: string, data: Record<string, unknown>) => api.patch(`/library/books/${id}`, data).then((r) => r.data),
+  deleteBook: (id: string) => api.delete(`/library/books/${id}`).then((r) => r.data),
+  listIssues: () => api.get('/library/issues').then((r) => r.data),
+  issueBook: (data: Record<string, unknown>) => api.post('/library/issues', data).then((r) => r.data),
+  returnBook: (id: string) => api.patch(`/library/issues/${id}/return`).then((r) => r.data),
+  deleteIssue: (id: string) => api.delete(`/library/issues/${id}`).then((r) => r.data),
+}
+
+export const transportApi = {
+  listVehicles: () => api.get('/transport/vehicles').then((r) => r.data),
+  createVehicle: (data: Record<string, unknown>) => api.post('/transport/vehicles', data).then((r) => r.data),
+  updateVehicle: (id: string, data: Record<string, unknown>) => api.patch(`/transport/vehicles/${id}`, data).then((r) => r.data),
+  deleteVehicle: (id: string) => api.delete(`/transport/vehicles/${id}`).then((r) => r.data),
+  listDrivers: () => api.get('/transport/drivers').then((r) => r.data),
+  createDriver: (data: Record<string, unknown>) => api.post('/transport/drivers', data).then((r) => r.data),
+  updateDriver: (id: string, data: Record<string, unknown>) => api.patch(`/transport/drivers/${id}`, data).then((r) => r.data),
+  deleteDriver: (id: string) => api.delete(`/transport/drivers/${id}`).then((r) => r.data),
+}
+
+export const expenseApi = {
+  list: () => api.get('/expenses').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/expenses', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/expenses/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/expenses/${id}`).then((r) => r.data),
+}
+
+export const supportApi = {
+  list: () => api.get('/support').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/support', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/support/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/support/${id}`).then((r) => r.data),
+}
+
+// Leaves
+export const leaveApi = {
+  list: (params?: { employeeType?: string; status?: string }) =>
+    api.get('/leaves', { params }).then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/leaves', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/leaves/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/leaves/${id}`).then((r) => r.data),
+}
+
+// Holidays
+export const holidayApi = {
+  list: () => api.get('/holidays').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/holidays', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/holidays/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/holidays/${id}`).then((r) => r.data),
+}
+
+// Staff (non-teaching employees)
+export const staffApi = {
+  list: (params?: { designation?: string; status?: string }) =>
+    api.get('/staff', { params }).then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/staff', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/staff/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/staff/${id}`).then((r) => r.data),
+}
+
 // Legacy-compatible default export (class-like singleton that wraps the new API)
 const apiClient = {
   // Auth
@@ -456,6 +518,49 @@ const apiClient = {
   sendNotification: notificationApi.send,
   getRecipientsCount: notificationApi.recipientsCount,
   deleteNotification: notificationApi.delete,
+  // Library
+  listBooks: libraryApi.listBooks,
+  createBook: libraryApi.createBook,
+  updateBook: libraryApi.updateBook,
+  deleteBook: libraryApi.deleteBook,
+  listBookIssues: libraryApi.listIssues,
+  issueBook: libraryApi.issueBook,
+  returnBook: libraryApi.returnBook,
+  deleteBookIssue: libraryApi.deleteIssue,
+  // Transport
+  listVehicles: transportApi.listVehicles,
+  createVehicle: transportApi.createVehicle,
+  updateVehicle: transportApi.updateVehicle,
+  deleteVehicle: transportApi.deleteVehicle,
+  listDrivers: transportApi.listDrivers,
+  createDriver: transportApi.createDriver,
+  updateDriver: transportApi.updateDriver,
+  deleteDriver: transportApi.deleteDriver,
+  // Expenses
+  listExpenses: expenseApi.list,
+  createExpense: expenseApi.create,
+  updateExpense: expenseApi.update,
+  deleteExpense: expenseApi.delete,
+  // Support
+  listTickets: supportApi.list,
+  createTicket: supportApi.create,
+  updateTicket: supportApi.update,
+  deleteTicket: supportApi.delete,
+  // Leaves
+  listLeaves: leaveApi.list,
+  createLeave: leaveApi.create,
+  updateLeave: leaveApi.update,
+  deleteLeave: leaveApi.delete,
+  // Holidays
+  listHolidays: holidayApi.list,
+  createHoliday: holidayApi.create,
+  updateHoliday: holidayApi.update,
+  deleteHoliday: holidayApi.delete,
+  // Staff
+  listStaff: staffApi.list,
+  createStaff: staffApi.create,
+  updateStaff: staffApi.update,
+  deleteStaff: staffApi.delete,
 }
 
 export default apiClient

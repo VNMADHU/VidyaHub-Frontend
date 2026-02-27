@@ -1,13 +1,13 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Trash2, SquarePen, CreditCard } from 'lucide-react'
+import { Trash2, SquarePen, CreditCard, Printer } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import SearchBar from '@/components/SearchBar'
 import { useToast } from '@/components/ToastContainer'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
-import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 
 const FEE_TYPES = ['tuition', 'exam', 'transport', 'library', 'sports', 'lab', 'other']
 const TERMS = ['Term 1', 'Term 2', 'Term 3', 'Annual']
@@ -205,6 +205,7 @@ const FeesPage = () => {
           <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
             📥 PDF
           </button>
+          <button style={exportButtonStyle} onClick={() => printTable('fees-print-area', 'Fee Records')} title="Print"><Printer size={16} /> Print</button>
           <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
             {showForm ? 'Cancel' : '+ Assign Fee'}
           </button>
@@ -360,7 +361,7 @@ const FeesPage = () => {
           <div className="loading-state">Loading fees...</div>
         ) : (
            <> 
-          <div className="data-table">
+          <div className="data-table" id="fees-print-area">
             <table>
               <thead>
                 <tr>

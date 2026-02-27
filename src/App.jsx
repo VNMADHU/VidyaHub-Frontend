@@ -38,6 +38,13 @@ import StudentLoginPage from './pages/StudentLoginPage'
 import TeacherLoginPage from './pages/TeacherLoginPage'
 import MyStudentProfile from './pages/MyStudentProfile'
 import MyTeacherProfile from './pages/MyTeacherProfile'
+import LibraryPage from './pages/LibraryPage'
+import TransportPage from './pages/TransportPage'
+import ExpensesPage from './pages/ExpensesPage'
+import SupportPage from './pages/SupportPage'
+import HolidaysPage from './pages/HolidaysPage'
+import LeavesPage from './pages/LeavesPage'
+import StaffPage from './pages/StaffPage'
 
 const router = createBrowserRouter([
   {
@@ -137,6 +144,13 @@ const router = createBrowserRouter([
       { path: 'announcements', element: <AnnouncementsPage /> },
       { path: 'achievements', element: <AchievementsPage /> },
       { path: 'sports', element: <SportsPage /> },
+      { path: 'library', element: <LibraryPage /> },
+      { path: 'transport', element: <TransportPage /> },
+      { path: 'expenses', element: <ExpensesPage /> },
+      { path: 'support', element: <SupportPage /> },
+      { path: 'holidays', element: <HolidaysPage /> },
+      { path: 'leaves', element: <LeavesPage /> },
+      { path: 'staff', element: <StaffPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],

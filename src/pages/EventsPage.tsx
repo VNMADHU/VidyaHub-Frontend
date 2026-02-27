@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { SquarePen, Trash2 } from 'lucide-react'
+import { SquarePen, Trash2, Printer } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
@@ -8,7 +8,7 @@ import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
-import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 
 const EventsPage = () => {
   const { confirm } = useConfirm()
@@ -175,6 +175,7 @@ const EventsPage = () => {
           <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
             📥 PDF
           </button>
+          <button style={exportButtonStyle} onClick={() => printTable('events-print-area', 'Events List')} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -260,7 +261,7 @@ const EventsPage = () => {
       {loading ? (
         <div className="loading-state">Loading events...</div>
       ) : (
-        <div className="events-grid">
+        <div className="events-grid" id="events-print-area">
           {filteredEvents.length === 0 ? (
             <div className="empty-state-card">
               {searchQuery ? 'No events match your search.' : 'No events scheduled. Create your first event!'}

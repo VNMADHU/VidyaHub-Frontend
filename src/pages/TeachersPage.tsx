@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { SquarePen, Trash2 } from 'lucide-react'
+import { SquarePen, Trash2, Printer } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import BulkImportModal from '@/components/BulkImportModal'
@@ -9,7 +9,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { useToast } from '@/components/ToastContainer'
-import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 
 // Validation helpers
 const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
@@ -227,6 +227,7 @@ const TeachersPage = () => {
           <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
             📥 PDF
           </button>
+          <button style={exportButtonStyle} onClick={() => printTable('teachers-print-area', 'Teachers List')} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -409,7 +410,7 @@ const TeachersPage = () => {
         <div className="loading-state">Loading teachers...</div>
       ) : (
             <> 
-        <div className="data-table">
+        <div className="data-table" id="teachers-print-area">
           <table>
             <thead>
               <tr>

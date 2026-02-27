@@ -93,3 +93,29 @@ export const exportButtonStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: '4px',
 }
+
+// ── Print Helper ──────────────────────────────────────────
+export function printTable(elementId: string, title: string) {
+  const content = document.getElementById(elementId)
+  if (!content) return
+  const printWindow = window.open('', '_blank')
+  if (!printWindow) return
+  printWindow.document.write(`
+    <html><head><title>${title}</title>
+    <style>
+      body { font-family: Arial, sans-serif; padding: 20px; }
+      h2 { text-align: center; margin-bottom: 20px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-size: 12px; }
+      th { background: #f3f4f6; font-weight: 600; }
+      .no-print, .btn-icon { display: none !important; }
+      .badge, span[style] { font-size: 11px; }
+      @media print { .no-print { display: none !important; } }
+    </style></head><body>
+    <h2>${title}</h2>
+    ${content.innerHTML}
+    </body></html>
+  `)
+  printWindow.document.close()
+  printWindow.print()
+}
