@@ -336,6 +336,14 @@ export const homeworkApi = {
   delete: (id: string) => api.delete(`/homework/${id}`).then((r) => r.data),
 }
 
+// Portal Homework (teacher portal — uses portalAuthenticate, not admin JWT)
+export const portalHomeworkApi = {
+  create: (data: Record<string, unknown>) => api.post('/portal/homework', data).then((r) => r.data),
+  update: (id: number, data: Record<string, unknown>) =>
+    api.patch(`/portal/homework/${id}`, data).then((r) => r.data),
+  delete: (id: number) => api.delete(`/portal/homework/${id}`).then((r) => r.data),
+}
+
 // Notifications
 export const notificationApi = {
   list: () => api.get('/notifications').then((r) => r.data),
@@ -536,6 +544,10 @@ const apiClient = {
   createHomework: homeworkApi.create,
   updateHomework: homeworkApi.update,
   deleteHomework: homeworkApi.delete,
+  // Portal Homework (teacher portal)
+  createPortalHomework: portalHomeworkApi.create,
+  updatePortalHomework: portalHomeworkApi.update,
+  deletePortalHomework: portalHomeworkApi.delete,
   // Notifications
   listNotifications: notificationApi.list,
   sendNotification: notificationApi.send,

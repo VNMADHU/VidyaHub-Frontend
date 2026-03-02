@@ -16,6 +16,13 @@ const MyTeacherProfile = () => {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('profile')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // Homework management state
+  const [hwList, setHwList] = useState(null)
+  const [showHwForm, setShowHwForm] = useState(false)
+  const [editingHwId, setEditingHwId] = useState(null)
+  const [hwSaving, setHwSaving] = useState(false)
+  const [hwError, setHwError] = useState('')
+  const [hwForm, setHwForm] = useState({ title: '', subject: '', classId: '', sectionId: '', dueDate: '', description: '' })
 
   // Prevent browser back button from leaving the portal
   useEffect(() => {
@@ -57,6 +64,72 @@ const MyTeacherProfile = () => {
     navigate('/teacher-login')
   }
 
+  // ── Homework Handlers ──────────────────────────────────────────────
+  const openAddHw = () => {
+    setHwForm({ title: '', subject: '', classId: '', sectionId: '', dueDate: '', description: '' })
+    setEditingHwId(null)
+    setHwError('')
+    setShowHwForm(true)
+  }
+
+  const openEditHw = (hw) => {
+    setHwForm({
+      title: hw.title,
+      subject: hw.subject,
+      classId: String(hw.classId),
+      sectionId: hw.sectionId ? String(hw.sectionId) : '',
+      dueDate: hw.dueDate ? hw.dueDate.split('T')[0] : '',
+      description: hw.description || '',
+    })
+    setEditingHwId(hw.id)
+    setHwError('')
+    setShowHwForm(true)
+  }
+
+  const cancelHwForm = () => {
+    setShowHwForm(false)
+    setEditingHwId(null)
+    setHwError('')
+  }
+
+  const saveHw = async (e) => {
+    e.preventDefault()
+    setHwSaving(true)
+    setHwError('')
+    try {
+      const payload = {
+        title: hwForm.title,
+        subject: hwForm.subject,
+        classId: parseInt(hwForm.classId),
+        sectionId: hwForm.sectionId ? parseInt(hwForm.sectionId) : undefined,
+        dueDate: hwForm.dueDate,
+        description: hwForm.description,
+      }
+      if (editingHwId) {
+        const res = await apiClient.updatePortalHomework(editingHwId, payload)
+        setHwList(prev => (prev ?? homework ?? []).map(h => h.id === editingHwId ? res.data : h))
+      } else {
+        const res = await apiClient.createPortalHomework(payload)
+        setHwList(prev => [res.data, ...(prev ?? homework ?? [])])
+      }
+      cancelHwForm()
+    } catch (err) {
+      setHwError(err.message || 'Failed to save homework')
+    } finally {
+      setHwSaving(false)
+    }
+  }
+
+  const removeHw = async (id) => {
+    if (!window.confirm('Delete this homework assignment?')) return
+    try {
+      await apiClient.deletePortalHomework(id)
+      setHwList(prev => (prev ?? homework ?? []).filter(h => h.id !== id))
+    } catch (err) {
+      alert(err.message || 'Failed to delete homework')
+    }
+  }
+
   if (loading) return (
     <div className="tp-app">
       <div className="tp-loading">Loading your profile...</div>
@@ -69,7 +142,10 @@ const MyTeacherProfile = () => {
     </div>
   )
 
-  const { teacher, events, announcements, sports, timetable, periods, homework, attendance } = data
+  const { teacher, events, announcements, sports, timetable, periods, homework, attendance, allClasses } = data
+
+  // Classes to show in homework form: assigned classes first, else all school classes
+  const hwClasses = (teacher.classes && teacher.classes.length > 0) ? teacher.classes : (allClasses || [])
 
   const tabs = [
     { id: 'profile', icon: '👤', label: 'Profile' },
@@ -321,34 +397,136 @@ const MyTeacherProfile = () => {
 
             {/* HOMEWORK */}
             {activeTab === 'homework' && (() => {
+              const allHw = hwList !== null ? hwList : (homework || [])
               const now = new Date()
-              const activeHw = (homework || []).filter(h => h.status === 'active' && new Date(h.dueDate) >= now)
-              const pastHw = (homework || []).filter(h => h.status !== 'active' || new Date(h.dueDate) < now)
+              const activeHw = allHw.filter(h => new Date(h.dueDate) >= now)
+              const pastHw = allHw.filter(h => new Date(h.dueDate) < now)
+              const selectedClass = hwClasses.find(c => String(c.id) === hwForm.classId)
+              const availableSections = selectedClass?.sections || []
 
               return (
                 <div className="tp-section">
+                  {/* Action bar */}
+                  <div className="tp-hw-action-bar">
+                    <span className="tp-hw-count">{allHw.length} assignment{allHw.length !== 1 ? 's' : ''}</span>
+                    {!showHwForm && (
+                      <button className="tp-btn-add" onClick={openAddHw}>➕ Add Homework</button>
+                    )}
+                  </div>
+
+                  {/* Add / Edit Form */}
+                  {showHwForm && (
+                    <div className="tp-card tp-hw-form-card">
+                      <h4 className="tp-hw-form-title">{editingHwId ? '✏️ Edit Homework' : '➕ New Homework Assignment'}</h4>
+                      <form onSubmit={saveHw} className="tp-hw-form">
+                        <div className="tp-form-row">
+                          <div className="tp-form-group">
+                            <label>Class *</label>
+                            <select
+                              value={hwForm.classId}
+                              onChange={e => setHwForm(p => ({ ...p, classId: e.target.value, sectionId: '' }))}
+                              required
+                            >
+                              <option value="">Select class...</option>
+                              {hwClasses.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="tp-form-group">
+                            <label>Section (optional)</label>
+                            <select
+                              value={hwForm.sectionId}
+                              onChange={e => setHwForm(p => ({ ...p, sectionId: e.target.value }))}
+                              disabled={availableSections.length === 0}
+                            >
+                              <option value="">All sections</option>
+                              {availableSections.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+                        <div className="tp-form-row">
+                          <div className="tp-form-group">
+                            <label>Subject *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Mathematics"
+                              value={hwForm.subject}
+                              onChange={e => setHwForm(p => ({ ...p, subject: e.target.value }))}
+                              required
+                            />
+                          </div>
+                          <div className="tp-form-group">
+                            <label>Due Date *</label>
+                            <input
+                              type="date"
+                              value={hwForm.dueDate}
+                              onChange={e => setHwForm(p => ({ ...p, dueDate: e.target.value }))}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <div className="tp-form-group">
+                          <label>Title *</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. Chapter 5 exercises (Q1–10)"
+                            value={hwForm.title}
+                            onChange={e => setHwForm(p => ({ ...p, title: e.target.value }))}
+                            required
+                          />
+                        </div>
+                        <div className="tp-form-group">
+                          <label>Description (optional)</label>
+                          <textarea
+                            placeholder="Any instructions or additional details..."
+                            value={hwForm.description}
+                            onChange={e => setHwForm(p => ({ ...p, description: e.target.value }))}
+                            rows={3}
+                          />
+                        </div>
+                        {hwError && <p className="tp-form-error">⚠️ {hwError}</p>}
+                        <div className="tp-form-actions">
+                          <button type="submit" className="tp-btn-save" disabled={hwSaving}>
+                            {hwSaving ? 'Saving...' : editingHwId ? '✅ Update Homework' : '✅ Assign Homework'}
+                          </button>
+                          <button type="button" className="tp-btn-cancel" onClick={cancelHwForm}>Cancel</button>
+                        </div>
+                      </form>
+                    </div>
+                  )}
+
+                  {/* Active homework */}
                   <div className="tp-card">
-                    <h3>📝 Active Homework Assignments</h3>
+                    <h3>📚 Active Assignments ({activeHw.length})</h3>
                     {activeHw.length === 0 ? (
-                      <p className="tp-empty">No active homework assignments.</p>
+                      <p className="tp-empty">No active homework.{!showHwForm ? ' Click "➕ Add Homework" to assign.' : ''}</p>
                     ) : (
                       <div className="tp-hw-list">
                         {activeHw.map(hw => {
                           const due = new Date(hw.dueDate)
-                          const diff = Math.ceil((due - now) / (1000 * 60 * 60 * 24))
+                          const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
                           const isUrgent = diff <= 2
                           return (
                             <div key={hw.id} className={`tp-hw-card ${isUrgent ? 'urgent' : ''}`}>
                               <div className="tp-hw-header">
-                                <span className="tp-hw-subject">{hw.subject}</span>
-                                <span className="tp-hw-class">{hw.class?.name || ''} {hw.section?.name ? `- ${hw.section.name}` : ''}</span>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <span className="tp-hw-subject">{hw.subject}</span>
+                                  <span className="tp-hw-class">{hw.class?.name || ''}{hw.section?.name ? ` — ${hw.section.name}` : ''}</span>
+                                </div>
+                                <div className="tp-hw-actions">
+                                  <button className="tp-hw-edit-btn" onClick={() => openEditHw(hw)} title="Edit">✏️</button>
+                                  <button className="tp-hw-del-btn" onClick={() => removeHw(hw.id)} title="Delete">🗑️</button>
+                                </div>
                               </div>
                               <h4 className="tp-hw-title">{hw.title}</h4>
                               {hw.description && <p className="tp-hw-desc">{hw.description}</p>}
                               <div className="tp-hw-meta">
                                 <span>📅 Due: {due.toLocaleDateString()}</span>
                                 <span className={`tp-hw-days ${isUrgent ? 'urgent' : ''}`}>
-                                  {diff === 0 ? 'Due today' : diff === 1 ? 'Due tomorrow' : `${diff} days left`}
+                                  {diff < 0 ? '⏰ Overdue' : diff === 0 ? 'Due today' : diff === 1 ? 'Due tomorrow' : `${diff} days left`}
                                 </span>
                               </div>
                             </div>
@@ -358,22 +536,26 @@ const MyTeacherProfile = () => {
                     )}
                   </div>
 
+                  {/* Past homework */}
                   {pastHw.length > 0 && (
                     <div className="tp-card">
-                      <h3>✅ Past Homework</h3>
+                      <h3>✅ Past Homework ({pastHw.length})</h3>
                       <div className="tp-hw-list">
                         {pastHw.slice(0, 20).map(hw => (
                           <div key={hw.id} className="tp-hw-card past">
                             <div className="tp-hw-header">
-                              <span className="tp-hw-subject">{hw.subject}</span>
-                              <span className="tp-hw-class">{hw.class?.name || ''}</span>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <span className="tp-hw-subject">{hw.subject}</span>
+                                <span className="tp-hw-class">{hw.class?.name || ''}</span>
+                              </div>
+                              <div className="tp-hw-actions">
+                                <button className="tp-hw-edit-btn" onClick={() => openEditHw(hw)} title="Edit">✏️</button>
+                                <button className="tp-hw-del-btn" onClick={() => removeHw(hw.id)} title="Delete">🗑️</button>
+                              </div>
                             </div>
                             <h4 className="tp-hw-title">{hw.title}</h4>
                             <div className="tp-hw-meta">
                               <span>📅 Was due: {new Date(hw.dueDate).toLocaleDateString()}</span>
-                              <span className={`tp-hw-status ${hw.status}`}>
-                                {hw.status === 'completed' ? '✅ Done' : hw.status === 'cancelled' ? '❌ Cancelled' : '⏰ Expired'}
-                              </span>
                             </div>
                           </div>
                         ))}
