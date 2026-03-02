@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { SquarePen, Trash2, Printer } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
@@ -13,6 +14,7 @@ import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils
 const TransportPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('vehicles') // vehicles | drivers
   const [vehicles, setVehicles] = useState([])
   const [drivers, setDrivers] = useState([])
@@ -254,7 +256,7 @@ const TransportPage = () => {
                     {filteredVehicles.length === 0 ? (
                       <tr><td colSpan="7" className="empty-row">{searchQuery ? 'No vehicles match.' : 'No vehicles added yet.'}</td></tr>
                     ) : paginatedVehicles.map((v) => (
-                      <tr key={v.id}>
+                      <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/portal/transport/vehicles/${v.id}`)}>
                         <td style={{ fontWeight: 600 }}>{v.vehicleNumber}</td>
                         <td style={{ textTransform: 'capitalize' }}>{v.vehicleType}</td>
                         <td>{v.capacity}</td>
@@ -268,8 +270,8 @@ const TransportPage = () => {
                           }}>{v.status}</span>
                         </td>
                         <td>
-                          <button className="btn-icon edit" onClick={() => handleEditVehicle(v)}><SquarePen size={16} /></button>
-                          <button className="btn-icon danger" onClick={() => handleDeleteVehicle(v.id)}><Trash2 size={16} /></button>
+                          <button className="btn-icon edit" onClick={(e) => { e.stopPropagation(); handleEditVehicle(v) }}><SquarePen size={16} /></button>
+                          <button className="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDeleteVehicle(v.id) }}><Trash2 size={16} /></button>
                         </td>
                       </tr>
                     ))}
@@ -342,7 +344,7 @@ const TransportPage = () => {
                     {filteredDrivers.length === 0 ? (
                       <tr><td colSpan="8" className="empty-row">{searchQuery ? 'No drivers match.' : 'No drivers added yet.'}</td></tr>
                     ) : paginatedDrivers.map((d) => (
-                      <tr key={d.id}>
+                      <tr key={d.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/portal/transport/drivers/${d.id}`)}>
                         <td style={{ fontWeight: 500 }}>{d.firstName} {d.lastName}</td>
                         <td>{d.phoneNumber}</td>
                         <td>{d.licenseNumber}</td>
@@ -357,8 +359,8 @@ const TransportPage = () => {
                           }}>{d.status}</span>
                         </td>
                         <td>
-                          <button className="btn-icon edit" onClick={() => handleEditDriver(d)}><SquarePen size={16} /></button>
-                          <button className="btn-icon danger" onClick={() => handleDeleteDriver(d.id)}><Trash2 size={16} /></button>
+                          <button className="btn-icon edit" onClick={(e) => { e.stopPropagation(); handleEditDriver(d) }}><SquarePen size={16} /></button>
+                          <button className="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDeleteDriver(d.id) }}><Trash2 size={16} /></button>
                         </td>
                       </tr>
                     ))}

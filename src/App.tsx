@@ -34,11 +34,15 @@ import MyStudentProfile from './pages/MyStudentProfile'
 import MyTeacherProfile from './pages/MyTeacherProfile'
 import LibraryPage from './pages/LibraryPage'
 import TransportPage from './pages/TransportPage'
+import DriverDetailPage from './pages/DriverDetailPage'
+import VehicleDetailPage from './pages/VehicleDetailPage'
+import StaffDetailPage from './pages/StaffDetailPage'
 import ExpensesPage from './pages/ExpensesPage'
 import SupportPage from './pages/SupportPage'
 import HolidaysPage from './pages/HolidaysPage'
 import LeavesPage from './pages/LeavesPage'
 import StaffPage from './pages/StaffPage'
+import HostelPage from './pages/HostelPage'
 
 const router = createBrowserRouter([
   {
@@ -84,11 +88,15 @@ const router = createBrowserRouter([
       { path: 'sports', element: <SportsPage /> },
       { path: 'library', element: <LibraryPage /> },
       { path: 'transport', element: <TransportPage /> },
+      { path: 'transport/drivers/:driverId', element: <DriverDetailPage /> },
+      { path: 'transport/vehicles/:vehicleId', element: <VehicleDetailPage /> },
       { path: 'expenses', element: <ExpensesPage /> },
       { path: 'support', element: <SupportPage /> },
       { path: 'holidays', element: <HolidaysPage /> },
       { path: 'leaves', element: <LeavesPage /> },
       { path: 'staff', element: <StaffPage /> },
+      { path: 'staff/:staffId', element: <StaffDetailPage /> },
+      { path: 'hostel', element: <HostelPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],

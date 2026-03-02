@@ -200,7 +200,7 @@ const ValueProposition = () => (
         <div className="vp-pricing-grid">
           <div className="vp-pricing-card">
             <div className="vp-pricing-tier">Web — Online</div>
-            <div className="vp-pricing-price">₹4,999<span>/year</span></div>
+            {/* <div className="vp-pricing-price">₹4,999<span>/year</span></div> */}
             <p className="vp-pricing-desc">Perfect for schools with reliable internet. Access from any browser, any device.</p>
             <ul className="vp-pricing-features">
               <li>✓ All 15+ modules included</li>
@@ -215,7 +215,7 @@ const ValueProposition = () => (
           <div className="vp-pricing-card featured">
             <div className="vp-pricing-badge">MOST POPULAR</div>
             <div className="vp-pricing-tier">Desktop — Offline</div>
-            <div className="vp-pricing-price">₹2,999<span>/year</span></div>
+            {/* <div className="vp-pricing-price">₹2,999<span>/year</span></div> */}
             <p className="vp-pricing-desc">Ideal for schools in areas with poor connectivity. Runs completely offline.</p>
             <ul className="vp-pricing-features">
               <li>✓ All 15+ modules included</li>

@@ -116,7 +116,7 @@ api.interceptors.response.use(
 
     logger.error('Network error', { url: error.config?.url })
     return Promise.reject(
-      new Error('Unable to connect to the server. Please check your internet connection.'),
+      new Error('Unable to reach the local server. Please restart the application.'),
     )
   },
 )
@@ -357,10 +357,12 @@ export const libraryApi = {
 
 export const transportApi = {
   listVehicles: () => api.get('/transport/vehicles').then((r) => r.data),
+  getVehicle: (id: string) => api.get(`/transport/vehicles/${id}`).then((r) => r.data),
   createVehicle: (data: Record<string, unknown>) => api.post('/transport/vehicles', data).then((r) => r.data),
   updateVehicle: (id: string, data: Record<string, unknown>) => api.patch(`/transport/vehicles/${id}`, data).then((r) => r.data),
   deleteVehicle: (id: string) => api.delete(`/transport/vehicles/${id}`).then((r) => r.data),
   listDrivers: () => api.get('/transport/drivers').then((r) => r.data),
+  getDriver: (id: string) => api.get(`/transport/drivers/${id}`).then((r) => r.data),
   createDriver: (data: Record<string, unknown>) => api.post('/transport/drivers', data).then((r) => r.data),
   updateDriver: (id: string, data: Record<string, unknown>) => api.patch(`/transport/drivers/${id}`, data).then((r) => r.data),
   deleteDriver: (id: string) => api.delete(`/transport/drivers/${id}`).then((r) => r.data),
@@ -401,9 +403,30 @@ export const holidayApi = {
 export const staffApi = {
   list: (params?: { designation?: string; status?: string }) =>
     api.get('/staff', { params }).then((r) => r.data),
+  getById: (id: string) => api.get(`/staff/${id}`).then((r) => r.data),
   create: (data: Record<string, unknown>) => api.post('/staff', data).then((r) => r.data),
   update: (id: string, data: Record<string, unknown>) => api.patch(`/staff/${id}`, data).then((r) => r.data),
   delete: (id: string) => api.delete(`/staff/${id}`).then((r) => r.data),
+}
+
+// Hostel Management
+export const hostelApi = {
+  // Hostels
+  listHostels: () => api.get('/hostel').then((r) => r.data),
+  getHostel: (id: string) => api.get(`/hostel/${id}`).then((r) => r.data),
+  createHostel: (data: Record<string, unknown>) => api.post('/hostel', data).then((r) => r.data),
+  updateHostel: (id: string, data: Record<string, unknown>) => api.patch(`/hostel/${id}`, data).then((r) => r.data),
+  deleteHostel: (id: string) => api.delete(`/hostel/${id}`).then((r) => r.data),
+  // Rooms
+  listRooms: (params?: { hostelId?: string }) => api.get('/hostel/rooms/list', { params }).then((r) => r.data),
+  createRoom: (data: Record<string, unknown>) => api.post('/hostel/rooms', data).then((r) => r.data),
+  updateRoom: (id: string, data: Record<string, unknown>) => api.patch(`/hostel/rooms/${id}`, data).then((r) => r.data),
+  deleteRoom: (id: string) => api.delete(`/hostel/rooms/${id}`).then((r) => r.data),
+  // Allotments
+  listAllotments: (params?: { hostelId?: string; status?: string }) => api.get('/hostel/allotments/list', { params }).then((r) => r.data),
+  createAllotment: (data: Record<string, unknown>) => api.post('/hostel/allotments', data).then((r) => r.data),
+  updateAllotment: (id: string, data: Record<string, unknown>) => api.patch(`/hostel/allotments/${id}`, data).then((r) => r.data),
+  deleteAllotment: (id: string) => api.delete(`/hostel/allotments/${id}`).then((r) => r.data),
 }
 
 // Legacy-compatible default export (class-like singleton that wraps the new API)
@@ -529,10 +552,12 @@ const apiClient = {
   deleteBookIssue: libraryApi.deleteIssue,
   // Transport
   listVehicles: transportApi.listVehicles,
+  getVehicle: transportApi.getVehicle,
   createVehicle: transportApi.createVehicle,
   updateVehicle: transportApi.updateVehicle,
   deleteVehicle: transportApi.deleteVehicle,
   listDrivers: transportApi.listDrivers,
+  getDriver: transportApi.getDriver,
   createDriver: transportApi.createDriver,
   updateDriver: transportApi.updateDriver,
   deleteDriver: transportApi.deleteDriver,
@@ -558,9 +583,24 @@ const apiClient = {
   deleteHoliday: holidayApi.delete,
   // Staff
   listStaff: staffApi.list,
+  getStaff: staffApi.getById,
   createStaff: staffApi.create,
   updateStaff: staffApi.update,
   deleteStaff: staffApi.delete,
+  // Hostel
+  listHostels: hostelApi.listHostels,
+  getHostel: hostelApi.getHostel,
+  createHostel: hostelApi.createHostel,
+  updateHostel: hostelApi.updateHostel,
+  deleteHostel: hostelApi.deleteHostel,
+  listHostelRooms: hostelApi.listRooms,
+  createHostelRoom: hostelApi.createRoom,
+  updateHostelRoom: hostelApi.updateRoom,
+  deleteHostelRoom: hostelApi.deleteRoom,
+  listHostelAllotments: hostelApi.listAllotments,
+  createHostelAllotment: hostelApi.createAllotment,
+  updateHostelAllotment: hostelApi.updateAllotment,
+  deleteHostelAllotment: hostelApi.deleteAllotment,
 }
 
 export default apiClient

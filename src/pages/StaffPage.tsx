@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { SquarePen, Trash2, Printer } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
@@ -51,6 +52,7 @@ const templateHeaders = ['firstName', 'lastName', 'staffId', 'designation', 'dep
 const StaffPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
+  const navigate = useNavigate()
   const [staff, setStaff] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -289,7 +291,7 @@ const StaffPage = () => {
                 <tr><td colSpan={8} className="empty-row">{searchQuery || filterDesignation || filterStatus ? 'No staff match the filters.' : 'No staff added yet. Click "+ Add Staff" to get started.'}</td></tr>
               ) : (
                 paginatedItems.map((member) => (
-                  <tr key={member.id}>
+                  <tr key={member.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/portal/staff/${member.id}`)}>
                     <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{member.staffId || '-'}</td>
                     <td style={{ fontWeight: 600 }}>{member.firstName} {member.lastName}</td>
                     <td>{member.designation}</td>
@@ -306,8 +308,8 @@ const StaffPage = () => {
                       </span>
                     </td>
                     <td>
-                      <button className="btn-icon edit" onClick={() => handleEdit(member)} title="Edit"><SquarePen size={16} /></button>
-                      <button className="btn-icon danger" onClick={() => handleDelete(member.id)} title="Delete"><Trash2 size={16} /></button>
+                      <button className="btn-icon edit" onClick={(e) => { e.stopPropagation(); handleEdit(member) }} title="Edit"><SquarePen size={16} /></button>
+                      <button className="btn-icon danger" onClick={(e) => { e.stopPropagation(); handleDelete(member.id) }} title="Delete"><Trash2 size={16} /></button>
                     </td>
                   </tr>
                 ))

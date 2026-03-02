@@ -35,6 +35,7 @@ const SchoolPortalLayout = () => {
     { path: '/portal/students', icon: '👥', label: 'Students' },
     { path: '/portal/teachers', icon: '👨‍🏫', label: 'Teachers' },
     { path: '/portal/staff', icon: '🧹', label: 'Staff' },
+    { path: '/portal/hostel', icon: '🏠', label: 'Hostel' },
     { path: '/portal/classes', icon: '🏫', label: 'Classes' },
     { path: '/portal/exam-management', icon: '📋', label: 'Exams' },
     { path: '/portal/exams', icon: '📝', label: 'Marks' },
@@ -52,12 +53,12 @@ const SchoolPortalLayout = () => {
     { path: '/portal/library', icon: '📚', label: 'Library' },
     { path: '/portal/transport', icon: '🚌', label: 'Transport' },
     { path: '/portal/expenses', icon: '💸', label: 'Expenses' },
-    { path: '/portal/support', icon: '🛟', label: 'Support' },
     { path: '/portal/holidays', icon: '🏖️', label: 'Holidays' },
     { path: '/portal/leaves', icon: '📋', label: 'Leaves' },
     { path: '/portal/transfer-certificate', icon: '📜', label: 'TC' },
     { path: '/portal/about', icon: 'ℹ️', label: 'About' },
     { path: '/portal/settings', icon: '⚙️', label: 'Settings' },
+    { path: '/portal/support', icon: '🛟', label: 'Support' },
   ]
 
   const handleLogout = () => {
