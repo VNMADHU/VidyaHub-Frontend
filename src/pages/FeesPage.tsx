@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
-import { Trash2, SquarePen, CreditCard, Printer } from 'lucide-react'
+import { Trash2, SquarePen, CreditCard, Printer, FileText } from 'lucide-react'
+import jsPDF from 'jspdf'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import SearchBar from '@/components/SearchBar'
@@ -23,6 +24,7 @@ const FeesPage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPayModal, setShowPayModal] = useState(null)
   const [paymentData, setPaymentData] = useState({ paymentMode: 'online', paidAmount: '', transactionId: '' })
+  const [school, setSchool] = useState(null)
   const [formData, setFormData] = useState({
     studentId: '',
     feeType: 'tuition',
@@ -36,7 +38,16 @@ const FeesPage = () => {
 
   useEffect(() => {
     loadData()
+    loadSchool()
   }, [])
+
+  const loadSchool = async () => {
+    try {
+      const res = await apiClient.listSchools()
+      const list = res?.data || res || []
+      if (list.length > 0) setSchool(list[0])
+    } catch { /* ignore */ }
+  }
 
   const loadData = async () => {
     try {
@@ -135,6 +146,95 @@ const FeesPage = () => {
       console.error('Failed to process payment:', error)
       toast.error(`Payment failed: ${error.message}`)
     }
+  }
+
+  const handleReceipt = (fee) => {
+    const doc = new jsPDF('portrait', 'mm', 'a5')
+    const pageW = doc.internal.pageSize.getWidth()
+    const pageH = doc.internal.pageSize.getHeight()
+    const margin = 12
+    let y = 0
+
+    // Border
+    doc.setDrawColor(37, 99, 235)
+    doc.setLineWidth(1.2)
+    doc.rect(6, 6, pageW - 12, pageH - 12, 'S')
+
+    // Header
+    y = 20
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(37, 99, 235)
+    doc.text(school?.name || 'School Name', pageW / 2, y, { align: 'center' })
+    y += 6
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(80, 80, 80)
+    doc.text(school?.address || '', pageW / 2, y, { align: 'center' })
+
+    // Title bar
+    y += 8
+    doc.setFillColor(37, 99, 235)
+    doc.rect(margin, y - 4, pageW - 2 * margin, 8, 'F')
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(255, 255, 255)
+    doc.text('FEE RECEIPT', pageW / 2, y + 1, { align: 'center' })
+
+    // Receipt No & Date
+    y += 12
+    doc.setTextColor(0, 0, 0)
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Receipt No: RCP-${String(fee.id).padStart(5, '0')}`, margin, y)
+    doc.text(`Date: ${new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}`, pageW - margin, y, { align: 'right' })
+
+    // Divider
+    y += 5
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.4)
+    doc.line(margin, y, pageW - margin, y)
+
+    // Student info
+    y += 8
+    const studentName = `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.trim()
+    const rows = [
+      ['Student Name', studentName],
+      ['Admission No.', fee.student?.admissionNumber || '-'],
+      ['Roll Number', fee.student?.rollNumber || '-'],
+      ['Fee Type', fee.feeType ? fee.feeType.charAt(0).toUpperCase() + fee.feeType.slice(1) + ' Fee' : '-'],
+      ['Academic Year', fee.academicYear || '-'],
+      ['Term', fee.term || '-'],
+      ['Total Amount', `\u20B9${(fee.amount || 0).toLocaleString('en-IN')}`],
+      ['Amount Paid', `\u20B9${(fee.paidAmount || 0).toLocaleString('en-IN')}`],
+      ['Balance', `\u20B9${((fee.amount || 0) - (fee.paidAmount || 0)).toLocaleString('en-IN')}`],
+      ['Payment Mode', fee.paymentMode || '-'],
+      ['Transaction ID', fee.transactionId || '-'],
+      ['Status', (fee.status || '').toUpperCase()],
+    ]
+
+    doc.setFontSize(9)
+    rows.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold')
+      doc.setTextColor(80, 80, 80)
+      doc.text(label + ':', margin, y)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(0, 0, 0)
+      doc.text(String(value), margin + 42, y)
+      y += 7
+    })
+
+    // Footer
+    y += 4
+    doc.setDrawColor(200, 200, 200)
+    doc.line(margin, y, pageW - margin, y)
+    y += 6
+    doc.setFontSize(8)
+    doc.setFont('helvetica', 'italic')
+    doc.setTextColor(120, 120, 120)
+    doc.text('This is a computer-generated receipt and does not require a signature.', pageW / 2, y, { align: 'center' })
+
+    doc.save(`Fee_Receipt_${studentName.replace(/\s+/g, '_')}_${fee.id}.pdf`)
   }
 
   const getStatusStyle = (status) => {
@@ -425,6 +525,17 @@ const FeesPage = () => {
                               title="Record Payment"
                             >
                               <CreditCard size={16} />
+                            </button>
+                          )}
+                          {(fee.status === 'paid' || fee.status === 'partial') && (
+                            <button
+                              className="btn-icon edit"
+                              onClick={() => handleReceipt(fee)}
+                              aria-label="Download receipt"
+                              title="Download Receipt PDF"
+                              style={{ color: '#16a34a' }}
+                            >
+                              <FileText size={16} />
                             </button>
                           )}
                           <button className="btn-icon edit" onClick={() => handleEdit(fee)} aria-label="Edit fee">

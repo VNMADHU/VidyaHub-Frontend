@@ -64,7 +64,7 @@ const EventsPage = () => {
       loadEvents()
     } catch (error) {
       console.error('Failed to create event:', error)
-      toast.error('Failed to save event. Please try again.')
+      toast.error(error?.message || 'Failed to save event.')
     }
   }
 
@@ -105,7 +105,7 @@ const EventsPage = () => {
       loadEvents()
     } catch (error) {
       console.error('Failed to delete event:', error)
-      toast.error('Failed to delete event. Please try again.')
+      toast.error(error?.message || 'Failed to delete event.')
     }
   }
 

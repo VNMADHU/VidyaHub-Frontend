@@ -125,7 +125,7 @@ const LeavesPage = () => {
       resetForm()
       loadData()
     } catch (error) {
-      toast.error('Failed to save leave application.')
+      toast.error(error?.message || 'Failed to save leave application.')
     }
   }
 
@@ -166,7 +166,7 @@ const LeavesPage = () => {
       toast.success('Leave deleted.')
       loadData()
     } catch (error) {
-      toast.error('Failed to delete leave.')
+      toast.error(error?.message || 'Failed to delete leave.')
     }
   }
 
@@ -176,7 +176,7 @@ const LeavesPage = () => {
       toast.success(`Leave ${newStatus}!`)
       loadData()
     } catch (error) {
-      toast.error('Failed to update status.')
+      toast.error(error?.message || 'Failed to update status.')
     }
   }
 

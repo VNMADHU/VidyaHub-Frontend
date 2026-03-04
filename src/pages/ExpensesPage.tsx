@@ -59,7 +59,7 @@ const ExpensesPage = () => {
       resetForm()
       loadExpenses()
     } catch (error) {
-      toast.error('Failed to save expense.')
+      toast.error(error?.message || 'Failed to save expense.')
     }
   }
 
@@ -98,7 +98,7 @@ const ExpensesPage = () => {
       await apiClient.deleteExpense(id)
       loadExpenses()
     } catch (error) {
-      toast.error('Failed to delete expense.')
+      toast.error(error?.message || 'Failed to delete expense.')
     }
   }
 
@@ -175,6 +175,7 @@ const ExpensesPage = () => {
                 <option value="utility">Utility (Electricity, Water)</option>
                 <option value="infrastructure">Infrastructure</option>
                 <option value="events">Events</option>
+                <option value="sports">Sports & Physical Education</option>
                 <option value="other">Other</option>
               </select>
               <input type="number" placeholder="Amount (₹) *" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required min="0" step="0.01" />

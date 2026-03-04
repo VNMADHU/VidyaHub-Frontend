@@ -114,7 +114,7 @@ const ExamManagementPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to save exam:', error)
-      toast.error('Failed to save exam. Please try again.')
+      toast.error(error?.message || 'Failed to save exam.')
     }
   }
 
@@ -146,7 +146,7 @@ const ExamManagementPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to delete exam:', error)
-      toast.error('Failed to delete exam. Please try again.')
+      toast.error(error?.message || 'Failed to delete exam.')
     }
   }
 

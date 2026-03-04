@@ -149,7 +149,7 @@ const EMPTY_STUDENT_FORM = {
       loadData()
     } catch (error) {
       console.error('Failed to create student:', error)
-      toast.error('Failed to save student. Please try again.')
+      toast.error(error?.message || 'Failed to save student.')
     }
   }
 

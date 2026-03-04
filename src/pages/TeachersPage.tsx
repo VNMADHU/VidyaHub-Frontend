@@ -99,7 +99,7 @@ const TeachersPage = () => {
       loadTeachers()
     } catch (error) {
       console.error('Failed to create teacher:', error)
-      toast.error('Failed to save teacher. Please try again.')
+      toast.error(error?.message || 'Failed to save teacher.')
     }
   }
 
@@ -145,7 +145,7 @@ const TeachersPage = () => {
       loadTeachers()
     } catch (error) {
       console.error('Failed to delete teacher:', error)
-      toast.error('Failed to delete teacher. Please try again.')
+      toast.error(error?.message || 'Failed to delete teacher.')
     }
   }
 

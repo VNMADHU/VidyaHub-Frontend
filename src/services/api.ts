@@ -1,6 +1,7 @@
 import axios, { AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import logger from '@/utils/logger'
 import { API_BASE_URL, API_TIMEOUT, HTTP, STORAGE_KEYS } from '@/utils/constants'
+
 import type {
   ApiResponse,
   Student,
@@ -99,9 +100,16 @@ api.interceptors.response.use(
         }
       }
 
+      // Free-trial limit reached — show full backend message as an error toast
+      if (status === 403 && (data as Record<string, unknown>)?.code === 'TRIAL_LIMIT_REACHED') {
+        const message = (data as Record<string, unknown>)?.message as string
+          || `Free trial limit reached. Please upgrade your plan to add more records.`
+        return Promise.reject(new Error(message))
+      }
+
       const errorMessage =
-        data?.message ||
-        data?.issues?.map((i) => i.message).join(', ') ||
+        (data as Record<string, unknown>)?.message as string ||
+        (data as Record<string, unknown>)?.issues?.toString() ||
         `Request failed (${status})`
 
       return Promise.reject(new Error(errorMessage))

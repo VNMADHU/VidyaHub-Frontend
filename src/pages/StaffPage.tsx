@@ -134,7 +134,7 @@ const StaffPage = () => {
       toast.success('Staff member deleted')
       loadStaff()
     } catch (err) {
-      toast.error('Failed to delete staff member')
+      toast.error(err?.message || 'Failed to delete staff member')
     }
   }
 

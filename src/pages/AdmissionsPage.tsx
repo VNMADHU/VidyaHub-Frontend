@@ -151,7 +151,7 @@ const AdmissionsPage = () => {
       toast.success('Admission deleted')
       loadAdmissions()
     } catch (err) {
-      toast.error('Failed to delete admission')
+      toast.error(err?.message || 'Failed to delete admission')
     }
   }
 

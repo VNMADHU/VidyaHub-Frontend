@@ -67,7 +67,7 @@ const HolidaysPage = () => {
       resetForm()
       loadHolidays()
     } catch (error) {
-      toast.error('Failed to save holiday.')
+      toast.error(error?.message || 'Failed to save holiday.')
     }
   }
 
@@ -102,7 +102,7 @@ const HolidaysPage = () => {
       toast.success('Holiday deleted.')
       loadHolidays()
     } catch (error) {
-      toast.error('Failed to delete holiday.')
+      toast.error(error?.message || 'Failed to delete holiday.')
     }
   }
 

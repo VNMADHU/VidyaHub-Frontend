@@ -78,7 +78,7 @@ const AttendancePage = () => {
       }
     } catch (error) {
       console.error('Failed to mark attendance:', error)
-      toast.error('Failed to mark attendance. Please try again.')
+      toast.error(error?.message || 'Failed to mark attendance.')
       loadData() // Reload on error to get accurate state
     } finally {
       setSaving(prev => ({ ...prev, [studentId]: false }))
@@ -107,7 +107,7 @@ const AttendancePage = () => {
       await loadData()
     } catch (error) {
       console.error('Failed to mark all:', error)
-      toast.error('Failed to mark all attendance. Please try again.')
+      toast.error(error?.message || 'Failed to mark all attendance.')
       await loadData()
     } finally {
       setSaving({})

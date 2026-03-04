@@ -77,7 +77,7 @@ const LibraryPage = () => {
       loadData()
     } catch (error) {
       console.error('Failed to save book:', error)
-      toast.error('Failed to save book. Please try again.')
+      toast.error(error?.message || 'Failed to save book.')
     }
   }
 
@@ -117,7 +117,7 @@ const LibraryPage = () => {
       loadData()
     } catch (error) {
       console.error('Failed to delete book:', error)
-      toast.error('Failed to delete book.')
+      toast.error(error?.message || 'Failed to delete book.')
     }
   }
 
@@ -146,7 +146,7 @@ const LibraryPage = () => {
       toast.success('Book returned successfully!')
     } catch (error) {
       console.error('Failed to return book:', error)
-      toast.error('Failed to return book.')
+      toast.error(error?.message || 'Failed to return book.')
     }
   }
 
@@ -157,7 +157,7 @@ const LibraryPage = () => {
       await apiClient.deleteBookIssue(issueId)
       loadData()
     } catch (error) {
-      toast.error('Failed to delete issue.')
+      toast.error(error?.message || 'Failed to delete issue.')
     }
   }
 

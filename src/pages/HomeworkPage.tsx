@@ -122,7 +122,7 @@ const HomeworkPage = () => {
       resetForm()
       loadHomework()
     } catch (err) {
-      toast.error('Failed to save homework. Please try again.')
+      toast.error(err?.message || 'Failed to save homework.')
       console.error(err)
     }
   }
@@ -135,7 +135,7 @@ const HomeworkPage = () => {
       toast.success('Homework deleted')
       loadHomework()
     } catch (err) {
-      toast.error('Failed to delete homework.')
+      toast.error(err?.message || 'Failed to delete homework.')
       console.error(err)
     }
   }

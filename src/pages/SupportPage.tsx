@@ -44,7 +44,7 @@ const SupportPage = () => {
       loadTickets()
       toast.success('Support ticket submitted! We will get back to you soon.')
     } catch (error) {
-      toast.error('Failed to submit ticket.')
+      toast.error(error?.message || 'Failed to submit ticket.')
     }
   }
 
@@ -55,7 +55,7 @@ const SupportPage = () => {
       await apiClient.deleteTicket(id)
       loadTickets()
     } catch (error) {
-      toast.error('Failed to delete ticket.')
+      toast.error(error?.message || 'Failed to delete ticket.')
     }
   }
 

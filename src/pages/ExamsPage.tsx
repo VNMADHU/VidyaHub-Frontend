@@ -159,7 +159,7 @@ const ExamsPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to create exam:', error)
-      toast.error('Failed to save marks. Please try again.')
+      toast.error(error?.message || 'Failed to save marks.')
     }
   }
 
@@ -199,7 +199,7 @@ const ExamsPage = () => {
       loadExams()
     } catch (error) {
       console.error('Failed to delete marks:', error)
-      toast.error('Failed to delete marks. Please try again.')
+      toast.error(error?.message || 'Failed to delete marks.')
     }
   }
 

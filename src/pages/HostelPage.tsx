@@ -90,7 +90,7 @@ const HostelPage = () => {
       else await apiClient.createHostel(payload)
       toast.success(editingId ? 'Hostel updated' : 'Hostel created')
       setShowForm(false); setEditingId(null); setHostelForm(emptyHostel); loadAll()
-    } catch { toast.error('Failed to save hostel.') }
+    } catch (err) { toast.error(err?.message || 'Failed to save hostel.') }
   }
 
   const handleEditHostel = (h) => {
@@ -106,7 +106,7 @@ const HostelPage = () => {
 
   const handleDeleteHostel = async (id) => {
     if (!await confirm({ message: 'Delete this hostel and all its rooms/allotments?' })) return
-    try { await apiClient.deleteHostel(id); loadAll() } catch { toast.error('Failed to delete hostel.') }
+    try { await apiClient.deleteHostel(id); loadAll() } catch (err) { toast.error(err?.message || 'Failed to delete hostel.') }
   }
 
   // ── Room CRUD ──────────────────────────────────────────
@@ -118,7 +118,7 @@ const HostelPage = () => {
       else await apiClient.createHostelRoom(payload)
       toast.success(editingId ? 'Room updated' : 'Room created')
       setShowForm(false); setEditingId(null); setRoomForm(emptyRoom); loadAll()
-    } catch { toast.error('Failed to save room.') }
+    } catch (err) { toast.error(err?.message || 'Failed to save room.') }
   }
 
   const handleEditRoom = (r) => {
@@ -133,7 +133,7 @@ const HostelPage = () => {
 
   const handleDeleteRoom = async (id) => {
     if (!await confirm({ message: 'Delete this room?' })) return
-    try { await apiClient.deleteHostelRoom(id); loadAll() } catch { toast.error('Failed to delete room.') }
+    try { await apiClient.deleteHostelRoom(id); loadAll() } catch (err) { toast.error(err?.message || 'Failed to delete room.') }
   }
 
   // ── Allotment CRUD ─────────────────────────────────────
@@ -152,7 +152,7 @@ const HostelPage = () => {
       else await apiClient.createHostelAllotment(payload)
       toast.success(editingId ? 'Allotment updated' : 'Allotment created')
       setShowForm(false); setEditingId(null); setAllotmentForm(emptyAllotment); loadAll()
-    } catch { toast.error('Failed to save allotment.') }
+    } catch (err) { toast.error(err?.message || 'Failed to save allotment.') }
   }
 
   const handleEditAllotment = (a) => {
@@ -170,7 +170,7 @@ const HostelPage = () => {
 
   const handleDeleteAllotment = async (id) => {
     if (!await confirm({ message: 'Delete this allotment?' })) return
-    try { await apiClient.deleteHostelAllotment(id); loadAll() } catch { toast.error('Failed to delete allotment.') }
+    try { await apiClient.deleteHostelAllotment(id); loadAll() } catch (err) { toast.error(err?.message || 'Failed to delete allotment.') }
   }
 
   const handleAddNew = () => {

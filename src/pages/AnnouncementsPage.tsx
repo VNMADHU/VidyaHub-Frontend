@@ -22,6 +22,7 @@ const AnnouncementsPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     message: '',
+    targetAudience: 'All',
   })
 
   useEffect(() => {
@@ -49,11 +50,11 @@ const AnnouncementsPage = () => {
       }
       setShowForm(false)
       setEditingId(null)
-      setFormData({ title: '', message: '' })
+      setFormData({ title: '', message: '', targetAudience: 'All' })
       loadAnnouncements()
     } catch (error) {
       console.error('Failed to save announcement:', error)
-      toast.error('Failed to save announcement. Please try again.')
+      toast.error(error?.message || 'Failed to save announcement.')
     }
   }
 
@@ -62,6 +63,7 @@ const AnnouncementsPage = () => {
     setFormData({
       title: '',
       message: '',
+      targetAudience: 'All',
     })
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -72,6 +74,7 @@ const AnnouncementsPage = () => {
     setFormData({
       title: announcement.title || '',
       message: announcement.message || '',
+      targetAudience: announcement.targetAudience || 'All',
     })
     setShowForm(true)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -87,7 +90,7 @@ const AnnouncementsPage = () => {
       loadAnnouncements()
     } catch (error) {
       console.error('Failed to delete announcement:', error)
-      toast.error('Failed to delete announcement. Please try again.')
+      toast.error(error?.message || 'Failed to delete announcement.')
     }
   }
 
@@ -179,6 +182,17 @@ const AnnouncementsPage = () => {
               style={{ gridColumn: '1 / -1' }}
               required
             />
+            <select
+              value={formData.targetAudience}
+              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+              title="Target Audience"
+            >
+              <option value="All">📢 All (Everyone)</option>
+              <option value="Students">🎓 Students Only</option>
+              <option value="Teachers">👩‍🏫 Teachers Only</option>
+              <option value="Parents">👨‍👩‍👧 Parents Only</option>
+              <option value="Staff">🏢 Staff Only</option>
+            </select>
             <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
               {editingId ? 'Update Announcement' : 'Create Announcement'}
             </button>
@@ -194,6 +208,7 @@ const AnnouncementsPage = () => {
             <thead>
               <tr>
                 <th>Title</th>
+                <th>Audience</th>
                 <th>Message</th>
                 <th>Date</th>
                 <th>Actions</th>
@@ -202,7 +217,7 @@ const AnnouncementsPage = () => {
             <tbody>
               {filteredAnnouncements.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="empty-row">
+                  <td colSpan="5" className="empty-row">
                     {searchQuery ? 'No announcements match your search.' : 'No announcements found. Create your first announcement!'}
                   </td>
                 </tr>
@@ -210,6 +225,11 @@ const AnnouncementsPage = () => {
                 paginatedAnnouncements.map((announcement) => (
                   <tr key={announcement.id}>
                     <td>{announcement.title}</td>
+                    <td>
+                      <span style={{ padding: '0.2rem 0.6rem', borderRadius: '999px', fontSize: '0.78rem', fontWeight: 600, background: '#ede9fe', color: '#5b21b6' }}>
+                        {announcement.targetAudience || 'All'}
+                      </span>
+                    </td>
                     <td>{announcement.message}</td>
                     <td>{announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : '-'}</td>
                     <td>

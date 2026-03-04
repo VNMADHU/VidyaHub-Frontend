@@ -71,7 +71,7 @@ const TransportPage = () => {
       setVehicleForm(emptyVehicleForm)
       loadData()
     } catch (error) {
-      toast.error('Failed to save vehicle.')
+      toast.error(error?.message || 'Failed to save vehicle.')
     }
   }
 
@@ -93,7 +93,7 @@ const TransportPage = () => {
   const handleDeleteVehicle = async (id) => {
     const ok = await confirm({ message: 'Delete this vehicle?' })
     if (!ok) return
-    try { await apiClient.deleteVehicle(id); loadData() } catch { toast.error('Failed to delete vehicle.') }
+    try { await apiClient.deleteVehicle(id); loadData() } catch (err) { toast.error(err?.message || 'Failed to delete vehicle.') }
   }
 
   // ── Driver CRUD ─────────────────────────────────────────
@@ -110,7 +110,7 @@ const TransportPage = () => {
       setDriverForm(emptyDriverForm)
       loadData()
     } catch (error) {
-      toast.error('Failed to save driver.')
+      toast.error(error?.message || 'Failed to save driver.')
     }
   }
 
@@ -132,7 +132,7 @@ const TransportPage = () => {
   const handleDeleteDriver = async (id) => {
     const ok = await confirm({ message: 'Delete this driver?' })
     if (!ok) return
-    try { await apiClient.deleteDriver(id); loadData() } catch { toast.error('Failed to delete driver.') }
+    try { await apiClient.deleteDriver(id); loadData() } catch (err) { toast.error(err?.message || 'Failed to delete driver.') }
   }
 
   const handleAddNew = () => {
