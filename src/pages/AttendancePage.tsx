@@ -86,36 +86,24 @@ const AttendancePage = () => {
   }
 
   const markAllAs = async (status) => {
-    const unmarked = filteredStudents.filter(
-      s => !todayAttendance.find(r => r.studentId === s.id)
-    )
-    const toUpdate = filteredStudents.filter(
-      s => {
+    const toCreate = filteredStudents
+      .filter(s => !todayAttendance.find(r => r.studentId === s.id))
+      .map(s => s.id)
+    const toUpdate = filteredStudents
+      .filter(s => {
         const record = todayAttendance.find(r => r.studentId === s.id)
         return record && record.status !== status
-      }
-    )
-    const allToProcess = [...unmarked, ...toUpdate]
-    if (allToProcess.length === 0) return
+      })
+      .map(s => todayAttendance.find(r => r.studentId === s.id).id)
 
-    // Set all as saving
+    if (toCreate.length === 0 && toUpdate.length === 0) return
+
     const savingState = {}
-    allToProcess.forEach(s => savingState[s.id] = true)
-    setSaving(prev => ({ ...prev, ...savingState }))
+    filteredStudents.forEach(s => { savingState[s.id] = true })
+    setSaving(savingState)
 
     try {
-      for (const student of allToProcess) {
-        const existing = todayAttendance.find(r => r.studentId === student.id)
-        if (existing) {
-          await apiClient.updateAttendance(existing.id, { status })
-        } else {
-          await apiClient.createAttendance({
-            studentId: student.id,
-            date: selectedDate,
-            status,
-          })
-        }
-      }
+      await apiClient.bulkAttendance({ date: selectedDate, status, toCreate, toUpdate })
       await loadData()
     } catch (error) {
       console.error('Failed to mark all:', error)

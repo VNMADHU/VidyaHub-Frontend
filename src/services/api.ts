@@ -178,6 +178,8 @@ export const attendanceApi = {
     api.patch<Attendance>(`/attendance/${id}`, data).then((r) => r.data),
   delete: (id: string) => api.delete(`/attendance/${id}`).then((r) => r.data),
   summary: () => api.get('/attendance/summary').then((r) => r.data),
+  bulk: (data: { date: string; status: string; toCreate: number[]; toUpdate: number[] }) =>
+    api.post('/attendance/bulk', data).then((r) => r.data),
 }
 
 // Marks
@@ -417,6 +419,17 @@ export const staffApi = {
   delete: (id: string) => api.delete(`/staff/${id}`).then((r) => r.data),
 }
 
+// Admissions
+export const admissionApi = {
+  list: (params?: { status?: string; applyingForClass?: string; academicYear?: string }) =>
+    api.get('/admissions', { params }).then((r) => r.data),
+  create: (data: Record<string, unknown>) =>
+    api.post('/admissions', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/admissions/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/admissions/${id}`).then((r) => r.data),
+}
+
 // Hostel Management
 export const hostelApi = {
   // Hostels
@@ -467,6 +480,7 @@ const apiClient = {
   updateAttendance: attendanceApi.update,
   deleteAttendance: attendanceApi.delete,
   getAttendanceSummary: attendanceApi.summary,
+  bulkAttendance: attendanceApi.bulk,
   // Marks
   listMarks: marksApi.list,
   createMarks: marksApi.create,
@@ -613,6 +627,11 @@ const apiClient = {
   createHostelAllotment: hostelApi.createAllotment,
   updateHostelAllotment: hostelApi.updateAllotment,
   deleteHostelAllotment: hostelApi.deleteAllotment,
+  // Admissions
+  listAdmissions: admissionApi.list,
+  createAdmission: admissionApi.create,
+  updateAdmission: admissionApi.update,
+  deleteAdmission: admissionApi.delete,
 }
 
 export default apiClient

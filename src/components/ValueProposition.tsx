@@ -212,6 +212,20 @@ const ValueProposition = () => (
             </ul>
             <a href="#auth" className="btn primary vp-pricing-btn">Get Started Free</a>
           </div>
+          <div className="vp-pricing-card">
+            <div className="vp-pricing-tier">Web + Mobile Apps</div>
+            {/* <div className="vp-pricing-price">₹7,999<span>/year</span></div> */}
+            <p className="vp-pricing-desc">Full web access plus dedicated Android & iOS apps for teachers, students, and parents.</p>
+            <ul className="vp-pricing-features">
+              <li>✓ Everything in Web — Online</li>
+              <li>✓ Android & iOS mobile apps</li>
+              <li>✓ Push notifications</li>
+              <li>✓ Mobile attendance marking</li>
+              <li>✓ Parent communication app</li>
+              <li>✓ Offline mobile sync</li>
+            </ul>
+            <a href="#contact" className="btn primary vp-pricing-btn">Contact Us</a>
+          </div>
           <div className="vp-pricing-card featured">
             <div className="vp-pricing-badge">MOST POPULAR</div>
             <div className="vp-pricing-tier">Desktop — Offline</div>

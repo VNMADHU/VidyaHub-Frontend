@@ -8,6 +8,7 @@ import apiClient from '@/services/api'
 const menuItems = [
   { path: '/portal/dashboard', icon: '📊', label: 'Dashboard' },
   { path: '/portal/students', icon: '👥', label: 'Students' },
+  { path: '/portal/admissions', icon: '📋', label: 'Admissions' },
   { path: '/portal/teachers', icon: '👨‍🏫', label: 'Teachers' },
   { path: '/portal/staff', icon: '🧹', label: 'Staff' },
   { path: '/portal/hostel', icon: '🏠', label: 'Hostel' },

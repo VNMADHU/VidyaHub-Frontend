@@ -43,6 +43,7 @@ import HolidaysPage from './pages/HolidaysPage'
 import LeavesPage from './pages/LeavesPage'
 import StaffPage from './pages/StaffPage'
 import HostelPage from './pages/HostelPage'
+import AdmissionsPage from './pages/AdmissionsPage'
 
 const router = createBrowserRouter([
   {
@@ -97,6 +98,7 @@ const router = createBrowserRouter([
       { path: 'staff', element: <StaffPage /> },
       { path: 'staff/:staffId', element: <StaffDetailPage /> },
       { path: 'hostel', element: <HostelPage /> },
+      { path: 'admissions', element: <AdmissionsPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],
