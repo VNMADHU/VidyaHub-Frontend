@@ -30,41 +30,63 @@ const SchoolPortalLayout = () => {
     loadSchoolName()
   }, [])
 
-  const menuItems = [
-    { path: '/portal/dashboard', icon: '📊', label: 'Dashboard' },
-    { path: '/portal/students', icon: '👥', label: 'Students' },
-    { path: '/portal/admissions', icon: '📋', label: 'Admissions' },
-    { path: '/portal/teachers', icon: '👨‍🏫', label: 'Teachers' },
-    { path: '/portal/staff', icon: '🧹', label: 'Staff' },
-    { path: '/portal/hostel', icon: '🏠', label: 'Hostel' },
-    { path: '/portal/classes', icon: '🏫', label: 'Classes' },
-    { path: '/portal/exam-management', icon: '📋', label: 'Exams' },
-    { path: '/portal/exams', icon: '📝', label: 'Marks' },
-    { path: '/portal/report-card', icon: '📄', label: 'Report Card' },
-    { path: '/portal/attendance', icon: '✓', label: 'Attendance' },
-    { path: '/portal/attendance-report', icon: '📊', label: 'Att. Report' },
-    { path: '/portal/fees', icon: '💰', label: 'Fees' },
-    { path: '/portal/timetable', icon: '📅', label: 'Timetable' },
-    { path: '/portal/homework', icon: '📝', label: 'Homework' },
-    { path: '/portal/notifications', icon: '📨', label: 'Notifications' },
-    { path: '/portal/events', icon: '🎉', label: 'Events' },
-    { path: '/portal/announcements', icon: '📣', label: 'Announcements' },
-    { path: '/portal/achievements', icon: '🏆', label: 'Awards' },
-    { path: '/portal/sports', icon: '⚽', label: 'Sports' },
-    { path: '/portal/library', icon: '📚', label: 'Library' },
-    { path: '/portal/transport', icon: '🚌', label: 'Transport' },
-    { path: '/portal/expenses', icon: '💸', label: 'Expenses' },
-    { path: '/portal/holidays', icon: '🏖️', label: 'Holidays' },
-    { path: '/portal/leaves', icon: '📋', label: 'Leaves' },
-    { path: '/portal/transfer-certificate', icon: '📜', label: 'TC' },
-    { path: '/portal/about', icon: 'ℹ️', label: 'About' },
-    { path: '/portal/settings', icon: '⚙️', label: 'Settings' },
-    { path: '/portal/support', icon: '🛟', label: 'Support' },
-  ]
+  // Parse module permissions for school-admin filtering
+  const allowedModules = Array.isArray(user?.modulePermissions)
+    ? user.modulePermissions
+    : (typeof user?.modulePermissions === 'string' && user.modulePermissions)
+      ? JSON.parse(user.modulePermissions)
+      : null // null = full access
 
-  const handleLogout = () => {
-    dispatch(logout())
-    navigate('/')
+  const menuItems = [
+    { path: '/portal/dashboard',         icon: '📊', label: 'Dashboard' },                              // always visible
+    { path: '/portal/students',          icon: '👥', label: 'Students',      module: 'students' },
+    { path: '/portal/admissions',        icon: '📋', label: 'Admissions',    module: 'admissions' },
+    { path: '/portal/teachers',          icon: '👨‍🏫', label: 'Teachers',      module: 'teachers' },
+    { path: '/portal/staff',             icon: '🧹', label: 'Staff',         module: 'staff' },
+    { path: '/portal/hostel',            icon: '🏠', label: 'Hostel',        module: 'hostel' },
+    { path: '/portal/classes',           icon: '🏫', label: 'Classes',       module: 'classes' },
+    { path: '/portal/exam-management',   icon: '📋', label: 'Exams',         module: 'exams' },
+    { path: '/portal/exams',             icon: '📝', label: 'Marks',         module: 'exams' },
+    { path: '/portal/report-card',       icon: '📄', label: 'Report Card',   module: 'exams' },
+    { path: '/portal/attendance',        icon: '✓',  label: 'Attendance',    module: 'attendance' },
+    { path: '/portal/attendance-report', icon: '📊', label: 'Att. Report',   module: 'attendance' },
+    { path: '/portal/fees',              icon: '💰', label: 'Fees',          module: 'fees' },
+    { path: '/portal/timetable',         icon: '📅', label: 'Timetable',     module: 'classes' },
+    { path: '/portal/homework',          icon: '📝', label: 'Homework',      module: 'students' },
+    { path: '/portal/notifications',     icon: '📨', label: 'Notifications', module: 'announcements' },
+    { path: '/portal/events',            icon: '🎉', label: 'Events',        module: 'events' },
+    { path: '/portal/announcements',     icon: '📣', label: 'Announcements', module: 'announcements' },
+    { path: '/portal/achievements',      icon: '🏆', label: 'Awards',        module: 'achievements' },
+    { path: '/portal/sports',            icon: '⚽', label: 'Sports',        module: 'sports' },
+    { path: '/portal/library',           icon: '📚', label: 'Library',       module: 'library' },
+    { path: '/portal/transport',         icon: '🚌', label: 'Transport',     module: 'transport' },
+    { path: '/portal/expenses',          icon: '💸', label: 'Expenses',      module: 'expenses' },
+    { path: '/portal/holidays',          icon: '🏖️', label: 'Holidays',      module: 'holidays' },
+    { path: '/portal/leaves',            icon: '📋', label: 'Leaves',        module: 'leaves' },
+    { path: '/portal/transfer-certificate', icon: '📜', label: 'TC',         module: 'students' },
+    ...(role === 'super-admin' ? [{ path: '/portal/admin-profiles', icon: '🔑', label: 'Admin Profiles' }] : []),
+    { path: '/portal/settings',          icon: '⚙️', label: 'Settings' },                               // always visible
+    { path: '/portal/support',           icon: '🛟', label: 'Support' },                                // always visible
+  
+  ].filter((item) => {
+    // super-admin always sees everything
+    if (role === 'super-admin') return true
+    // items with no module key are always visible (dashboard, timetable, etc.)
+    if (!item.module) return true
+    // null allowedModules = full access (no restriction set)
+    if (allowedModules === null) return true
+    return allowedModules.includes(item.module)
+  })
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.logout()
+    } catch {
+      // session may already be gone — still clear locally
+    } finally {
+      dispatch(logout())
+      navigate('/login')
+    }
   }
 
   const isActive = (path) => location.pathname === path
@@ -124,7 +146,7 @@ const SchoolPortalLayout = () => {
           >
             ☰
           </button>
-          <h1 className="portal-title">{schoolName ? `${schoolName} Portal` : 'School Portal'}</h1>
+          <h1 className="portal-title">{schoolName ? (/school/i.test(schoolName) ? `${schoolName} Portal` : `${schoolName} School Portal`) : 'School Portal'}</h1>
           <div className="header-user">
             <span className="header-email">{user?.email}</span>
             <div className="header-avatar">

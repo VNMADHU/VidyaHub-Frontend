@@ -10,6 +10,7 @@ const AchievementsPage = () => {
   const { confirm } = useConfirm()
   const [achievements, setAchievements] = useState([])
   const [students, setStudents] = useState([])
+  const [achievementCategories, setAchievementCategories] = useState([])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [formData, setFormData] = useState({
@@ -31,12 +32,14 @@ const AchievementsPage = () => {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [achievementsRes, studentsRes] = await Promise.all([
+      const [achievementsRes, studentsRes, catRes] = await Promise.all([
         apiClient.listAchievements(),
         apiClient.listStudents(),
+        apiClient.listMasterData('event-categories').catch(() => []),
       ])
       setAchievements(achievementsRes?.data || [])
       setStudents(studentsRes?.data || [])
+      setAchievementCategories(Array.isArray(catRes) ? catRes : catRes?.data || [])
       setError(null)
     } catch (err) {
       setError(`Failed to load data: ${err.message}`)
@@ -198,10 +201,10 @@ const AchievementsPage = () => {
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             >
-              <option value="academic">Academic</option>
-              <option value="sports">Sports</option>
-              <option value="cultural">Cultural</option>
-              <option value="other">Other</option>
+              <option value="">-- Category --</option>
+              {achievementCategories.map(c => (
+                <option key={c.id} value={c.label}>{c.label}</option>
+              ))}
             </select>
             <input
               type="date"

@@ -44,6 +44,9 @@ import LeavesPage from './pages/LeavesPage'
 import StaffPage from './pages/StaffPage'
 import HostelPage from './pages/HostelPage'
 import AdmissionsPage from './pages/AdmissionsPage'
+import UserProfilePage from './pages/UserProfilePage'
+import AdminProfilesPage from './pages/AdminProfilesPage'
+import LoginPage from './pages/LoginPage'
 
 const router = createBrowserRouter([
   {
@@ -60,6 +63,7 @@ const router = createBrowserRouter([
     ],
   },
   // Student & Teacher self-service portal (no password login)
+  { path: '/login', element: <LoginPage /> },
   { path: '/student-login', element: <StudentLoginPage /> },
   { path: '/teacher-login', element: <TeacherLoginPage /> },
   { path: '/my/student/:studentId', element: <MyStudentProfile /> },
@@ -99,6 +103,8 @@ const router = createBrowserRouter([
       { path: 'staff/:staffId', element: <StaffDetailPage /> },
       { path: 'hostel', element: <HostelPage /> },
       { path: 'admissions', element: <AdmissionsPage /> },
+      { path: 'profile', element: <UserProfilePage /> },
+      { path: 'admin-profiles', element: <AdminProfilesPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],

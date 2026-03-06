@@ -16,28 +16,14 @@ const Hero = () => (
           academics, attendance, fees, events, and communication effortlessly.
         </p>
         <div className="hero-actions">
-          <a className="btn primary hero-btn" href="#auth">
-            Get Started Free →
+          <a className="btn primary hero-btn" href="/login">
+            Login →
           </a>
           <a className="btn outline hero-btn" href="#features-detail">
             Explore Features
           </a>
         </div>
-        <div className="portal-access-strip">
-          <span className="portal-access-label">Quick Access Portals</span>
-          <div className="portal-access-links">
-            <a className="portal-link student" href="/student-login">
-              <span className="portal-link-icon">🎓</span>
-              <span className="portal-link-text">Student Portal</span>
-              <span className="portal-link-arrow">→</span>
-            </a>
-            <a className="portal-link teacher" href="/teacher-login">
-              <span className="portal-link-icon">👨‍🏫</span>
-              <span className="portal-link-text">Teacher Portal</span>
-              <span className="portal-link-arrow">→</span>
-            </a>
-          </div>
-        </div>
+
       </div>
       <div className="hero-stats-card">
         <div className="hero-stats-header">

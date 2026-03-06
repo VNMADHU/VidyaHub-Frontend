@@ -17,6 +17,7 @@ const LibraryPage = () => {
   const [books, setBooks] = useState([])
   const [issues, setIssues] = useState([])
   const [students, setStudents] = useState([])
+  const [bookCategories, setBookCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showIssueForm, setShowIssueForm] = useState(false)
@@ -46,14 +47,16 @@ const LibraryPage = () => {
 
   const loadData = async () => {
     try {
-      const [booksRes, issuesRes, studentsRes] = await Promise.all([
+      const [booksRes, issuesRes, studentsRes, bookCatsRes] = await Promise.all([
         apiClient.listBooks().catch(() => ({ data: [] })),
         apiClient.listBookIssues().catch(() => ({ data: [] })),
         apiClient.listStudents().catch(() => ({ data: [] })),
+        apiClient.listMasterData('book-categories').catch(() => []),
       ])
       setBooks(booksRes?.data || [])
       setIssues(issuesRes?.data || [])
       setStudents(studentsRes?.data || studentsRes || [])
+      setBookCategories(Array.isArray(bookCatsRes) ? bookCatsRes : bookCatsRes?.data || [])
     } catch (error) {
       console.error('Failed to load library data:', error)
     } finally {
@@ -255,11 +258,10 @@ const LibraryPage = () => {
                   <input type="text" placeholder="Author *" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} required />
                   <input type="text" placeholder="ISBN" value={formData.isbn} onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
                   <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                    <option value="textbook">Textbook</option>
-                    <option value="reference">Reference</option>
-                    <option value="fiction">Fiction</option>
-                    <option value="non-fiction">Non-Fiction</option>
-                    <option value="magazine">Magazine</option>
+                    <option value="">-- Category --</option>
+                    {bookCategories.map(c => (
+                      <option key={c.id} value={c.label}>{c.label.charAt(0).toUpperCase() + c.label.slice(1)}</option>
+                    ))}
                   </select>
                   <input type="text" placeholder="Publisher" value={formData.publisher} onChange={(e) => setFormData({ ...formData, publisher: e.target.value })} />
                   <input type="text" placeholder="Edition" value={formData.edition} onChange={(e) => setFormData({ ...formData, edition: e.target.value })} />

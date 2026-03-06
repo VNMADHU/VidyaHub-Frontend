@@ -8,6 +8,12 @@ export interface User {
   email: string
   role: string
   schoolId?: string
+  phone?: string
+  modulePermissions?: string | null
+  firstName?: string
+  lastName?: string
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
   createdAt?: string
   updatedAt?: string
 }
@@ -27,9 +33,58 @@ export interface LoginPayload {
   role: string
 }
 
+/** Returned from POST /auth/login when OTP is sent (step 1 of 2-step login) */
+export interface OtpStepResponse {
+  otpSent: true
+  message: string
+  maskedEmail: string
+  maskedPhone: string | null
+}
+
+/** Returned from POST /auth/login when another session is already active */
+export interface SessionConflictResponse {
+  sessionConflict: true
+  message: string
+  maskedEmail: string
+  maskedPhone: string | null
+}
+
+/** Returned from POST /auth/verify-otp (step 2) — full session */
 export interface LoginResponse {
   user: User
   token: string
+}
+
+/** Returned from POST /auth/register */
+export interface RegisterResponse {
+  message: string
+  email: string
+  maskedEmail: string
+  maskedPhone: string
+  needsVerification: true
+}
+
+/** Returned from POST /auth/forgot-password */
+export interface ForgotPasswordResponse {
+  message: string
+  maskedEmail: string
+  maskedPhone: string | null
+}
+
+export interface AdminUser {
+  id: number
+  email: string
+  phone?: string
+  modulePermissions?: string[] | null
+  schoolId?: number | null
+  school?: { id: number; name: string } | null
+  accountStatus?: 'active' | 'suspended'
+  profile?: { firstName: string; lastName: string; phone?: string | null } | null
+  isEmailVerified?: boolean
+  isPhoneVerified?: boolean
+  mfaEmail?: boolean
+  mfaPhone?: boolean
+  createdAt: string
 }
 
 // ── School ────────────────────────────────────────────────

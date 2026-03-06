@@ -59,9 +59,10 @@ const MyTeacherProfile = () => {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await apiClient.logout() } catch { /* session may already be gone */ }
     dispatch(logout())
-    navigate('/teacher-login')
+    navigate('/login')
   }
 
   // ── Homework Handlers ──────────────────────────────────────────────

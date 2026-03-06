@@ -3,7 +3,7 @@ export const navLinks = [
   { label: 'Benefits', href: '/#benefits' },
   { label: 'Features', href: '/#features-detail' },
   { label: 'Pricing', href: '/#pricing' },
-  { label: 'Login', href: '/#auth' },
+  { label: 'Login', href: '/login' },
   { label: 'Contact', href: '/#contact' },
 ] as const
 

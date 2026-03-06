@@ -50,6 +50,8 @@ import LeavesPage from './pages/LeavesPage'
 import StaffPage from './pages/StaffPage'
 import HostelPage from './pages/HostelPage'
 import AdmissionsPage from './pages/AdmissionsPage'
+import AdminProfilesPage from './pages/AdminProfilesPage'
+import LoginPage from './pages/LoginPage'
 
 const router = createBrowserRouter([
   {
@@ -101,6 +103,7 @@ const router = createBrowserRouter([
     ],
   },
   // Student & Teacher self-service portal (login pages — public)
+  { path: '/login', element: <LoginPage /> },
   { path: '/student-login', element: <StudentLoginPage /> },
   { path: '/teacher-login', element: <TeacherLoginPage /> },
   // Student & Teacher profile pages — protected by JWT
@@ -163,6 +166,7 @@ const router = createBrowserRouter([
       { path: 'admissions', element: <AdmissionsPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
+      { path: 'admin-profiles', element: <AdminProfilesPage /> },
     ],
   },
 ])

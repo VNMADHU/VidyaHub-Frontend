@@ -14,6 +14,7 @@ const EventsPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
   const [events, setEvents] = useState([])
+  const [eventCategories, setEventCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
@@ -30,6 +31,9 @@ const EventsPage = () => {
 
   useEffect(() => {
     loadEvents()
+    apiClient.listMasterData('event-categories').then((data) => {
+      setEventCategories(Array.isArray(data) ? data : data?.data || [])
+    }).catch(() => {})
   }, [])
 
   const loadEvents = async () => {
@@ -236,10 +240,10 @@ const EventsPage = () => {
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
             >
-              <option value="academic">Academic</option>
-              <option value="sports">Sports</option>
-              <option value="cultural">Cultural</option>
-              <option value="other">Other</option>
+              <option value="">-- Category --</option>
+              {eventCategories.map(c => (
+                <option key={c.id} value={c.label}>{c.label}</option>
+              ))}
             </select>
             <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
               {editingId ? 'Update Event' : 'Create Event'}

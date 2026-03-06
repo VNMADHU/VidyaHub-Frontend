@@ -18,6 +18,10 @@ import type {
   Section,
   Fee,
   LoginResponse,
+  OtpStepResponse,
+  SessionConflictResponse,
+  RegisterResponse,
+  AdminUser,
 } from '@/types'
 
 // ── Create Axios Instance ─────────────────────────────────
@@ -86,17 +90,11 @@ api.interceptors.response.use(
       // Auto-logout on 401 (but not on login pages — let those show inline errors)
       if (status === HTTP.UNAUTHORIZED) {
         const path = window.location.pathname
-        const isLoginPage = path === '/student-login' || path === '/teacher-login' || path === '/'
+        const isLoginPage = path === '/login' || path === '/student-login' || path === '/teacher-login' || path === '/' || path.startsWith('/login')
         if (!isLoginPage) {
           logger.warn('Unauthorized — clearing session')
           localStorage.removeItem(STORAGE_KEYS.AUTH)
-          if (path.startsWith('/my/student')) {
-            window.location.href = '/student-login'
-          } else if (path.startsWith('/my/teacher')) {
-            window.location.href = '/teacher-login'
-          } else {
-            window.location.href = '/'
-          }
+          window.location.href = '/login'
         }
       }
 
@@ -112,7 +110,21 @@ api.interceptors.response.use(
         (data as Record<string, unknown>)?.issues?.toString() ||
         `Request failed (${status})`
 
-      return Promise.reject(new Error(errorMessage))
+      // Enrich the error with extra fields from the server payload so callers
+      // can branch on accountLocked / attemptsLeft / sessionInvalidated etc.
+      const richError = new Error(errorMessage) as Error & Record<string, unknown>
+      const payload = data as Record<string, unknown>
+      if (payload?.accountLocked) richError.accountLocked = true
+      if (payload?.lockedUntil)   richError.lockedUntil   = payload.lockedUntil
+      if (typeof payload?.attemptsLeft === 'number') richError.attemptsLeft = payload.attemptsLeft
+      if (payload?.sessionInvalidated) richError.sessionInvalidated = true
+      if (payload?.needsEmailVerification) richError.needsEmailVerification = true
+      if (payload?.needsPhoneVerification) richError.needsPhoneVerification = true
+      if (payload?.email)       richError.email       = payload.email
+      if (payload?.maskedEmail) richError.maskedEmail = payload.maskedEmail
+      if (payload?.maskedPhone) richError.maskedPhone = payload.maskedPhone
+
+      return Promise.reject(richError)
     }
 
     if (error.code === 'ECONNABORTED') {
@@ -133,17 +145,94 @@ api.interceptors.response.use(
 
 // Auth
 export const authApi = {
+  /** Step 1: verify credentials → send OTP or issue JWT directly (MFA disabled). */
   login: (email: string, password: string, role: string) =>
-    api.post<LoginResponse>('/auth/login', { email, password, role }).then((r) => r.data),
+    api.post<OtpStepResponse | LoginResponse>('/auth/login', { email, password, role }).then((r) => r.data),
 
-  register: (email: string, password: string, schoolName: string) =>
-    api.post('/auth/register', { email, password, schoolName }).then((r) => r.data),
+  /** Force login — overrides existing session; sends OTP or issues JWT directly (MFA disabled) */
+  forceLogin: (email: string, password: string) =>
+    api.post<OtpStepResponse | LoginResponse>('/auth/force-login', { email, password }).then((r) => r.data),
 
-  requestOtp: (email: string) =>
-    api.post('/auth/otp', { email }).then((r) => r.data),
+  /** Step 2: verify OTP → issue JWT. Returns full LoginResponse with token. */
+  verifyOtp: (email: string, otp: string) =>
+    api.post<LoginResponse>('/auth/verify-otp', { email, otp }).then((r) => r.data),
+
+  /** Resend login OTP */
+  resendOtp: (email: string) =>
+    api.post<OtpStepResponse>('/auth/resend-otp', { email }).then((r) => r.data),
+
+  /** Verify email address with the code from the welcome email */
+  verifyEmail: (email: string, code: string) =>
+    api.post('/auth/verify-email', { email, code }).then((r) => r.data),
+
+  /** Verify phone number with the 6-digit OTP sent via SMS */
+  verifyPhone: (email: string, otp: string) =>
+    api.post('/auth/verify-phone', { email, otp }).then((r) => r.data),
+
+  /** Resend a verification code (email or phone) */
+  resendVerification: (email: string, type: 'email' | 'phone') =>
+    api.post('/auth/resend-verification', { email, type }).then((r) => r.data),
+
+  /** Logout — kills session token in DB */
+  logout: () =>
+    api.post('/auth/logout').then((r) => r.data),
+
+  /** Poll session validity — 401 if session was invalidated */
+  sessionCheck: () =>
+    api.get('/auth/session-check').then((r) => r.data),
+
+  /** Register new school */
+  register: (email: string, password: string, schoolName: string, phone: string, address?: string, isFreeTrail?: boolean) =>
+    api.post('/auth/register', { email, password, schoolName, phone, address, isFreeTrail }).then((r) => r.data),
+
+  /** Send password reset code to email + phone */
+  forgotPassword: (email: string) =>
+    api.post('/auth/forgot-password', { email }).then((r) => r.data),
+
+  /** Reset password with 6-digit code */
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    api.post('/auth/reset-password', { email, code, newPassword }).then((r) => r.data),
 
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }).then((r) => r.data),
+
+  getProfile: () =>
+    api.get('/auth/profile').then((r) => r.data),
+
+  updateProfile: (data: { firstName?: string; lastName?: string; phone?: string }) =>
+    api.patch('/auth/profile', data).then((r) => r.data),
+
+  getMfaSettings: () =>
+    api.get('/auth/mfa-settings').then((r) => r.data),
+
+  updateMfaSettings: (data: { mfaEmail?: boolean; mfaPhone?: boolean }) =>
+    api.patch('/auth/mfa-settings', data).then((r) => r.data),
+}
+
+// Admin Management (super-admin and school-admin)
+export const adminApi = {
+  list: () => api.get<AdminUser[]>('/admins').then((r) => r.data),
+  getModules: () => api.get<string[]>('/admins/modules').then((r) => r.data),
+  create: (data: {
+    email: string
+    password: string
+    firstName: string
+    lastName: string
+    phone: string
+    modulePermissions?: string[] | null
+  }) => api.post<AdminUser>('/admins', data).then((r) => r.data),
+  update: (id: number, data: {
+    email?: string
+    firstName?: string
+    lastName?: string
+    phone?: string
+    modulePermissions?: string[] | null
+  }) => api.patch<AdminUser>(`/admins/${id}`, data).then((r) => r.data),
+  updatePassword: (id: number, password: string) =>
+    api.patch(`/admins/${id}/password`, { password }).then((r) => r.data),
+  toggleStatus: (id: number) =>
+    api.patch<{ message: string; accountStatus: string }>(`/admins/${id}/status`).then((r) => r.data),
+  delete: (id: number) => api.delete(`/admins/${id}`).then((r) => r.data),
 }
 
 // Schools
@@ -458,13 +547,45 @@ export const hostelApi = {
   deleteAllotment: (id: string) => api.delete(`/hostel/allotments/${id}`).then((r) => r.data),
 }
 
+// Master Data (configurable dropdown values)
+export const masterDataApi = {
+  list: (category: string) =>
+    api.get('/master-data', { params: { category } }).then((r) => r.data),
+  listAll: (category: string) =>
+    api.get('/master-data/all', { params: { category } }).then((r) => r.data),
+  create: (category: string, label: string) =>
+    api.post('/master-data', { category, label }).then((r) => r.data),
+  update: (id: number, data: { label?: string; sortOrder?: number; isActive?: boolean }) =>
+    api.patch(`/master-data/${id}`, data).then((r) => r.data),
+  delete: (id: number) =>
+    api.delete(`/master-data/${id}`).then((r) => r.data),
+}
+
 // Legacy-compatible default export (class-like singleton that wraps the new API)
 const apiClient = {
   // Auth
   login: authApi.login,
+  logout: authApi.logout,
+  verifyOtp: authApi.verifyOtp,
+  resendOtp: authApi.resendOtp,
   register: authApi.register,
-  requestOtp: authApi.requestOtp,
   changePassword: authApi.changePassword,
+  getProfile: authApi.getProfile,
+  updateProfile: authApi.updateProfile,
+  getMfaSettings: authApi.getMfaSettings,
+  updateMfaSettings: authApi.updateMfaSettings,
+  // Master Data
+  listMasterData: masterDataApi.list,
+  listAllMasterData: masterDataApi.listAll,
+  createMasterData: masterDataApi.create,
+  updateMasterData: masterDataApi.update,
+  deleteMasterData: masterDataApi.delete,
+  // Admin Management
+  listAdmins: adminApi.list,
+  getAdminModules: adminApi.getModules,
+  createAdmin: adminApi.create,
+  updateAdmin: adminApi.update,
+  deleteAdmin: adminApi.delete,
   // Schools
   listSchools: schoolApi.list,
   createSchool: schoolApi.create,

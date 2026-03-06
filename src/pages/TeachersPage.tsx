@@ -59,6 +59,7 @@ const TeachersPage = () => {
   }
   const [formData, setFormData] = useState(EMPTY_TEACHER_FORM)
   const [subjects, setSubjects] = useState([])
+  const [teacherDesignations, setTeacherDesignations] = useState([])
 
   useEffect(() => {
     loadTeachers()
@@ -66,12 +67,14 @@ const TeachersPage = () => {
 
   const loadTeachers = async () => {
     try {
-      const [response, subjectsRes] = await Promise.all([
+      const [response, subjectsRes, designationsRes] = await Promise.all([
         apiClient.listTeachers(),
         apiClient.listSubjects(),
+        apiClient.listMasterData('teacher-designations').catch(() => []),
       ])
       setTeachers(response?.data || [])
       setSubjects(subjectsRes?.data || [])
+      setTeacherDesignations(Array.isArray(designationsRes) ? designationsRes : designationsRes?.data || [])
     } catch (error) {
       console.error('Failed to load teachers:', error)
     } finally {
@@ -334,12 +337,9 @@ const TeachersPage = () => {
               onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
             >
               <option value="">Designation</option>
-              <option value="PRT">PRT (Primary Teacher)</option>
-              <option value="TGT">TGT (Trained Graduate Teacher)</option>
-              <option value="PGT">PGT (Post Graduate Teacher)</option>
-              <option value="HOD">HOD (Head of Department)</option>
-              <option value="Vice Principal">Vice Principal</option>
-              <option value="Principal">Principal</option>
+              {teacherDesignations.map((d) => (
+                <option key={d.id} value={d.label}>{d.label}</option>
+              ))}
             </select>
             <input
               type="text"

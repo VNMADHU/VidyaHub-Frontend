@@ -6,6 +6,146 @@ import { useToast } from '@/components/ToastContainer'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useAppSelector } from '@/store'
 
+// ── Reusable component for any MasterData category ──
+const MasterDataSection = ({ category, title, description }) => {
+  const toast = useToast()
+  const { confirm } = useConfirm()
+  const [items, setItems] = useState([])
+  const [newLabel, setNewLabel] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [msg, setMsg] = useState('')
+
+  const load = async () => {
+    try {
+      const data = await apiClient.listAllMasterData(category)
+      setItems(Array.isArray(data) ? data : data?.data || [])
+    } catch {}
+  }
+
+  useEffect(() => { load() }, [category])
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    if (!newLabel.trim()) return
+    try {
+      if (editingId) {
+        await apiClient.updateMasterData(editingId, { label: newLabel })
+        setMsg('✅ Updated!')
+        setEditingId(null)
+      } else {
+        await apiClient.createMasterData(category, newLabel)
+        setMsg('✅ Added!')
+      }
+      setNewLabel('')
+      load()
+      setTimeout(() => setMsg(''), 3000)
+    } catch (err) {
+      setMsg('❌ ' + (err?.response?.data?.message || err?.message || 'Failed to save'))
+      setTimeout(() => setMsg(''), 4000)
+    }
+  }
+
+  const handleDelete = async (id) => {
+    const ok = await confirm('Delete this item?')
+    if (!ok) return
+    try {
+      await apiClient.deleteMasterData(id)
+      load()
+    } catch (err) {
+      toast.error('Failed to delete: ' + (err?.response?.data?.message || err?.message))
+    }
+  }
+
+  const handleToggleActive = async (item) => {
+    try {
+      await apiClient.updateMasterData(item.id, { isActive: !item.isActive })
+      load()
+    } catch {}
+  }
+
+  return (
+    <div style={{ marginBottom: '2rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border, #e5e7eb)' }}>
+      <h4 style={{ marginBottom: '0.25rem', color: 'var(--text)' }}>{title}</h4>
+      {description && (
+        <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1rem' }}>{description}</p>
+      )}
+      {msg && (
+        <div style={{ padding: '0.4rem 0.75rem', marginBottom: '1rem', borderRadius: '6px', background: msg.startsWith('✅') ? '#d1fae5' : '#fee2e2', fontSize: '0.875rem' }}>
+          {msg}
+        </div>
+      )}
+      <form onSubmit={handleSave} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          placeholder={`New ${title} value...`}
+          value={newLabel}
+          onChange={(e) => setNewLabel(e.target.value)}
+          required
+          style={{ flex: 1, minWidth: '200px' }}
+        />
+        <button type="submit" className="btn primary">
+          {editingId ? '✓ Update' : '+ Add'}
+        </button>
+        {editingId && (
+          <button type="button" className="btn outline" onClick={() => { setEditingId(null); setNewLabel('') }}>
+            Cancel
+          </button>
+        )}
+      </form>
+      <div className="data-table">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Label</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.length === 0 ? (
+              <tr><td colSpan={4} className="empty-row">No items yet — add the first one above!</td></tr>
+            ) : (
+              items.map((item, idx) => (
+                <tr key={item.id} style={!item.isActive ? { opacity: 0.55 } : {}}>
+                  <td>{idx + 1}</td>
+                  <td style={{ fontWeight: 500 }}>{item.label}</td>
+                  <td>
+                    <span
+                      onClick={() => handleToggleActive(item)}
+                      title="Click to toggle active/inactive"
+                      style={{ cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, padding: '2px 10px', borderRadius: '12px', background: item.isActive ? '#d1fae5' : '#f3f4f6', color: item.isActive ? '#059669' : '#6b7280' }}
+                    >
+                      {item.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                  <td style={{ display: 'flex', gap: '0.35rem' }}>
+                    <button
+                      className="btn-icon edit"
+                      onClick={() => { setEditingId(item.id); setNewLabel(item.label) }}
+                      style={{ padding: '4px' }}
+                      aria-label="Edit"
+                    >
+                      <SquarePen size={16} />
+                    </button>
+                    <button
+                      className="btn-icon danger"
+                      onClick={() => handleDelete(item.id)}
+                      aria-label="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 const SettingsPage = () => {
   const toast = useToast()
   const { confirm } = useConfirm()
@@ -20,6 +160,11 @@ const SettingsPage = () => {
   // Password change
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [passwordMsg, setPasswordMsg] = useState('')
+
+  // MFA settings
+  const [mfa, setMfa] = useState({ mfaEmail: true, mfaPhone: false })
+  const [mfaMsg, setMfaMsg] = useState('')
+  const [mfaLoading, setMfaLoading] = useState(false)
 
   // Subject management
   const [subjects, setSubjects] = useState([])
@@ -37,6 +182,9 @@ const SettingsPage = () => {
     loadSchool()
     loadSubjects()
     loadPeriods()
+    apiClient.getMfaSettings().then((data) => {
+      setMfa({ mfaEmail: data.mfaEmail ?? true, mfaPhone: data.mfaPhone ?? false })
+    }).catch(() => {})
   }, [])
 
   const loadSchool = async () => {
@@ -186,13 +334,21 @@ const SettingsPage = () => {
       </div>
 
       <div className="settings-tabs">
-        {['school', 'subjects', 'periods', 'security'].map((tab) => (
+        {[
+          { id: 'school', label: '🏫 School' },
+          { id: 'subjects', label: '📚 Subjects' },
+          { id: 'periods', label: '🕐 Periods' },
+          { id: 'designations', label: '🏷️ Designations' },
+          { id: 'finance', label: '💰 Finance Types' },
+          { id: 'lookups', label: '📋 Lookups' },
+          { id: 'security', label: '🔒 Security' },
+        ].map(({ id, label }) => (
           <button
-            key={tab}
-            className={`tab-btn ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}
+            key={id}
+            className={`tab-btn ${activeTab === id ? 'active' : ''}`}
+            onClick={() => setActiveTab(id)}
           >
-            {tab === 'school' ? '🏫 School' : tab === 'subjects' ? '📚 Subjects' : tab === 'periods' ? '🕐 Periods' : '🔒 Security'}
+            {label}
           </button>
         ))}
       </div>
@@ -435,9 +591,146 @@ const SettingsPage = () => {
           </div>
         )}
 
+        {/* ── Designations ── */}
+        {activeTab === 'designations' && (
+          <div className="settings-card">
+            <h3>🏷️ Designations</h3>
+            <p style={{ color: 'var(--muted)', marginBottom: '1.5rem' }}>
+              Manage designations for teachers and staff. These appear as dropdown options across the app.
+            </p>
+            <MasterDataSection
+              category="teacher-designations"
+              title="Teacher Designations"
+              description="e.g. PRT, TGT, PGT, HOD, Vice Principal, Principal"
+            />
+            <MasterDataSection
+              category="staff-designations"
+              title="Staff Designations"
+              description="e.g. Watchman, Cook, Cleaning Staff, Office Boy, Peon"
+            />
+            <MasterDataSection
+              category="staff-departments"
+              title="Staff Departments"
+              description="e.g. Office, Security, Housekeeping, Laboratory, Kitchen, Transport"
+            />
+          </div>
+        )}
+
+        {/* ── Finance Types ── */}
+        {activeTab === 'finance' && (
+          <div className="settings-card">
+            <h3>💰 Finance Types</h3>
+            <p style={{ color: 'var(--muted)', marginBottom: '1.5rem' }}>
+              Manage fee categories and expense types used throughout the Finance module.
+            </p>
+            <MasterDataSection
+              category="fee-types"
+              title="Fee Types"
+              description="e.g. Tuition, Exam, Transport, Library, Sports, Lab"
+            />
+            <MasterDataSection
+              category="expense-categories"
+              title="Expense Categories"
+              description="e.g. Maintenance, Salary, Supplies, Infrastructure, Events"
+            />
+          </div>
+        )}
+
+        {/* ── Other Lookups ── */}
+        {activeTab === 'lookups' && (
+          <div className="settings-card">
+            <h3>📋 Lookups</h3>
+            <p style={{ color: 'var(--muted)', marginBottom: '1.5rem' }}>
+              Manage leave types and library book categories used across the app.
+            </p>
+            <MasterDataSection
+              category="leave-types"
+              title="Leave Types"
+              description="e.g. Sick, Casual, Annual, Maternity, Paternity, Emergency"
+            />
+            <MasterDataSection
+              category="book-categories"
+              title="Book Categories"
+              description="e.g. Textbook, Reference, Fiction, Non-Fiction, Magazine"
+            />
+            <MasterDataSection
+              category="event-categories"
+              title="Event & Achievement Categories"
+              description="e.g. Academic, Sports, Cultural, Other — used in Events and Achievements"
+            />
+          </div>
+        )}
+
         {/* ── Security (Change Password) ── */}
         {activeTab === 'security' && (
           <div className="settings-card">
+
+            {/* MFA Settings */}
+            <h3>🔐 Two-Factor Authentication (MFA)</h3>
+            <p style={{ color: 'var(--muted)', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
+              Choose how you want to verify your identity when logging in. If both are unchecked, you will log in directly without an OTP.
+            </p>
+            {mfaMsg && (
+              <div style={{ padding: '0.5rem 0.75rem', marginBottom: '1rem', borderRadius: '8px', background: mfaMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', fontSize: '0.875rem' }}>
+                {mfaMsg}
+              </div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', cursor: 'pointer', padding: '1rem', borderRadius: '10px', border: `2px solid ${mfa.mfaEmail ? '#3b82f6' : 'var(--border, #e5e7eb)'}`, background: mfa.mfaEmail ? '#eff6ff' : 'var(--surface)' }}>
+                <input
+                  type="checkbox"
+                  checked={mfa.mfaEmail}
+                  onChange={(e) => setMfa({ ...mfa, mfaEmail: e.target.checked })}
+                  style={{ marginTop: '2px', width: '18px', height: '18px', accentColor: '#3b82f6', flexShrink: 0 }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text)' }}>📧 Email OTP</div>
+                  <div style={{ fontSize: '0.825rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    Send a one-time password to your registered email address on every login.
+                  </div>
+                </div>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', cursor: 'pointer', padding: '1rem', borderRadius: '10px', border: `2px solid ${mfa.mfaPhone ? '#3b82f6' : 'var(--border, #e5e7eb)'}`, background: mfa.mfaPhone ? '#eff6ff' : 'var(--surface)' }}>
+                <input
+                  type="checkbox"
+                  checked={mfa.mfaPhone}
+                  onChange={(e) => setMfa({ ...mfa, mfaPhone: e.target.checked })}
+                  style={{ marginTop: '2px', width: '18px', height: '18px', accentColor: '#3b82f6', flexShrink: 0 }}
+                />
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text)' }}>📱 SMS OTP</div>
+                  <div style={{ fontSize: '0.825rem', color: 'var(--muted)', marginTop: '2px' }}>
+                    Send a one-time password via SMS to your registered mobile number on every login.
+                  </div>
+                </div>
+              </label>
+              {!mfa.mfaEmail && !mfa.mfaPhone && (
+                <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: '#fef9c3', border: '1px solid #fbbf24', fontSize: '0.85rem', color: '#92400e' }}>
+                  ⚠️ <strong>No MFA enabled</strong> — you will log in directly without any OTP verification.
+                </div>
+              )}
+            </div>
+            <button
+              className="btn primary"
+              disabled={mfaLoading}
+              onClick={async () => {
+                setMfaLoading(true)
+                try {
+                  await apiClient.updateMfaSettings(mfa)
+                  setMfaMsg('✅ MFA settings saved!')
+                } catch (err) {
+                  setMfaMsg('❌ ' + (err?.response?.data?.message || 'Failed to save'))
+                } finally {
+                  setMfaLoading(false)
+                  setTimeout(() => setMfaMsg(''), 4000)
+                }
+              }}
+            >
+              {mfaLoading ? 'Saving…' : 'Save MFA Settings'}
+            </button>
+
+            <hr style={{ border: 'none', borderTop: '1px solid var(--border, #e5e7eb)', margin: '2rem 0' }} />
+
             <h3>🔒 Change Password</h3>
             {passwordMsg && <div style={{ padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', background: passwordMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2' }}>{passwordMsg}</div>}
             <form onSubmit={handlePasswordChange}>

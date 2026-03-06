@@ -11,7 +11,7 @@ import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 
 const EMPLOYEE_TYPES = ['teacher', 'driver', 'staff']
-const LEAVE_TYPES = ['sick', 'casual', 'annual', 'maternity', 'paternity', 'emergency', 'unpaid']
+// Leave types loaded dynamically from Settings > Lookups
 const STATUS_OPTIONS = ['pending', 'approved', 'rejected']
 
 const STATUS_COLORS = {
@@ -27,6 +27,7 @@ const LeavesPage = () => {
   const [teachers, setTeachers] = useState([])
   const [drivers, setDrivers] = useState([])
   const [staffList, setStaffList] = useState([])
+  const [leaveTypes, setLeaveTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
@@ -52,16 +53,18 @@ const LeavesPage = () => {
 
   const loadData = async () => {
     try {
-      const [leavesRes, teachersRes, driversRes, staffRes] = await Promise.all([
+      const [leavesRes, teachersRes, driversRes, staffRes, leaveTypesRes] = await Promise.all([
         apiClient.listLeaves().catch(() => ({ data: [] })),
         apiClient.listTeachers().catch(() => ({ data: [] })),
         apiClient.listDrivers().catch(() => ({ data: [] })),
         apiClient.listStaff().catch(() => ({ data: [] })),
+        apiClient.listMasterData('leave-types').catch(() => []),
       ])
       setLeaves(leavesRes?.data || [])
       setTeachers(teachersRes?.data || teachersRes || [])
       setDrivers(driversRes?.data || driversRes || [])
       setStaffList(staffRes?.data || [])
+      setLeaveTypes(Array.isArray(leaveTypesRes) ? leaveTypesRes : leaveTypesRes?.data || [])
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -222,7 +225,7 @@ const LeavesPage = () => {
     return {
       employeeType: EMPLOYEE_TYPES.includes(row.employeeType) ? row.employeeType : 'staff',
       employeeName: String(row.employeeName).trim(),
-      leaveType: LEAVE_TYPES.includes(row.leaveType) ? row.leaveType : 'casual',
+      leaveType: row.leaveType || 'casual',
       fromDate: String(row.fromDate).trim(),
       toDate: String(row.toDate).trim(),
       days: parseInt(row.days) || 1,
@@ -318,8 +321,8 @@ const LeavesPage = () => {
               )}
 
               <select value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}>
-                {LEAVE_TYPES.map((t) => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                {leaveTypes.map((t) => (
+                  <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)}</option>
                 ))}
               </select>
 

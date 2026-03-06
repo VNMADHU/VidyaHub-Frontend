@@ -10,7 +10,7 @@ import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 
-const FEE_TYPES = ['tuition', 'exam', 'transport', 'library', 'sports', 'lab', 'other']
+// Fee types loaded dynamically from Settings > Finance Types
 const TERMS = ['Term 1', 'Term 2', 'Term 3', 'Annual']
 
 const FeesPage = () => {
@@ -18,6 +18,7 @@ const FeesPage = () => {
   const toast = useToast()
   const [fees, setFees] = useState([])
   const [students, setStudents] = useState([])
+  const [feeTypes, setFeeTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
@@ -51,12 +52,14 @@ const FeesPage = () => {
 
   const loadData = async () => {
     try {
-      const [feesRes, studentsRes] = await Promise.all([
+      const [feesRes, studentsRes, feeTypesRes] = await Promise.all([
         apiClient.listFees(),
         apiClient.listStudents(),
+        apiClient.listMasterData('fee-types').catch(() => []),
       ])
       setFees(feesRes?.data || [])
       setStudents(studentsRes?.data || [])
+      setFeeTypes(Array.isArray(feeTypesRes) ? feeTypesRes : feeTypesRes?.data || [])
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -361,8 +364,8 @@ const FeesPage = () => {
                 onChange={(e) => setFormData({ ...formData, feeType: e.target.value })}
                 required
               >
-                {FEE_TYPES.map(t => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)} Fee</option>
+                {feeTypes.map(t => (
+                  <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)} Fee</option>
                 ))}
               </select>
               <input

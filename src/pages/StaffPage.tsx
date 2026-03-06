@@ -11,12 +11,8 @@ import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 
-const DESIGNATIONS = [
-  'Watchman', 'Security Guard', 'Cleaning Staff', 'Sweeper', 'Peon', 'Office Boy',
-  'Accountant', 'Clerk', 'Receptionist', 'Lab Assistant', 'Librarian',
-  'Cook', 'Kitchen Staff', 'Gardener', 'Electrician', 'Plumber',
-  'IT Support', 'Nurse', 'Counsellor', 'Bus Conductor', 'Hostel Warden', 'Other',
-]
+// Staff designations loaded dynamically from Settings > Designations
+// Staff departments loaded dynamically from Settings > Designations
 
 const DEPARTMENTS = ['Office', 'Security', 'Housekeeping', 'Laboratory', 'Library', 'Kitchen', 'Hostel', 'Maintenance', 'Transport', 'Other']
 
@@ -30,7 +26,7 @@ const STATUS_COLORS = {
 }
 
 const EMPTY_FORM = {
-  firstName: '', lastName: '', staffId: '', designation: 'Watchman', department: '',
+  firstName: '', lastName: '', staffId: '', designation: '', department: '',
   phoneNumber: '', email: '', dateOfBirth: '', gender: '', address: '',
   aadhaarNumber: '', joiningDate: '', salary: '', bloodGroup: '',
   emergencyContact: '', status: 'active',
@@ -60,6 +56,18 @@ const StaffPage = () => {
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDesignation, setFilterDesignation] = useState('')
+  const [staffDesignations, setStaffDesignations] = useState([])
+  const [staffDepartments, setStaffDepartments] = useState([])
+
+  useEffect(() => {
+    Promise.all([
+      apiClient.listMasterData('staff-designations').catch(() => []),
+      apiClient.listMasterData('staff-departments').catch(() => []),
+    ]).then(([desigs, depts]) => {
+      setStaffDesignations(Array.isArray(desigs) ? desigs : desigs?.data || [])
+      setStaffDepartments(Array.isArray(depts) ? depts : depts?.data || [])
+    })
+  }, [])
   const [filterStatus, setFilterStatus] = useState('')
   const [formData, setFormData] = useState(EMPTY_FORM)
 
@@ -212,12 +220,13 @@ const StaffPage = () => {
             <input placeholder="Staff ID (e.g. STF001)" value={formData.staffId} onChange={(e) => setFormData({ ...formData, staffId: e.target.value })} />
 
             <select value={formData.designation} onChange={(e) => setFormData({ ...formData, designation: e.target.value })} required>
-              {DESIGNATIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+              <option value="">-- Designation *</option>
+              {staffDesignations.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
             </select>
 
             <select value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })}>
               <option value="">-- Department --</option>
-              {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+              {staffDepartments.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
             </select>
 
             <input placeholder="Phone Number" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} />
@@ -260,7 +269,7 @@ const StaffPage = () => {
         <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, designation, ID..." />
         <select value={filterDesignation} onChange={(e) => setFilterDesignation(e.target.value)} className="filter-select">
           <option value="">All Designations</option>
-          {DESIGNATIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+          {staffDesignations.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
         </select>
         <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="filter-select">
           <option value="">All Status</option>

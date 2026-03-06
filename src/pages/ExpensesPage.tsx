@@ -14,6 +14,7 @@ const ExpensesPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
   const [expenses, setExpenses] = useState([])
+  const [expenseCategories, setExpenseCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
@@ -32,7 +33,12 @@ const ExpensesPage = () => {
     status: 'approved',
   })
 
-  useEffect(() => { loadExpenses() }, [])
+  useEffect(() => {
+    loadExpenses()
+    apiClient.listMasterData('expense-categories').then((data) => {
+      setExpenseCategories(Array.isArray(data) ? data : data?.data || [])
+    }).catch(() => {})
+  }, [])
 
   const loadExpenses = async () => {
     try {
@@ -168,15 +174,10 @@ const ExpensesPage = () => {
             <form onSubmit={handleSubmit} className="form-grid">
               <input type="text" placeholder="Title / Description *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
               <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                <option value="maintenance">Maintenance</option>
-                <option value="salary">Salary</option>
-                <option value="supplies">Supplies</option>
-                <option value="transport">Transport</option>
-                <option value="utility">Utility (Electricity, Water)</option>
-                <option value="infrastructure">Infrastructure</option>
-                <option value="events">Events</option>
-                <option value="sports">Sports & Physical Education</option>
-                <option value="other">Other</option>
+                <option value="">-- Category --</option>
+                {expenseCategories.map(c => (
+                  <option key={c.id} value={c.label}>{c.label.charAt(0).toUpperCase() + c.label.slice(1)}</option>
+                ))}
               </select>
               <input type="number" placeholder="Amount (₹) *" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required min="0" step="0.01" />
               <input type="date" title="Expense Date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />

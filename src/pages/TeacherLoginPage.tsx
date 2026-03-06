@@ -85,8 +85,8 @@ const TeacherLoginPage = () => {
           </button>
         </form>
 
-        <button className="portal-login-back" onClick={() => navigate('/')}>
-          ← Back to Home
+        <button className="portal-login-back" onClick={() => navigate('/login')}>
+          ← Back to Login
         </button>
       </div>
     </div>

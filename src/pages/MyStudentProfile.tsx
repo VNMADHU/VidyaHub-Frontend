@@ -74,9 +74,10 @@ const MyStudentProfile = () => {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try { await apiClient.logout() } catch { /* session may already be gone */ }
     dispatch(logout())
-    navigate('/student-login')
+    navigate('/login')
   }
 
   const getAttendanceStats = () => {
