@@ -8,6 +8,7 @@ import BulkImportModal from '@/components/BulkImportModal'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 const ExamManagementPage = () => {
   const { confirm } = useConfirm()
@@ -122,7 +123,6 @@ const ExamManagementPage = () => {
     setEditingId(null)
     setFormData({ name: '', classId: '', sectionId: '' })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (exam) => {
@@ -133,7 +133,6 @@ const ExamManagementPage = () => {
       sectionId: exam.sectionId ? String(exam.sectionId) : '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (examId) => {
@@ -204,8 +203,8 @@ const ExamManagementPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Create Exam'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Create Exam
           </button>
         </div>
       </div>
@@ -244,40 +243,45 @@ const ExamManagementPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Exam' : 'Create New Exam'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="Exam Name * (e.g., Mid-Term 2026, Final Exam, Unit Test 1)"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <select
-              value={formData.classId}
-              onChange={(e) => setFormData({ ...formData, classId: e.target.value, sectionId: '' })}
-            >
-              <option value="">Select Class (optional)</option>
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>{cls.name}</option>
-              ))}
-            </select>
-            <select
-              value={formData.sectionId}
-              onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
-              disabled={!formData.classId}
-            >
-              <option value="">Select Section (optional)</option>
-              {formSections.map(sec => (
-                <option key={sec.id} value={sec.id}>{sec.name}</option>
-              ))}
-            </select>
-            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-              {editingId ? 'Update Exam' : 'Create Exam'}
-            </button>
+        <Modal title={editingId ? 'Edit Exam' : 'Create New Exam'} onClose={() => setShowForm(false)} footer={<button type="submit" form="exam-mgmt-form" className="btn primary">{editingId ? 'Update Exam' : 'Create Exam'}</button>}>
+          <form id="exam-mgmt-form" onSubmit={handleSubmit} className="form-grid">
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Exam Name *</span>
+              <input
+                type="text"
+                placeholder="Exam Name * (e.g., Mid-Term 2026, Final Exam, Unit Test 1)"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Class</span>
+              <select
+                value={formData.classId}
+                onChange={(e) => setFormData({ ...formData, classId: e.target.value, sectionId: '' })}
+              >
+                <option value="">Select Class (optional)</option>
+                {classes.map(cls => (
+                  <option key={cls.id} value={cls.id}>{cls.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Section</span>
+              <select
+                value={formData.sectionId}
+                onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                disabled={!formData.classId}
+              >
+                <option value="">Select Section (optional)</option>
+                {formSections.map(sec => (
+                  <option key={sec.id} value={sec.id}>{sec.name}</option>
+                ))}
+              </select>
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

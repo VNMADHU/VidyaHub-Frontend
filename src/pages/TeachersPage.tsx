@@ -10,6 +10,7 @@ import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { useToast } from '@/components/ToastContainer'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 // Validation helpers
 const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
@@ -110,7 +111,6 @@ const TeachersPage = () => {
     setEditingId(null)
     setFormData(EMPTY_TEACHER_FORM)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (teacher) => {
@@ -235,8 +235,8 @@ const TeachersPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Teacher'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Teacher
           </button>
         </div>
       </div>
@@ -249,8 +249,7 @@ const TeachersPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Teacher' : 'Add New Teacher'}</h3>
+        <Modal title={editingId ? 'Edit Teacher' : 'Add New Teacher'} onClose={() => setShowForm(false)} footer={<button type="submit" form="teacher-form" className="btn primary">{editingId ? 'Update Teacher' : 'Add Teacher'}</button>}>
           {formErrors.length > 0 && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem' }}>
               {formErrors.map((err, i) => (
@@ -258,142 +257,187 @@ const TeachersPage = () => {
               ))}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="First Name *"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Last Name *"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              required
-            />
-            <input
-              type="email"
-              placeholder="Email *"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-            <input
-              type="tel"
-              placeholder="Phone Number (10 digits)"
-              value={formData.phoneNumber}
-              onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              pattern="[6-9][0-9]{9}"
-              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
-              maxLength={10}
-            />
-            <select
-              value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-            >
-              <option value="">-- Select Subject --</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Qualification"
-              value={formData.qualification}
-              onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
-            />
-            <input
-              type="number"
-              placeholder="Years of Experience"
-              value={formData.experience}
-              onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Teacher ID (for teacher login)"
-              value={formData.teacherId}
-              onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
-            />
-            <input
-              type="date"
-              placeholder="Date of Birth"
-              title="Date of Birth"
-              value={formData.dateOfBirth}
-              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-            />
-            <select
-              value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-            >
-              <option value="">Gender</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-            <select
-              value={formData.designation}
-              onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
-            >
-              <option value="">Designation</option>
-              {teacherDesignations.map((d) => (
-                <option key={d.id} value={d.label}>{d.label}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Department (Science, Commerce, Arts...)"
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-            />
-            <input
-              type="date"
-              placeholder="Joining Date"
-              title="Joining Date"
-              value={formData.joiningDate}
-              onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-            />
-            <select
-              value={formData.bloodGroup}
-              onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-            >
-              <option value="">Blood Group</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Aadhaar Number (12 digits)"
-              value={formData.aadhaarNumber}
-              onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })}
-              maxLength={12}
-            />
-            <input
-              type="text"
-              placeholder="PAN Number (e.g., ABCDE1234F)"
-              value={formData.panNumber}
-              onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase().slice(0, 10) })}
-              maxLength={10}
-            />
-            <textarea
-              placeholder="Address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              rows="2"
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-              {editingId ? 'Update Teacher' : 'Add Teacher'}
-            </button>
+          <form id="teacher-form" onSubmit={handleSubmit} className="form-grid">
+            <label>
+              <span className="field-label">First Name *</span>
+              <input
+                type="text"
+                placeholder="First Name *"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Last Name *</span>
+              <input
+                type="text"
+                placeholder="Last Name *"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Email *</span>
+              <input
+                type="email"
+                placeholder="Email *"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Phone Number</span>
+              <input
+                type="tel"
+                placeholder="Phone Number (10 digits)"
+                value={formData.phoneNumber}
+                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                pattern="[6-9][0-9]{9}"
+                title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                maxLength={10}
+              />
+            </label>
+            <label>
+              <span className="field-label">Subject</span>
+              <select
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+              >
+                <option value="">-- Select Subject --</option>
+                {subjects.map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Qualification</span>
+              <input
+                type="text"
+                placeholder="Qualification"
+                value={formData.qualification}
+                onChange={(e) => setFormData({ ...formData, qualification: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Years of Experience</span>
+              <input
+                type="number"
+                placeholder="Years of Experience"
+                value={formData.experience}
+                onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Teacher ID</span>
+              <input
+                type="text"
+                placeholder="Teacher ID (for teacher login)"
+                value={formData.teacherId}
+                onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Date of Birth</span>
+              <input
+                type="date"
+                title="Date of Birth"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Gender</span>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              >
+                <option value="">Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Designation</span>
+              <select
+                value={formData.designation}
+                onChange={(e) => setFormData({ ...formData, designation: e.target.value })}
+              >
+                <option value="">Designation</option>
+                {teacherDesignations.map((d) => (
+                  <option key={d.id} value={d.label}>{d.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Department</span>
+              <input
+                type="text"
+                placeholder="Department (Science, Commerce, Arts...)"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Joining Date</span>
+              <input
+                type="date"
+                title="Joining Date"
+                value={formData.joiningDate}
+                onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Blood Group</span>
+              <select
+                value={formData.bloodGroup}
+                onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+              >
+                <option value="">Blood Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Aadhaar Number</span>
+              <input
+                type="text"
+                placeholder="Aadhaar Number (12 digits)"
+                value={formData.aadhaarNumber}
+                onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+                maxLength={12}
+              />
+            </label>
+            <label>
+              <span className="field-label">PAN Number</span>
+              <input
+                type="text"
+                placeholder="PAN Number (e.g., ABCDE1234F)"
+                value={formData.panNumber}
+                onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase().slice(0, 10) })}
+                maxLength={10}
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Address</span>
+              <textarea
+                placeholder="Address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                rows="2"
+              />
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

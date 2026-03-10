@@ -8,6 +8,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CLASS_OPTIONS = [
@@ -137,7 +138,6 @@ const AdmissionsPage = () => {
     })
     setEditingId(record.id)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -176,31 +176,6 @@ const AdmissionsPage = () => {
   const approvedCount = countByStatus('approved')
   const enrolledCount = countByStatus('enrolled')
 
-  const field = (key, label, type = 'text', required = false, placeholder = '') => (
-    <div className="form-group" key={key}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>{label}{required && <span style={{ color: 'red' }}>*</span>}</label>
-      <input
-        type={type}
-        value={formData[key]}
-        onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-        required={required}
-        placeholder={placeholder}
-      />
-    </div>
-  )
-
-  const selectField = (key, label, options, required = false) => (
-    <div className="form-group" key={key}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}>{label}{required && <span style={{ color: 'red' }}>*</span>}</label>
-      <select value={formData[key]} onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}>
-        {!required && <option value="">— Select —</option>}
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
-    </div>
-  )
-
   return (
     <div className="page-container">
       {/* ── Header ── */}
@@ -226,77 +201,104 @@ const AdmissionsPage = () => {
               else { setFormData(EMPTY_FORM); setEditingId(null); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
             }}
           >
-            {showForm && !editingId ? 'Cancel' : '+ New Application'}
+            + New Application
           </button>
         </div>
       </div>
 
       {/* ── Form ── */}
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? '✏️ Edit Admission' : '📋 New Admission Application'}</h3>
-          <form onSubmit={handleSubmit}>
+        <Modal title={editingId ? '✏️ Edit Admission' : '📋 New Admission Application'} onClose={() => { setShowForm(false); setEditingId(null); setFormData(EMPTY_FORM) }} footer={<button type="submit" form="admission-form" className="btn primary">{editingId ? 'Update' : 'Submit Application'}</button>}>
+          <form id="admission-form" onSubmit={handleSubmit} className="form-grid">
 
-            {/* Section: Applicant */}
-            <h4 style={{ marginBottom: '0.5rem', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.4rem' }}>
-              Applicant Details
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              📋 Applicant Details
             </h4>
-            <div className="form-grid">
-              {field('applicantName', 'Applicant Name', 'text', true, 'Full name of student')}
-              {field('dateOfBirth', 'Date of Birth', 'date', false)}
-              {selectField('gender', 'Gender', ['Male', 'Female', 'Other'])}
-              {selectField('applyingForClass', 'Applying For Class', CLASS_OPTIONS, true)}
-              {field('academicYear', 'Academic Year', 'text', false, '2025-26')}
-              {selectField('category', 'Category', CATEGORY_OPTIONS)}
-            </div>
+            <label>
+              <span className="field-label">Applicant Name *</span>
+              <input type="text" placeholder="Full name of student" value={formData.applicantName} onChange={(e) => setFormData({ ...formData, applicantName: e.target.value })} required />
+            </label>
+            <label>
+              <span className="field-label">Date of Birth</span>
+              <input type="date" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
+            </label>
+            <label>
+              <span className="field-label">Gender</span>
+              <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}>
+                <option value="">— Select —</option>
+                {['Male', 'Female', 'Other'].map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Applying For Class *</span>
+              <select value={formData.applyingForClass} onChange={(e) => setFormData({ ...formData, applyingForClass: e.target.value })} required>
+                {CLASS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Academic Year</span>
+              <input type="text" placeholder="2025-26" value={formData.academicYear} onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })} />
+            </label>
+            <label>
+              <span className="field-label">Category</span>
+              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+                <option value="">— Select —</option>
+                {CATEGORY_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </label>
 
-            {/* Section: Guardian */}
-            <h4 style={{ margin: '1rem 0 0.5rem', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.4rem' }}>
-              Guardian / Parent Details
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              👨‍👩‍👧 Guardian / Parent Details
             </h4>
-            <div className="form-grid">
-              {field('guardianName', 'Guardian Name', 'text', true, 'Father / Mother / Guardian')}
-              {field('guardianPhone', 'Phone Number', 'tel', true, '9876543210')}
-              {field('guardianEmail', 'Email', 'email', false, 'optional')}
-              {field('address', 'Address', 'text', false)}
-            </div>
+            <label>
+              <span className="field-label">Guardian Name *</span>
+              <input type="text" placeholder="Father / Mother / Guardian" value={formData.guardianName} onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })} required />
+            </label>
+            <label>
+              <span className="field-label">Phone Number *</span>
+              <input type="tel" placeholder="9876543210" value={formData.guardianPhone} onChange={(e) => setFormData({ ...formData, guardianPhone: e.target.value })} required />
+            </label>
+            <label>
+              <span className="field-label">Email</span>
+              <input type="email" placeholder="optional" value={formData.guardianEmail} onChange={(e) => setFormData({ ...formData, guardianEmail: e.target.value })} />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Address</span>
+              <textarea rows={2} placeholder="Address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
+            </label>
 
-            {/* Section: Previous School */}
-            <h4 style={{ margin: '1rem 0 0.5rem', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.4rem' }}>
-              Previous School (if any)
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              🏫 Previous School (if any)
             </h4>
-            <div className="form-grid">
-              {field('previousSchool', 'Previous School Name', 'text', false)}
-              {field('previousClass', 'Previous Class', 'text', false, 'e.g. Class 5')}
-            </div>
+            <label>
+              <span className="field-label">Previous School Name</span>
+              <input type="text" placeholder="Previous school name" value={formData.previousSchool} onChange={(e) => setFormData({ ...formData, previousSchool: e.target.value })} />
+            </label>
+            <label>
+              <span className="field-label">Previous Class</span>
+              <input type="text" placeholder="e.g. Class 5" value={formData.previousClass} onChange={(e) => setFormData({ ...formData, previousClass: e.target.value })} />
+            </label>
 
-            {/* Section: Status */}
-            <h4 style={{ margin: '1rem 0 0.5rem', color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: '0.4rem' }}>
-              Application Status
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              📊 Application Status
             </h4>
-            <div className="form-grid">
-              {selectField('status', 'Status', STATUS_OPTIONS, true)}
-              {field('interviewDate', 'Interview Date', 'date', false)}
-            </div>
+            <label>
+              <span className="field-label">Status *</span>
+              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} required>
+                {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Interview Date</span>
+              <input type="date" value={formData.interviewDate} onChange={(e) => setFormData({ ...formData, interviewDate: e.target.value })} />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Remarks</span>
+              <textarea rows={3} placeholder="Any additional notes..." value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} />
+            </label>
 
-            <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-              <label>Remarks</label>
-              <textarea
-                rows={3}
-                value={formData.remarks}
-                onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-                placeholder="Any additional notes..."
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-              <button type="submit" className="btn primary">{editingId ? 'Update' : 'Submit Application'}</button>
-              <button type="button" className="btn outline" onClick={() => { setShowForm(false); setEditingId(null); setFormData(EMPTY_FORM) }}>
-                Cancel
-              </button>
-            </div>
           </form>
-        </div>
+        </Modal>
       )}
 
       {/* ── Filters ── */}

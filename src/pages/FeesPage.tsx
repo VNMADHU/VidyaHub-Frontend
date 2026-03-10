@@ -9,6 +9,8 @@ import { useToast } from '@/components/ToastContainer'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
+import { useAppSelector } from '@/store'
 
 // Fee types loaded dynamically from Settings > Finance Types
 const TERMS = ['Term 1', 'Term 2', 'Term 3', 'Annual']
@@ -16,6 +18,14 @@ const TERMS = ['Term 1', 'Term 2', 'Term 3', 'Annual']
 const FeesPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
+
+  // ── Permission checks ──────────────────────────────────────────────────────
+  const authUser = useAppSelector((state) => state.auth.user)
+  const authRole = useAppSelector((state) => state.auth.role)
+  // super-admin always allowed; school-admin only if DB field is true
+  const canEditFees   = authRole === 'super-admin' || authUser?.feeCanEdit === true
+  const canDeleteFees = authRole === 'super-admin' || authUser?.feeCanDelete === true
+  // ──────────────────────────────────────────────────────────────────────────
   const [fees, setFees] = useState([])
   const [students, setStudents] = useState([])
   const [feeTypes, setFeeTypes] = useState([])
@@ -23,6 +33,9 @@ const FeesPage = () => {
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterDate, setFilterDate] = useState('')
+  const [filterClass, setFilterClass] = useState('')
+  const [classes, setClasses] = useState([])
   const [showPayModal, setShowPayModal] = useState(null)
   const [paymentData, setPaymentData] = useState({ paymentMode: 'online', paidAmount: '', transactionId: '' })
   const [school, setSchool] = useState(null)
@@ -31,6 +44,7 @@ const FeesPage = () => {
     feeType: 'tuition',
     description: '',
     amount: '',
+    discount: '',
     dueDate: '',
     status: 'pending',
     academicYear: '2025-2026',
@@ -52,14 +66,16 @@ const FeesPage = () => {
 
   const loadData = async () => {
     try {
-      const [feesRes, studentsRes, feeTypesRes] = await Promise.all([
+      const [feesRes, studentsRes, feeTypesRes, classesRes] = await Promise.all([
         apiClient.listFees(),
         apiClient.listStudents(),
         apiClient.listMasterData('fee-types').catch(() => []),
+        apiClient.listClasses().catch(() => []),
       ])
       setFees(feesRes?.data || [])
       setStudents(studentsRes?.data || [])
       setFeeTypes(Array.isArray(feeTypesRes) ? feeTypesRes : feeTypesRes?.data || [])
+      setClasses(Array.isArray(classesRes) ? classesRes : classesRes?.data || [])
     } catch (error) {
       console.error('Failed to load data:', error)
     } finally {
@@ -91,6 +107,7 @@ const FeesPage = () => {
       feeType: 'tuition',
       description: '',
       amount: '',
+      discount: '',
       dueDate: '',
       status: 'pending',
       academicYear: '2025-2026',
@@ -102,7 +119,6 @@ const FeesPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (fee) => {
@@ -112,6 +128,7 @@ const FeesPage = () => {
       feeType: fee.feeType,
       description: fee.description || '',
       amount: fee.amount,
+      discount: fee.discount || '',
       dueDate: fee.dueDate?.split('T')[0] || '',
       status: fee.status,
       academicYear: fee.academicYear || '2025-2026',
@@ -209,8 +226,10 @@ const FeesPage = () => {
       ['Academic Year', fee.academicYear || '-'],
       ['Term', fee.term || '-'],
       ['Total Amount', `\u20B9${(fee.amount || 0).toLocaleString('en-IN')}`],
-      ['Amount Paid', `\u20B9${(fee.paidAmount || 0).toLocaleString('en-IN')}`],
-      ['Balance', `\u20B9${((fee.amount || 0) - (fee.paidAmount || 0)).toLocaleString('en-IN')}`],
+      ...(fee.discount > 0 ? [['Discount', `-\u20B9${(fee.discount || 0).toLocaleString('en-IN')}`]] : []),
+      ...(fee.discount > 0 ? [['Net Payable', `\u20B9${((fee.amount || 0) - (fee.discount || 0)).toLocaleString('en-IN')}`]] : []),
+      ['Amount Paid', `\u20B9${(fee.status === 'paid' ? ((fee.amount || 0) - (fee.discount || 0)) : (fee.paidAmount || 0)).toLocaleString('en-IN')}`],
+      ['Balance', `\u20B9${(Math.max(0, (fee.amount || 0) - (fee.discount || 0) - (fee.status === 'paid' ? ((fee.amount || 0) - (fee.discount || 0)) : (fee.paidAmount || 0)))).toLocaleString('en-IN')}`],
       ['Payment Mode', fee.paymentMode || '-'],
       ['Transaction ID', fee.transactionId || '-'],
       ['Status', (fee.status || '').toUpperCase()],
@@ -250,8 +269,27 @@ const FeesPage = () => {
     }
   }
 
-  const totalFees = fees.reduce((sum, f) => sum + f.amount, 0)
-  const totalPaid = fees.reduce((sum, f) => sum + (f.paidAmount || 0), 0)
+  const filteredFees = fees.filter((fee) => {
+    if (filterDate && fee.dueDate?.split('T')[0] !== filterDate) return false
+    if (filterClass && String(fee.student?.classId) !== filterClass) return false
+    const query = searchQuery.toLowerCase()
+    const studentName = `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.toLowerCase()
+    return (
+      studentName.includes(query) ||
+      fee.feeType?.toLowerCase().includes(query) ||
+      fee.status?.toLowerCase().includes(query) ||
+      fee.student?.admissionNumber?.toLowerCase().includes(query) ||
+      fee.student?.rollNumber?.toLowerCase().includes(query) ||
+      fee.academicYear?.toLowerCase().includes(query) ||
+      fee.term?.toLowerCase().includes(query)
+    )
+  })
+
+  const totalFees = filteredFees.reduce((sum, f) => sum + (f.amount - (f.discount || 0)), 0)
+  const totalPaid = filteredFees.reduce((sum, f) => {
+    if (f.status === 'paid') return sum + (f.amount - (f.discount || 0))
+    return sum + (f.paidAmount || 0)
+  }, 0)
   const totalPending = totalFees - totalPaid
 
   const feeExportColumns = [
@@ -282,20 +320,6 @@ const FeesPage = () => {
     exportToPDF(mapFeesForExport(filteredFees), 'Fees', feeExportColumns, 'Fee Records', 'landscape')
   }
 
-  const filteredFees = fees.filter((fee) => {
-    const query = searchQuery.toLowerCase()
-    const studentName = `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.toLowerCase()
-    return (
-      studentName.includes(query) ||
-      fee.feeType?.toLowerCase().includes(query) ||
-      fee.status?.toLowerCase().includes(query) ||
-      fee.student?.admissionNumber?.toLowerCase().includes(query) ||
-      fee.student?.rollNumber?.toLowerCase().includes(query) ||
-      fee.academicYear?.toLowerCase().includes(query) ||
-      fee.term?.toLowerCase().includes(query)
-    )
-  })
-
   const { paginatedItems: paginatedFees, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredFees)
 
   return (
@@ -310,8 +334,8 @@ const FeesPage = () => {
             📥 PDF
           </button>
           <button style={exportButtonStyle} onClick={() => printTable('fees-print-area', 'Fee Records')} title="Print"><Printer size={16} /> Print</button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Assign Fee'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Assign Fee
           </button>
         </div>
       </div>
@@ -332,94 +356,163 @@ const FeesPage = () => {
         </div>
         <div className="stat-card">
           <span className="stat-label">Records</span>
-          <span className="stat-number">{fees.length}</span>
+          <span className="stat-number">{filteredFees.length}</span>
         </div>
       </div>
 
-      <SearchBar
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search by student name, roll number, fee type, status..."
-      />
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '220px' }}>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search by student name, roll number, fee type, status..."
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', paddingBottom: '1.5rem' }}>
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            style={{ padding: '0.75rem 0.75rem', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--card-bg, #fff)', color: 'var(--text, #1e293b)', cursor: 'pointer' }}
+            title="Filter by due date"
+          />
+          <select
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            style={{ padding: '0.75rem 0.75rem', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--card-bg, #fff)', color: 'var(--text, #1e293b)', cursor: 'pointer', minWidth: '140px' }}
+          >
+            <option value="">All Classes</option>
+            {classes.map((c) => (
+              <option key={c.id} value={String(c.id)}>{c.name}</option>
+            ))}
+          </select>
+          {(filterDate || filterClass) && (
+            <button
+              onClick={() => { setFilterDate(''); setFilterClass('') }}
+              className="btn outline"
+              style={{ fontSize: '0.8rem', padding: '0.65rem 0.9rem', whiteSpace: 'nowrap' }}
+            >
+              ✕ Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="page-content-scrollable">
         {showForm && (
-          <div className="form-card">
-            <h3>{editingId ? 'Edit Fee' : 'Assign New Fee'}</h3>
-            <form onSubmit={handleSubmit} className="form-grid">
-              <select
-                value={formData.studentId}
-                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                required
-              >
-                <option value="">Select Student *</option>
-                {students.map(s => (
-                  <option key={s.id} value={s.id}>
-                    {s.firstName} {s.lastName} ({s.admissionNumber}{s.rollNumber ? ` / Roll: ${s.rollNumber}` : ''})
-                  </option>
-                ))}
-              </select>
-              <select
-                value={formData.feeType}
-                onChange={(e) => setFormData({ ...formData, feeType: e.target.value })}
-                required
-              >
-                {feeTypes.map(t => (
-                  <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)} Fee</option>
-                ))}
-              </select>
-              <input
-                type="number"
-                placeholder="Amount (₹) *"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                required
-                min="1"
-              />
-              <input
-                type="date"
-                placeholder="Due Date *"
-                title="Due Date"
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                required
-              />
-              <input
-                type="text"
-                placeholder="Description (optional)"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-              <input
-                type="text"
-                placeholder="Academic Year (e.g. 2025-2026)"
-                value={formData.academicYear}
-                onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
-              />
-              <select
-                value={formData.term}
-                onChange={(e) => setFormData({ ...formData, term: e.target.value })}
-              >
-                {TERMS.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              {editingId && (
+          <Modal title={editingId ? 'Edit Fee' : 'Assign New Fee'} onClose={() => setShowForm(false)} footer={<button type="submit" form="fee-form" className="btn primary">{editingId ? 'Update Fee' : 'Assign Fee'}</button>}>
+            <form id="fee-form" onSubmit={handleSubmit} className="form-grid">
+              <label>
+                <span className="field-label">Student *</span>
                 <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  value={formData.studentId}
+                  onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                  required
                 >
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="partial">Partial</option>
+                  <option value="">Select Student *</option>
+                  {students.map(s => (
+                    <option key={s.id} value={s.id}>
+                      {s.firstName} {s.lastName} ({s.admissionNumber}{s.rollNumber ? ` / Roll: ${s.rollNumber}` : ''})
+                    </option>
+                  ))}
                 </select>
+              </label>
+              <label>
+                <span className="field-label">Fee Type</span>
+                <select
+                  value={formData.feeType}
+                  onChange={(e) => setFormData({ ...formData, feeType: e.target.value })}
+                  required
+                >
+                  {feeTypes.map(t => (
+                    <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)} Fee</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="field-label">Amount (₹) *</span>
+                <input
+                  type="number"
+                  placeholder="Amount (₹) *"
+                  value={formData.amount}
+                  onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                  required
+                  min="1"
+                />
+              </label>
+              <label>
+                <span className="field-label">Discount (₹)</span>
+                <input
+                  type="number"
+                  placeholder="Discount amount (₹) — leave blank for none"
+                  value={formData.discount}
+                  onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                  min="0"
+                  max={formData.amount || undefined}
+                />
+              </label>
+              {formData.amount && Number(formData.discount) > 0 && (
+                <div style={{ gridColumn: '1 / -1', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', color: '#166534', display: 'flex', gap: '1.5rem' }}>
+                  <span>Original: <strong>₹{Number(formData.amount).toLocaleString()}</strong></span>
+                  <span>Discount: <strong>-₹{Number(formData.discount).toLocaleString()}</strong></span>
+                  <span>Net Payable: <strong>₹{(Number(formData.amount) - Number(formData.discount)).toLocaleString()}</strong></span>
+                </div>
               )}
-              <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-                {editingId ? 'Update Fee' : 'Assign Fee'}
-              </button>
+              <label>
+                <span className="field-label">Due Date *</span>
+                <input
+                  type="date"
+                  title="Due Date"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  required
+                />
+              </label>
+              <label>
+                <span className="field-label">Description</span>
+                <input
+                  type="text"
+                  placeholder="Description (optional)"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="field-label">Academic Year</span>
+                <input
+                  type="text"
+                  placeholder="Academic Year (e.g. 2025-2026)"
+                  value={formData.academicYear}
+                  onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
+                />
+              </label>
+              <label>
+                <span className="field-label">Term</span>
+                <select
+                  value={formData.term}
+                  onChange={(e) => setFormData({ ...formData, term: e.target.value })}
+                >
+                  {TERMS.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </label>
+              {editingId && (
+                <label>
+                  <span className="field-label">Status</span>
+                  <select
+                    value={formData.status}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="partial">Partial</option>
+                  </select>
+                </label>
+              )}
             </form>
-          </div>
+          </Modal>
         )}
 
         {/* Payment Modal */}
@@ -427,15 +520,15 @@ const FeesPage = () => {
           <div className="form-card" style={{ border: '2px solid var(--primary)', marginBottom: '1.5rem' }}>
             <h3>💳 Record Payment — {showPayModal.student?.firstName} {showPayModal.student?.lastName}</h3>
             <p style={{ color: 'var(--muted)', margin: '0 0 1rem' }}>
-              {showPayModal.feeType} Fee — Amount: ₹{showPayModal.amount} | Already Paid: ₹{showPayModal.paidAmount || 0} | Balance: ₹{showPayModal.amount - (showPayModal.paidAmount || 0)}
+              {showPayModal.feeType} Fee — Amount: ₹{showPayModal.amount}{showPayModal.discount > 0 ? ` (disc: -₹${showPayModal.discount})` : ''} | Net: ₹{(showPayModal.amount - (showPayModal.discount || 0)).toLocaleString()} | Already Paid: ₹{showPayModal.paidAmount || 0} | Balance: ₹{(showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)).toLocaleString()}
             </p>
             <form onSubmit={handlePay} className="form-grid">
               <input
                 type="number"
-                placeholder={`Amount to pay (₹${showPayModal.amount - (showPayModal.paidAmount || 0)})`}
+                placeholder={`Amount to pay (₹${(showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)).toLocaleString()})`}
                 value={paymentData.paidAmount}
                 onChange={(e) => setPaymentData({ ...paymentData, paidAmount: e.target.value })}
-                max={showPayModal.amount - (showPayModal.paidAmount || 0)}
+                max={showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)}
                 min="1"
               />
               <select
@@ -495,10 +588,17 @@ const FeesPage = () => {
                       <td>{fee.student?.rollNumber || '-'}</td>
                       <td style={{ textTransform: 'capitalize' }}>{fee.feeType}</td>
                       <td>{fee.term || '-'}</td>
-                      <td>₹{fee.amount?.toLocaleString()}</td>
-                      <td style={{ color: '#16a34a', fontWeight: 600 }}>₹{(fee.paidAmount || 0).toLocaleString()}</td>
-                      <td style={{ color: fee.amount - (fee.paidAmount || 0) > 0 ? '#dc2626' : '#16a34a', fontWeight: 600 }}>
-                        ₹{(fee.amount - (fee.paidAmount || 0)).toLocaleString()}
+                      <td>
+                        <div>₹{fee.amount?.toLocaleString()}</div>
+                        {fee.discount > 0 && (
+                          <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 500 }}>-₹{fee.discount.toLocaleString()} disc</div>
+                        )}
+                      </td>
+                      <td style={{ color: '#16a34a', fontWeight: 600 }}>
+                        ₹{(fee.status === 'paid' ? (fee.amount - (fee.discount || 0)) : (fee.paidAmount || 0)).toLocaleString()}
+                      </td>
+                      <td style={{ color: (() => { const net = fee.amount - (fee.discount || 0); const paid = fee.status === 'paid' ? net : (fee.paidAmount || 0); return net - paid > 0 ? '#dc2626' : '#16a34a' })(), fontWeight: 600 }}>
+                        {(() => { const net = fee.amount - (fee.discount || 0); const paid = fee.status === 'paid' ? net : (fee.paidAmount || 0); return `₹${(net - paid).toLocaleString()}` })()}
                       </td>
                       <td>{fee.dueDate ? new Date(fee.dueDate).toLocaleDateString() : '-'}</td>
                       <td>
@@ -541,12 +641,16 @@ const FeesPage = () => {
                               <FileText size={16} />
                             </button>
                           )}
-                          <button className="btn-icon edit" onClick={() => handleEdit(fee)} aria-label="Edit fee">
-                            <SquarePen size={16} />
-                          </button>
-                          <button className="btn-icon danger" onClick={() => handleDelete(fee.id)} aria-label="Delete fee">
-                            <Trash2 size={16} />
-                          </button>
+                          {canEditFees && (
+                            <button className="btn-icon edit" onClick={() => handleEdit(fee)} aria-label="Edit fee">
+                              <SquarePen size={16} />
+                            </button>
+                          )}
+                          {canDeleteFees && (
+                            <button className="btn-icon danger" onClick={() => handleDelete(fee.id)} aria-label="Delete fee">
+                              <Trash2 size={16} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

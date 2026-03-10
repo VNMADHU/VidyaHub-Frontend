@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react'
 import { adminApi, schoolApi } from '@/services/api'
 import { useToast } from '@/components/ToastContainer'
+import Modal from '@/components/Modal'
 import type { AdminUser, School } from '@/types'
 
 const ALL_MODULES = [
@@ -32,6 +33,8 @@ const emptyForm = {
   phone: '',
   schoolId: '',
   modulePermissions: null as string[] | null, // null = all modules
+  feeCanEdit: false,
+  feeCanDelete: false,
 }
 
 type FormData = typeof emptyForm
@@ -104,10 +107,14 @@ const AdminManagementPage = () => {
 
   const openEdit = (admin: AdminUser) => {
     setEditId(admin.id)
-    const perms: string[] | null = (() => {
-      if (!admin.modulePermissions) return null
-      try { return JSON.parse(admin.modulePermissions) as string[] } catch { return null }
+    const rawPerms = admin.modulePermissions
+    const allPerms: string[] | null = (() => {
+      if (!rawPerms) return null
+      if (Array.isArray(rawPerms)) return rawPerms as string[]
+      try { return JSON.parse(rawPerms as unknown as string) as string[] } catch { return null }
     })()
+    // Separate module keys from action tokens
+    const moduleKeys = allPerms ? allPerms.filter((p) => !p.includes(':')) : null
     setForm({
       email:             admin.email,
       password:          '',
@@ -115,7 +122,9 @@ const AdminManagementPage = () => {
       lastName:          admin.profile?.lastName  ?? '',
       phone:             admin.phone ?? '',
       schoolId:          admin.schoolId ? String(admin.schoolId) : '',
-      modulePermissions: perms,
+      modulePermissions: moduleKeys,
+      feeCanEdit:        admin.feeCanEdit ?? false,
+      feeCanDelete:      admin.feeCanDelete ?? false,
     })
     setShowForm(true)
   }
@@ -139,13 +148,20 @@ const AdminManagementPage = () => {
     if (!form.phone.trim()) { toast.error('Mobile number is required.'); return }
     setSaving(true)
     try {
+      // Build final permissions: module keys only (fee permissions are separate DB fields)
+      const finalPermissions: string[] | null = (() => {
+        if (form.modulePermissions === null) return null // full access
+        return [...form.modulePermissions]
+      })()
       const payload = {
         email:             form.email,
         firstName:         form.firstName,
         lastName:          form.lastName,
         phone:             form.phone,
         schoolId:          form.schoolId ? Number(form.schoolId) : undefined,
-        modulePermissions: form.modulePermissions,
+        modulePermissions: finalPermissions,
+        feeCanEdit:        form.feeCanEdit,
+        feeCanDelete:      form.feeCanDelete,
         ...(form.password ? { password: form.password } : {}),
       }
       if (editId) {
@@ -194,17 +210,19 @@ const AdminManagementPage = () => {
     }
   }
 
-  const moduleLabel = (perms: string | null | undefined) => {
+  const moduleLabel = (perms: string[] | string | null | undefined) => {
     if (!perms) return <span style={{ color: '#22c55e', fontSize: '0.8rem' }}>● All modules</span>
-    try {
-      const arr: string[] = JSON.parse(perms)
-      if (arr.length === 0) return <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>No access</span>
-      return (
-        <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>
-          {arr.length} module{arr.length !== 1 ? 's' : ''}: {arr.join(', ')}
-        </span>
-      )
-    } catch { return <span style={{ opacity: 0.5 }}>—</span> }
+    const arr: string[] = Array.isArray(perms)
+      ? perms
+      : (() => { try { return JSON.parse(perms) } catch { return [] } })()
+    // Filter out action tokens like 'fees:canEdit'
+    const modules = arr.filter((p) => !p.includes(':'))
+    if (modules.length === 0) return <span style={{ color: '#ef4444', fontSize: '0.8rem' }}>No access</span>
+    return (
+      <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>
+        {modules.length} module{modules.length !== 1 ? 's' : ''}: {modules.join(', ')}
+      </span>
+    )
   }
 
   return (
@@ -273,18 +291,13 @@ const AdminManagementPage = () => {
 
       {/* ── Create / Edit modal ── */}
       {showForm && (
-        <div className="modal-overlay" onClick={() => setShowForm(false)}>
-          <div className="modal" style={{ maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editId ? 'Edit Admin' : 'Create Admin'}</h2>
-              <button className="modal-close" onClick={() => setShowForm(false)}>×</button>
-            </div>
+        <Modal title={editId ? 'Edit Admin' : 'Create Admin'} onClose={() => setShowForm(false)} size="md">
             {!editId && (
-              <p style={{ padding: '0 1.25rem', fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 0 }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 0, marginBottom: '1rem' }}>
                 📧 A welcome email with credentials and a verification code will be sent automatically.
               </p>
             )}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0 1.25rem 1.25rem' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                 <label>
                   <span className="field-label">First Name *</span>
@@ -364,6 +377,57 @@ const AdminManagementPage = () => {
                 )}
               </div>
 
+              {/* ── Fees Module Specific Permissions ── */}
+              <div>
+                  <span className="field-label" style={{ display: 'block', marginBottom: '0.5rem' }}>💰 Fee Permissions</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {/* Can Edit row */}
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      border: '1px solid var(--border)', borderRadius: '10px',
+                      padding: '0.75rem 1rem', cursor: 'pointer',
+                      background: form.feeCanEdit ? 'rgba(58,102,255,0.04)' : 'var(--surface)',
+                      transition: 'background 0.15s',
+                    }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 500, fontSize: '0.92rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.feeCanEdit}
+                          onChange={(e) => setForm((p) => ({ ...p, feeCanEdit: e.target.checked }))}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }}
+                        />
+                        ✏️ Edit Fees
+                      </span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Allow modifying fee records</span>
+                    </label>
+                    {/* Can Delete row */}
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      border: '1px solid var(--border)', borderRadius: '10px',
+                      padding: '0.75rem 1rem', cursor: 'pointer',
+                      background: form.feeCanDelete ? 'rgba(58,102,255,0.04)' : 'var(--surface)',
+                      transition: 'background 0.15s',
+                    }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 500, fontSize: '0.92rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.feeCanDelete}
+                          onChange={(e) => setForm((p) => ({ ...p, feeCanDelete: e.target.checked }))}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }}
+                        />
+                        🗑️ Delete Fees
+                      </span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Allow permanently removing fee records</span>
+                    </label>
+                    {/* Warning when both off */}
+                    {!form.feeCanEdit && !form.feeCanDelete && (
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.55rem 0.85rem' }}>
+                        ⚠️ Both fee permissions disabled — this admin can only add fees, not edit or delete.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <button className="btn primary" type="submit" disabled={saving}>
                   {saving ? 'Saving...' : editId ? 'Update Admin' : 'Create Admin'}
@@ -371,19 +435,13 @@ const AdminManagementPage = () => {
                 <button className="btn outline" type="button" onClick={() => setShowForm(false)}>Cancel</button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* ── Change Password modal ── */}
       {pwModal !== null && (
-        <div className="modal-overlay" onClick={() => setPwModal(null)}>
-          <div className="modal" style={{ maxWidth: '380px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>🔑 Change Password</h2>
-              <button className="modal-close" onClick={() => setPwModal(null)}>×</button>
-            </div>
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0 1.25rem 1.25rem' }}>
+        <Modal title="🔑 Change Password" onClose={() => setPwModal(null)} size="sm">
+            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0 }}>
                 The user's active session will be terminated and they will need to log in again with the new password.
               </p>
@@ -406,8 +464,7 @@ const AdminManagementPage = () => {
                 <button className="btn outline" type="button" onClick={() => setPwModal(null)}>Cancel</button>
               </div>
             </form>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   )

@@ -5,6 +5,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
+import Modal from '@/components/Modal'
 import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
@@ -66,7 +67,6 @@ const AnnouncementsPage = () => {
       targetAudience: 'All',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (announcement) => {
@@ -77,7 +77,6 @@ const AnnouncementsPage = () => {
       targetAudience: announcement.targetAudience || 'All',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (announcementId) => {
@@ -149,8 +148,8 @@ const AnnouncementsPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Announcement'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Announcement
           </button>
         </div>
       </div>
@@ -163,41 +162,44 @@ const AnnouncementsPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Announcement' : 'Create Announcement'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="Title *"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <textarea
-              placeholder="Message *"
-              value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              rows="4"
-              style={{ gridColumn: '1 / -1' }}
-              required
-            />
-            <select
-              value={formData.targetAudience}
-              onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
-              title="Target Audience"
-            >
-              <option value="All">📢 All (Everyone)</option>
-              <option value="Students">🎓 Students Only</option>
-              <option value="Teachers">👩‍🏫 Teachers Only</option>
-              <option value="Parents">👨‍👩‍👧 Parents Only</option>
-              <option value="Staff">🏢 Staff Only</option>
-            </select>
-            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-              {editingId ? 'Update Announcement' : 'Create Announcement'}
-            </button>
+        <Modal title={editingId ? 'Edit Announcement' : 'Create Announcement'} onClose={() => setShowForm(false)} footer={<button type="submit" form="announcement-form" className="btn primary">{editingId ? 'Update Announcement' : 'Create Announcement'}</button>}>
+          <form id="announcement-form" onSubmit={handleSubmit} className="form-grid">
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Title *</span>
+              <input
+                type="text"
+                placeholder="Title *"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Message *</span>
+              <textarea
+                placeholder="Message *"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                rows="4"
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Target Audience</span>
+              <select
+                value={formData.targetAudience}
+                onChange={(e) => setFormData({ ...formData, targetAudience: e.target.value })}
+                title="Target Audience"
+              >
+                <option value="All">📢 All (Everyone)</option>
+                <option value="Students">🎓 Students Only</option>
+                <option value="Teachers">👩‍🏫 Teachers Only</option>
+                <option value="Parents">👨‍👩‍👧 Parents Only</option>
+                <option value="Staff">🏢 Staff Only</option>
+              </select>
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {loading ? (

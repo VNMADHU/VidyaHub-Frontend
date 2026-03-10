@@ -9,6 +9,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 const EMPLOYEE_TYPES = ['teacher', 'driver', 'staff']
 // Leave types loaded dynamically from Settings > Lookups
@@ -140,7 +141,6 @@ const LeavesPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (leave) => {
@@ -271,8 +271,8 @@ const LeavesPage = () => {
           <button style={exportButtonStyle} onClick={() => exportToPDF(filteredLeaves, 'Leaves', exportColumns, 'Leave Records', 'landscape')} title="Export PDF">📥 PDF</button>
           <button style={exportButtonStyle} onClick={handlePrint} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Apply Leave'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Apply Leave
           </button>
         </div>
       </div>
@@ -296,59 +296,91 @@ const LeavesPage = () => {
 
       <div className="page-content-scrollable">
         {showForm && (
-          <div className="form-card">
-            <h3>{editingId ? 'Edit Leave' : 'Apply for Leave'}</h3>
-            <form onSubmit={handleSubmit} className="form-grid">
-              <select value={formData.employeeType} onChange={(e) => setFormData({ ...formData, employeeType: e.target.value, employeeId: '', employeeName: '' })}>
-                {EMPLOYEE_TYPES.map((t) => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                ))}
-              </select>
-
-              {employeeOptions.length > 0 ? (
-                <select value={formData.employeeId} onChange={(e) => handleEmployeeSelect(e.target.value)}>
-                  <option value="">-- Select {formData.employeeType} --</option>
-                  {employeeOptions.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+          <Modal title={editingId ? 'Edit Leave' : 'Apply for Leave'} onClose={() => setShowForm(false)} footer={<button type="submit" form="leave-form" className="btn primary">{editingId ? 'Update Leave' : 'Submit Leave Application'}</button>}>
+            <form id="leave-form" onSubmit={handleSubmit} className="form-grid">
+              <label>
+                <span className="field-label">Employee Type</span>
+                <select value={formData.employeeType} onChange={(e) => setFormData({ ...formData, employeeType: e.target.value, employeeId: '', employeeName: '' })}>
+                  {EMPLOYEE_TYPES.map((t) => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                   ))}
                 </select>
+              </label>
+
+              {employeeOptions.length > 0 ? (
+                <label>
+                  <span className="field-label">Select {formData.employeeType === 'staff' ? 'Staff' : formData.employeeType.charAt(0).toUpperCase() + formData.employeeType.slice(1)}</span>
+                  <select value={formData.employeeId} onChange={(e) => handleEmployeeSelect(e.target.value)}>
+                    <option value="">-- Select {formData.employeeType} --</option>
+                    {employeeOptions.map((emp) => (
+                      <option key={emp.id} value={emp.id}>{emp.name}</option>
+                    ))}
+                  </select>
+                </label>
               ) : (
-                <input type="text" placeholder="Employee Name *" value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} required />
+                <label>
+                  <span className="field-label">Employee Name *</span>
+                  <input type="text" placeholder="Employee Name *" value={formData.employeeName} onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })} required />
+                </label>
               )}
 
               {formData.employeeType !== 'staff' && employeeOptions.length > 0 && (
-                <input type="text" placeholder="Employee Name" value={formData.employeeName} readOnly style={{ background: '#f9fafb' }} />
+                <label>
+                  <span className="field-label">Employee Name</span>
+                  <input type="text" placeholder="Employee Name" value={formData.employeeName} readOnly style={{ background: '#f9fafb' }} />
+                </label>
               )}
 
-              <select value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}>
-                {leaveTypes.map((t) => (
-                  <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)}</option>
-                ))}
-              </select>
+              <label>
+                <span className="field-label">Leave Type</span>
+                <select value={formData.leaveType} onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}>
+                  {leaveTypes.map((t) => (
+                    <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)}</option>
+                  ))}
+                </select>
+              </label>
 
-              <input type="date" title="From Date" placeholder="From Date *" value={formData.fromDate} onChange={(e) => handleDateChange('fromDate', e.target.value)} required />
-              <input type="date" title="To Date" placeholder="To Date *" value={formData.toDate} onChange={(e) => handleDateChange('toDate', e.target.value)} required />
-              <input type="number" placeholder="Days *" value={formData.days} onChange={(e) => setFormData({ ...formData, days: e.target.value })} min="1" required />
+              <label>
+                <span className="field-label">From Date *</span>
+                <input type="date" title="From Date" placeholder="From Date *" value={formData.fromDate} onChange={(e) => handleDateChange('fromDate', e.target.value)} required />
+              </label>
+              <label>
+                <span className="field-label">To Date *</span>
+                <input type="date" title="To Date" placeholder="To Date *" value={formData.toDate} onChange={(e) => handleDateChange('toDate', e.target.value)} required />
+              </label>
+              <label>
+                <span className="field-label">Days *</span>
+                <input type="number" placeholder="Days *" value={formData.days} onChange={(e) => setFormData({ ...formData, days: e.target.value })} min="1" required />
+              </label>
 
-              <textarea placeholder="Reason *" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} rows="2" required style={{ gridColumn: '1 / -1' }} />
+              <label style={{ gridColumn: '1 / -1' }}>
+                <span className="field-label">Reason *</span>
+                <textarea placeholder="Reason *" value={formData.reason} onChange={(e) => setFormData({ ...formData, reason: e.target.value })} rows="2" required />
+              </label>
 
               {editingId && (
                 <>
-                  <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                    ))}
-                  </select>
-                  <input type="text" placeholder="Approved By" value={formData.approvedBy} onChange={(e) => setFormData({ ...formData, approvedBy: e.target.value })} />
-                  <textarea placeholder="Remarks" value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
+                  <label>
+                    <span className="field-label">Status</span>
+                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                      {STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Approved By</span>
+                    <input type="text" placeholder="Approved By" value={formData.approvedBy} onChange={(e) => setFormData({ ...formData, approvedBy: e.target.value })} />
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    <span className="field-label">Remarks</span>
+                    <textarea placeholder="Remarks" value={formData.remarks} onChange={(e) => setFormData({ ...formData, remarks: e.target.value })} rows="2" />
+                  </label>
                 </>
               )}
 
-              <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-                {editingId ? 'Update Leave' : 'Submit Leave Application'}
-              </button>
             </form>
-          </div>
+          </Modal>
         )}
 
         {loading ? (

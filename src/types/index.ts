@@ -10,6 +10,8 @@ export interface User {
   schoolId?: string
   phone?: string
   modulePermissions?: string | null
+  feeCanEdit?: boolean
+  feeCanDelete?: boolean
   firstName?: string
   lastName?: string
   isEmailVerified?: boolean
@@ -84,6 +86,8 @@ export interface AdminUser {
   isPhoneVerified?: boolean
   mfaEmail?: boolean
   mfaPhone?: boolean
+  feeCanEdit?: boolean
+  feeCanDelete?: boolean
   createdAt: string
 }
 

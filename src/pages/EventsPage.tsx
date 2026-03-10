@@ -9,6 +9,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 const EventsPage = () => {
   const { confirm } = useConfirm()
@@ -50,10 +51,11 @@ const EventsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      const payload = { ...formData, category: formData.category?.toLowerCase() }
       if (editingId) {
-        await apiClient.updateEvent(editingId, formData)
+        await apiClient.updateEvent(editingId, payload)
       } else {
-        await apiClient.createEvent(formData)
+        await apiClient.createEvent(payload)
       }
       setShowForm(false)
       setEditingId(null)
@@ -83,7 +85,6 @@ const EventsPage = () => {
       category: 'academic',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (event) => {
@@ -137,7 +138,7 @@ const EventsPage = () => {
       eventDate: String(row.eventDate).trim(),
       eventTime: row.eventTime ? String(row.eventTime).trim() : '',
       location: row.location ? String(row.location).trim() : '',
-      category: row.category ? String(row.category).trim() : 'academic',
+      category: row.category ? String(row.category).trim().toLowerCase() : 'academic',
     }
   }
 
@@ -184,8 +185,8 @@ const EventsPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Create Event'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Create Event
           </button>
         </div>
       </div>
@@ -198,58 +199,69 @@ const EventsPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Event' : 'Create New Event'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="Event Title *"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <textarea
-              placeholder="Event Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows="3"
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <input
-              type="date"
-              placeholder="Event Date *"
-              title="Event Date"
-              value={formData.eventDate}
-              onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-              required
-            />
-            <input
-              type="time"
-              placeholder="Event Time"
-              value={formData.eventTime}
-              onChange={(e) => setFormData({ ...formData, eventTime: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Location"
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            />
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            >
-              <option value="">-- Category --</option>
-              {eventCategories.map(c => (
-                <option key={c.id} value={c.label}>{c.label}</option>
-              ))}
-            </select>
-            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-              {editingId ? 'Update Event' : 'Create Event'}
-            </button>
+        <Modal title={editingId ? 'Edit Event' : 'Create New Event'} onClose={() => setShowForm(false)} footer={<button type="submit" form="event-form" className="btn primary">{editingId ? 'Update Event' : 'Create Event'}</button>}>
+          <form id="event-form" onSubmit={handleSubmit} className="form-grid">
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Event Title *</span>
+              <input
+                type="text"
+                placeholder="Event Title *"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Event Description</span>
+              <textarea
+                placeholder="Event Description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows="3"
+              />
+            </label>
+            <label>
+              <span className="field-label">Event Date *</span>
+              <input
+                type="date"
+                title="Event Date"
+                value={formData.eventDate}
+                onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Event Time</span>
+              <input
+                type="time"
+                placeholder="Event Time"
+                value={formData.eventTime}
+                onChange={(e) => setFormData({ ...formData, eventTime: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Location</span>
+              <input
+                type="text"
+                placeholder="Location"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Category</span>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <option value="">-- Category --</option>
+                {eventCategories.map(c => (
+                  <option key={c.id} value={c.label}>{c.label}</option>
+                ))}
+              </select>
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

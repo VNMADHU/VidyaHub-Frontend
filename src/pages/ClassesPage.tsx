@@ -5,6 +5,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Modal from '../components/Modal'
 
 const ClassesPage = () => {
   const { confirm } = useConfirm()
@@ -166,8 +167,8 @@ const ClassesPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '' }) }}>
-            {showForm ? 'Cancel' : '+ Add Class'}
+          <button className="btn primary" onClick={() => { setShowForm(true); setEditingId(null); setFormData({ name: '' }) }}>
+            + Add Class
           </button>
         </div>
       </div>
@@ -182,21 +183,20 @@ const ClassesPage = () => {
 
       <div className="page-content-scrollable">
         {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Class' : 'Add New Class'}</h3>
-          <form onSubmit={handleSubmitClass} className="form-grid">
-            <input
-              type="text"
-              placeholder="Class Name * (e.g., LKG, UKG, 1, 2, etc.)"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <button type="submit" className="btn primary">
-              {editingId ? 'Update Class' : 'Add Class'}
-            </button>
+        <Modal title={editingId ? 'Edit Class' : 'Add New Class'} onClose={() => setShowForm(false)} footer={<button type="submit" form="class-form" className="btn primary">{editingId ? 'Update Class' : 'Add Class'}</button>}>
+          <form id="class-form" onSubmit={handleSubmitClass} className="form-grid">
+            <label>
+              <span className="field-label">Class Name *</span>
+              <input
+                type="text"
+                placeholder="Class Name * (e.g., LKG, UKG, 1, 2, etc.)"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (
@@ -217,36 +217,42 @@ const ClassesPage = () => {
               <h3>{editingSectionId ? 'Edit Section' : 'Add Section'}</h3>
               <button className="modal-close" onClick={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }}>✕</button>
             </div>
-            <form onSubmit={handleSubmitSection} className="form-grid">
-              <select
-                value={sectionForm.classId || ''}
-                onChange={(e) => setSectionForm({ ...sectionForm, classId: Number(e.target.value) })}
-                required
-                disabled={editingSectionId}
-              >
-                <option value="">Select Class *</option>
-                {classes.map(cls => (
-                  <option key={cls.id} value={cls.id}>
-                    Class {cls.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="text"
-              placeholder="Section Name * (e.g., A, B, C)"
-                value={sectionForm.name}
-                onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })}
-                required
-              />
-              <div style={{ display: 'flex', gap: '0.5rem', gridColumn: '1 / -1' }}>
-                <button type="submit" className="btn primary">
-                  {editingSectionId ? 'Update Section' : 'Add Section'}
-                </button>
-                <button type="button" onClick={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }} className="btn outline">
-                  Cancel
-                </button>
-              </div>
+            <form id="section-form" onSubmit={handleSubmitSection} className="form-grid">
+              <label>
+                <span className="field-label">Class *</span>
+                <select
+                  value={sectionForm.classId || ''}
+                  onChange={(e) => setSectionForm({ ...sectionForm, classId: Number(e.target.value) })}
+                  required
+                  disabled={editingSectionId}
+                >
+                  <option value="">Select Class *</option>
+                  {classes.map(cls => (
+                    <option key={cls.id} value={cls.id}>
+                      Class {cls.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="field-label">Section Name *</span>
+                <input
+                  type="text"
+                placeholder="Section Name * (e.g., A, B, C)"
+                  value={sectionForm.name}
+                  onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })}
+                  required
+                />
+              </label>
+              <button type="button" onClick={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }} className="btn outline" style={{ gridColumn: '1 / -1' }}>
+                Cancel
+              </button>
             </form>
+            <div className="modal-footer">
+              <button type="submit" form="section-form" className="btn primary">
+                {editingSectionId ? 'Update Section' : 'Add Section'}
+              </button>
+            </div>
           </div>
         </div>
       )}

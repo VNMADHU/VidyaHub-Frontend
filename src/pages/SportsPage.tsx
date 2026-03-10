@@ -5,6 +5,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Modal from '../components/Modal'
 
 const SportsPage = () => {
   const { confirm } = useConfirm()
@@ -67,7 +68,6 @@ const SportsPage = () => {
       description: '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (sport) => {
@@ -79,7 +79,6 @@ const SportsPage = () => {
     })
     setEditingId(sport.id)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -135,8 +134,8 @@ const SportsPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Sport'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Sport
           </button>
         </div>
       </div>
@@ -151,40 +150,47 @@ const SportsPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Sport' : 'Add New Sport'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="Sport Name *"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Coach Name"
-              value={formData.coachName}
-              onChange={(e) => setFormData({ ...formData, coachName: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Schedule (e.g., Mon, Wed - 4PM)"
-              value={formData.schedule}
-              onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
-            />
-            <textarea
-              placeholder="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows="2"
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <button type="submit" className="btn primary">
-              {editingId ? 'Update Sport' : 'Add Sport'}
-            </button>
+        <Modal title={editingId ? 'Edit Sport' : 'Add New Sport'} onClose={() => setShowForm(false)} footer={<button type="submit" form="sport-form" className="btn primary">{editingId ? 'Update Sport' : 'Add Sport'}</button>}>
+          <form id="sport-form" onSubmit={handleSubmit} className="form-grid">
+            <label>
+              <span className="field-label">Sport Name *</span>
+              <input
+                type="text"
+                placeholder="Sport Name *"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Coach Name</span>
+              <input
+                type="text"
+                placeholder="Coach Name"
+                value={formData.coachName}
+                onChange={(e) => setFormData({ ...formData, coachName: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Schedule</span>
+              <input
+                type="text"
+                placeholder="Schedule (e.g., Mon, Wed - 4PM)"
+                value={formData.schedule}
+                onChange={(e) => setFormData({ ...formData, schedule: e.target.value })}
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Description</span>
+              <textarea
+                placeholder="Description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows="2"
+              />
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

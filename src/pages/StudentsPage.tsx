@@ -11,6 +11,7 @@ import { useToast } from '@/components/ToastContainer'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 // Validation helpers
 const INDIAN_PHONE_REGEX = /^[6-9]\d{9}$/
@@ -157,7 +158,6 @@ const EMPTY_STUDENT_FORM = {
     setEditingId(null)
     setFormData(EMPTY_STUDENT_FORM)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (student) => {
@@ -193,7 +193,6 @@ const EMPTY_STUDENT_FORM = {
       parentEmail: student.parentEmail || '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (studentId) => {
@@ -328,8 +327,8 @@ const EMPTY_STUDENT_FORM = {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Student'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Student
           </button>
         </div>
       </div>
@@ -342,8 +341,7 @@ const EMPTY_STUDENT_FORM = {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Student' : 'Add New Student'}</h3>
+        <Modal title={editingId ? 'Edit Student' : 'Add New Student'} onClose={() => setShowForm(false)} footer={<button type="submit" form="student-form" className="btn primary">{editingId ? 'Update Student' : 'Add Student'}</button>}>
           {formErrors.length > 0 && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '0.5rem', padding: '0.75rem 1rem', marginBottom: '1rem' }}>
               {formErrors.map((err, i) => (
@@ -351,238 +349,314 @@ const EMPTY_STUDENT_FORM = {
               ))}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="First Name *"
-              value={formData.firstName}
-              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Last Name *"
-              value={formData.lastName}
-              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-              required
-            />
-            <input
-              type="email"
-              placeholder="Email *"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-            />
-            <input
-              type="date"
-              placeholder="Date of Birth *"
-              title="Date of Birth"
-              value={formData.dateOfBirth}
-              onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
-              max={TODAY}
-              required
-            />
-            <select
-              value={formData.gender}
-              onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-            >
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Admission Number *"
-              value={formData.admissionNumber}
-              onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Roll Number"
-              value={formData.rollNumber}
-              onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
-            />
-            <select
-              value={formData.classId}
-              onChange={(e) => {
-                setFormData({ ...formData, classId: e.target.value, sectionId: '' })
-              }}
-            >
-              <option value="">Select Class</option>
-              {classes.map(cls => (
-                <option key={cls.id} value={cls.id}>
-                  Class {cls.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={formData.sectionId}
-              onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
-              disabled={!formData.classId}
-            >
-              <option value="">Select Section</option>
-              {sections.map(section => (
-                <option key={section.id} value={section.id}>
-                  Section {section.name}
-                </option>
-              ))}
-            </select>
+          <form id="student-form" onSubmit={handleSubmit} className="form-grid">
+            <label>
+              <span className="field-label">First Name *</span>
+              <input
+                type="text"
+                placeholder="First Name *"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Last Name *</span>
+              <input
+                type="text"
+                placeholder="Last Name *"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Email *</span>
+              <input
+                type="email"
+                placeholder="Email *"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Date of Birth *</span>
+              <input
+                type="date"
+                placeholder="Date of Birth *"
+                title="Date of Birth"
+                value={formData.dateOfBirth}
+                onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                max={TODAY}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Gender</span>
+              <select
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Admission Number *</span>
+              <input
+                type="text"
+                placeholder="Admission Number *"
+                value={formData.admissionNumber}
+                onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Roll Number</span>
+              <input
+                type="text"
+                placeholder="Roll Number"
+                value={formData.rollNumber}
+                onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Class</span>
+              <select
+                value={formData.classId}
+                onChange={(e) => {
+                  setFormData({ ...formData, classId: e.target.value, sectionId: '' })
+                }}
+              >
+                <option value="">Select Class</option>
+                {classes.map(cls => (
+                  <option key={cls.id} value={cls.id}>
+                    Class {cls.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Section</span>
+              <select
+                value={formData.sectionId}
+                onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                disabled={!formData.classId}
+              >
+                <option value="">Select Section</option>
+                {sections.map(section => (
+                  <option key={section.id} value={section.id}>
+                    Section {section.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             {/* Indian School Fields */}
             <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
               📋 Additional Details
             </h4>
-            <input
-              type="text"
-              placeholder="Aadhaar Number (12 digits)"
-              value={formData.aadhaarNumber}
-              onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })}
-              maxLength={12}
-              pattern="\d{12}"
-              title="Enter 12-digit Aadhaar number"
-            />
-            <select
-              value={formData.bloodGroup}
-              onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
-            >
-              <option value="">Blood Group</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-            </select>
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            >
-              <option value="">Category</option>
-              <option value="General">General</option>
-              <option value="OBC">OBC</option>
-              <option value="SC">SC</option>
-              <option value="ST">ST</option>
-              <option value="EWS">EWS</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Religion"
-              value={formData.religion}
-              onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Nationality"
-              value={formData.nationality}
-              onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-            />
-            <textarea
-              placeholder="Current Address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              rows="2"
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <textarea
-              placeholder="Permanent Address"
-              value={formData.permanentAddress}
-              onChange={(e) => setFormData({ ...formData, permanentAddress: e.target.value })}
-              rows="2"
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <select
-              value={formData.transportMode}
-              onChange={(e) => setFormData({ ...formData, transportMode: e.target.value })}
-            >
-              <option value="">Transport Mode</option>
-              <option value="School Bus">School Bus</option>
-              <option value="Auto">Auto</option>
-              <option value="Walk">Walk</option>
-              <option value="Private Vehicle">Private Vehicle</option>
-              <option value="Bicycle">Bicycle</option>
-              <option value="Public Transport">Public Transport</option>
-            </select>
-            <input
-              type="text"
-              placeholder="Bus Route (if applicable)"
-              value={formData.busRoute}
-              onChange={(e) => setFormData({ ...formData, busRoute: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Previous School"
-              value={formData.previousSchool}
-              onChange={(e) => setFormData({ ...formData, previousSchool: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="TC Number (Transfer Certificate)"
-              value={formData.tcNumber}
-              onChange={(e) => setFormData({ ...formData, tcNumber: e.target.value })}
-            />
+            <label>
+              <span className="field-label">Aadhaar Number</span>
+              <input
+                type="text"
+                placeholder="Aadhaar Number (12 digits)"
+                value={formData.aadhaarNumber}
+                onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value.replace(/\D/g, '').slice(0, 12) })}
+                maxLength={12}
+                pattern="\d{12}"
+                title="Enter 12-digit Aadhaar number"
+              />
+            </label>
+            <label>
+              <span className="field-label">Blood Group</span>
+              <select
+                value={formData.bloodGroup}
+                onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+              >
+                <option value="">Blood Group</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Category</span>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <option value="">Category</option>
+                <option value="General">General</option>
+                <option value="OBC">OBC</option>
+                <option value="SC">SC</option>
+                <option value="ST">ST</option>
+                <option value="EWS">EWS</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Religion</span>
+              <input
+                type="text"
+                placeholder="Religion"
+                value={formData.religion}
+                onChange={(e) => setFormData({ ...formData, religion: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Nationality</span>
+              <input
+                type="text"
+                placeholder="Nationality"
+                value={formData.nationality}
+                onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Current Address</span>
+              <textarea
+                placeholder="Current Address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                rows="2"
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Permanent Address</span>
+              <textarea
+                placeholder="Permanent Address"
+                value={formData.permanentAddress}
+                onChange={(e) => setFormData({ ...formData, permanentAddress: e.target.value })}
+                rows="2"
+              />
+            </label>
+            <label>
+              <span className="field-label">Transport Mode</span>
+              <select
+                value={formData.transportMode}
+                onChange={(e) => setFormData({ ...formData, transportMode: e.target.value })}
+              >
+                <option value="">Transport Mode</option>
+                <option value="School Bus">School Bus</option>
+                <option value="Auto">Auto</option>
+                <option value="Walk">Walk</option>
+                <option value="Private Vehicle">Private Vehicle</option>
+                <option value="Bicycle">Bicycle</option>
+                <option value="Public Transport">Public Transport</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Bus Route</span>
+              <input
+                type="text"
+                placeholder="Bus Route (if applicable)"
+                value={formData.busRoute}
+                onChange={(e) => setFormData({ ...formData, busRoute: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Previous School</span>
+              <input
+                type="text"
+                placeholder="Previous School"
+                value={formData.previousSchool}
+                onChange={(e) => setFormData({ ...formData, previousSchool: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">TC Number</span>
+              <input
+                type="text"
+                placeholder="TC Number (Transfer Certificate)"
+                value={formData.tcNumber}
+                onChange={(e) => setFormData({ ...formData, tcNumber: e.target.value })}
+              />
+            </label>
 
             <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
               👨‍👩‍👧 Parent / Guardian Details
             </h4>
-            <input
-              type="text"
-              placeholder="Father Name"
-              value={formData.fatherName}
-              onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Mother Name"
-              value={formData.motherName}
-              onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="Guardian Name"
-              value={formData.guardianName}
-              onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })}
-            />
-            <input
-              type="tel"
-              placeholder="Father Contact (10 digits)"
-              value={formData.fatherContact}
-              onChange={(e) => setFormData({ ...formData, fatherContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              pattern="[6-9][0-9]{9}"
-              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
-              maxLength={10}
-            />
-            <input
-              type="tel"
-              placeholder="Mother Contact (10 digits)"
-              value={formData.motherContact}
-              onChange={(e) => setFormData({ ...formData, motherContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              pattern="[6-9][0-9]{9}"
-              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
-              maxLength={10}
-            />
-            <input
-              type="tel"
-              placeholder="Guardian Contact (10 digits)"
-              value={formData.guardianContact}
-              onChange={(e) => setFormData({ ...formData, guardianContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-              pattern="[6-9][0-9]{9}"
-              title="Enter a valid 10-digit Indian mobile number starting with 6-9"
-              maxLength={10}
-            />
-            <input
-              type="email"
-              placeholder="Parent Email"
-              value={formData.parentEmail}
-              onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
-            />
-            <button type="submit" className="btn primary">
-              {editingId ? 'Update Student' : 'Add Student'}
-            </button>
+            <label>
+              <span className="field-label">Father Name</span>
+              <input
+                type="text"
+                placeholder="Father Name"
+                value={formData.fatherName}
+                onChange={(e) => setFormData({ ...formData, fatherName: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Mother Name</span>
+              <input
+                type="text"
+                placeholder="Mother Name"
+                value={formData.motherName}
+                onChange={(e) => setFormData({ ...formData, motherName: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Guardian Name</span>
+              <input
+                type="text"
+                placeholder="Guardian Name"
+                value={formData.guardianName}
+                onChange={(e) => setFormData({ ...formData, guardianName: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Father Contact</span>
+              <input
+                type="tel"
+                placeholder="Father Contact (10 digits)"
+                value={formData.fatherContact}
+                onChange={(e) => setFormData({ ...formData, fatherContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                pattern="[6-9][0-9]{9}"
+                title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                maxLength={10}
+              />
+            </label>
+            <label>
+              <span className="field-label">Mother Contact</span>
+              <input
+                type="tel"
+                placeholder="Mother Contact (10 digits)"
+                value={formData.motherContact}
+                onChange={(e) => setFormData({ ...formData, motherContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                pattern="[6-9][0-9]{9}"
+                title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                maxLength={10}
+              />
+            </label>
+            <label>
+              <span className="field-label">Guardian Contact</span>
+              <input
+                type="tel"
+                placeholder="Guardian Contact (10 digits)"
+                value={formData.guardianContact}
+                onChange={(e) => setFormData({ ...formData, guardianContact: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                pattern="[6-9][0-9]{9}"
+                title="Enter a valid 10-digit Indian mobile number starting with 6-9"
+                maxLength={10}
+              />
+            </label>
+            <label>
+              <span className="field-label">Parent Email</span>
+              <input
+                type="email"
+                placeholder="Parent Email"
+                value={formData.parentEmail}
+                onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
+              />
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

@@ -10,6 +10,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 // Staff designations loaded dynamically from Settings > Designations
 // Staff departments loaded dynamically from Settings > Designations
@@ -131,7 +132,6 @@ const StaffPage = () => {
     })
     setEditingId(member.id)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -179,12 +179,9 @@ const StaffPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
           <button
             className="btn primary"
-            onClick={() => {
-              if (showForm && !editingId) { setShowForm(false) }
-              else { setFormData(EMPTY_FORM); setEditingId(null); setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' }) }
-            }}
+            onClick={() => { setFormData(EMPTY_FORM); setEditingId(null); setShowForm(true) }}
           >
-            {showForm && !editingId ? 'Cancel' : '+ Add Staff'}
+            + Add Staff
           </button>
         </div>
       </div>
@@ -212,56 +209,100 @@ const StaffPage = () => {
 
       {/* Add / Edit Form */}
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Staff Member' : 'Add Staff Member'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input placeholder="First Name *" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required />
-            <input placeholder="Last Name *" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required />
-            <input placeholder="Staff ID (e.g. STF001)" value={formData.staffId} onChange={(e) => setFormData({ ...formData, staffId: e.target.value })} />
+        <Modal title={editingId ? 'Edit Staff Member' : 'Add Staff Member'} onClose={() => setShowForm(false)} footer={<button type="submit" form="staff-form" className="btn primary">{editingId ? 'Update Staff Member' : 'Add Staff Member'}</button>}>
+          <form id="staff-form" onSubmit={handleSubmit} className="form-grid">
+            <label>
+              <span className="field-label">First Name *</span>
+              <input placeholder="First Name *" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} required />
+            </label>
+            <label>
+              <span className="field-label">Last Name *</span>
+              <input placeholder="Last Name *" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} required />
+            </label>
+            <label>
+              <span className="field-label">Staff ID</span>
+              <input placeholder="Staff ID (e.g. STF001)" value={formData.staffId} onChange={(e) => setFormData({ ...formData, staffId: e.target.value })} />
+            </label>
 
-            <select value={formData.designation} onChange={(e) => setFormData({ ...formData, designation: e.target.value })} required>
-              <option value="">-- Designation *</option>
-              {staffDesignations.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
-            </select>
+            <label>
+              <span className="field-label">Designation *</span>
+              <select value={formData.designation} onChange={(e) => setFormData({ ...formData, designation: e.target.value })} required>
+                <option value="">-- Designation *</option>
+                {staffDesignations.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
+              </select>
+            </label>
 
-            <select value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })}>
-              <option value="">-- Department --</option>
-              {staffDepartments.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
-            </select>
+            <label>
+              <span className="field-label">Department</span>
+              <select value={formData.department} onChange={(e) => setFormData({ ...formData, department: e.target.value })}>
+                <option value="">-- Department --</option>
+                {staffDepartments.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
+              </select>
+            </label>
 
-            <input placeholder="Phone Number" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} />
-            <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            <label>
+              <span className="field-label">Phone Number</span>
+              <input placeholder="Phone Number" value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} />
+            </label>
+            <label>
+              <span className="field-label">Email</span>
+              <input type="email" placeholder="Email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+            </label>
 
-            <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}>
-              <option value="">-- Gender --</option>
-              <option value="male">Male</option>
-              <option value="female">Female</option>
-              <option value="other">Other</option>
-            </select>
+            <label>
+              <span className="field-label">Gender</span>
+              <select value={formData.gender} onChange={(e) => setFormData({ ...formData, gender: e.target.value })}>
+                <option value="">-- Gender --</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
 
-            <input type="date" title="Date of Birth" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
-            <input type="date" title="Joining Date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} />
+            <label>
+              <span className="field-label">Date of Birth</span>
+              <input type="date" title="Date of Birth" value={formData.dateOfBirth} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} />
+            </label>
+            <label>
+              <span className="field-label">Joining Date</span>
+              <input type="date" title="Joining Date" value={formData.joiningDate} onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })} />
+            </label>
 
-            <input type="number" placeholder="Salary (₹)" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} min="0" />
-            <input placeholder="Aadhaar Number (12 digits)" value={formData.aadhaarNumber} onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value })} maxLength={12} />
-            <input placeholder="Emergency Contact" value={formData.emergencyContact} onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })} />
+            <label>
+              <span className="field-label">Salary (₹)</span>
+              <input type="number" placeholder="Salary (₹)" value={formData.salary} onChange={(e) => setFormData({ ...formData, salary: e.target.value })} min="0" />
+            </label>
+            <label>
+              <span className="field-label">Aadhaar Number</span>
+              <input placeholder="Aadhaar Number (12 digits)" value={formData.aadhaarNumber} onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value })} maxLength={12} />
+            </label>
+            <label>
+              <span className="field-label">Emergency Contact</span>
+              <input placeholder="Emergency Contact" value={formData.emergencyContact} onChange={(e) => setFormData({ ...formData, emergencyContact: e.target.value })} />
+            </label>
 
-            <select value={formData.bloodGroup} onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}>
-              <option value="">-- Blood Group --</option>
-              {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => <option key={bg} value={bg}>{bg}</option>)}
-            </select>
+            <label>
+              <span className="field-label">Blood Group</span>
+              <select value={formData.bloodGroup} onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}>
+                <option value="">-- Blood Group --</option>
+                {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => <option key={bg} value={bg}>{bg}</option>)}
+              </select>
+            </label>
 
-            <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-              {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
-            </select>
+            <label>
+              <span className="field-label">Status</span>
+              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+              </select>
+            </label>
 
-            <textarea placeholder="Address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Address</span>
+              <textarea placeholder="Address" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} rows="2" />
+            </label>
 
-            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-              {editingId ? 'Update Staff Member' : 'Add Staff Member'}
-            </button>
           </form>
-        </div>
+        </Modal>
       )}
 
       {/* Filters */}

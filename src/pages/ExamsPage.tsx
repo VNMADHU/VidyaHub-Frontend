@@ -8,6 +8,7 @@ import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
+import Modal from '../components/Modal'
 
 // CBSE-style grade calculation
 const getGrade = (score, maxScore = 100) => {
@@ -173,7 +174,6 @@ const ExamsPage = () => {
       subject: '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (mark) => {
@@ -186,7 +186,6 @@ const ExamsPage = () => {
       subject: mark.subject || '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (markId) => {
@@ -230,8 +229,8 @@ const ExamsPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Marks'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Marks
           </button>
         </div>
       </div>
@@ -276,61 +275,72 @@ const ExamsPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Marks' : 'Add Marks'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <select
-              value={formData.studentId}
-              onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-              required
-            >
-              <option value="">Select Student *</option>
-              {filteredStudents.map((student) => (
-                <option key={student.id} value={student.id}>
-                  {student.firstName} {student.lastName} ({student.admissionNumber})
-                </option>
-              ))}
-            </select>
-            <select
-              value={formData.examId}
-              onChange={(e) => setFormData({ ...formData, examId: e.target.value })}
-              required
-            >
-              <option value="">Select Exam *</option>
-              {filteredExamsList.map((exam) => (
-                <option key={exam.id} value={exam.id}>
-                  {exam.name}{exam.class ? ` (${exam.class.name}${exam.section ? ` - ${exam.section.name}` : ''})` : ''}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              placeholder="Marks *"
-              value={formData.marks}
-              onChange={(e) => setFormData({ ...formData, marks: e.target.value })}
-              required
-            />
-            <input
-              type="number"
-              placeholder="Max Score (default 100)"
-              value={formData.maxScore}
-              onChange={(e) => setFormData({ ...formData, maxScore: e.target.value })}
-            />
-            <select
-              value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-              required
-            >
-              <option value="">-- Select Subject * --</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.name}>{s.name}</option>
-              ))}
-            </select>
-            <button type="submit" className="btn primary">
-              {editingId ? 'Update Marks' : 'Add Marks'}
-            </button>
+        <Modal title={editingId ? 'Edit Marks' : 'Add Marks'} onClose={() => setShowForm(false)} footer={<button type="submit" form="exam-form" className="btn primary">{editingId ? 'Update Marks' : 'Add Marks'}</button>}>
+          <form id="exam-form" onSubmit={handleSubmit} className="form-grid">
+            <label>
+              <span className="field-label">Student *</span>
+              <select
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                required
+              >
+                <option value="">Select Student *</option>
+                {filteredStudents.map((student) => (
+                  <option key={student.id} value={student.id}>
+                    {student.firstName} {student.lastName} ({student.admissionNumber})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Exam *</span>
+              <select
+                value={formData.examId}
+                onChange={(e) => setFormData({ ...formData, examId: e.target.value })}
+                required
+              >
+                <option value="">Select Exam *</option>
+                {filteredExamsList.map((exam) => (
+                  <option key={exam.id} value={exam.id}>
+                    {exam.name}{exam.class ? ` (${exam.class.name}${exam.section ? ` - ${exam.section.name}` : ''})` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Marks *</span>
+              <input
+                type="number"
+                placeholder="Marks *"
+                value={formData.marks}
+                onChange={(e) => setFormData({ ...formData, marks: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Max Score</span>
+              <input
+                type="number"
+                placeholder="Max Score (default 100)"
+                value={formData.maxScore}
+                onChange={(e) => setFormData({ ...formData, maxScore: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Subject *</span>
+              <select
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                required
+              >
+                <option value="">-- Select Subject * --</option>
+                {subjects.map((s) => (
+                  <option key={s.id} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

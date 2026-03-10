@@ -66,6 +66,8 @@ const emptyForm = {
   modulePermissions: null as string[] | null,
   mfaEmail: true,
   mfaPhone: false,
+  feeCanEdit: false,
+  feeCanDelete: false,
 }
 type FormData = typeof emptyForm
 
@@ -150,18 +152,22 @@ const AdminProfilesPage = () => {
 
   const openEdit = (admin: AdminUser) => {
     setEditId(admin.id)
-    const perms: string[] | null = Array.isArray(admin.modulePermissions)
-      ? admin.modulePermissions
-      : null
+    const rawPerms = admin.modulePermissions
+    const allPerms: string[] | null = Array.isArray(rawPerms)
+      ? rawPerms as string[]
+      : (() => { try { return JSON.parse(rawPerms as unknown as string) } catch { return null } })()
+    const moduleKeys = allPerms ? allPerms.filter((p) => !p.includes(':')) : null
     setForm({
       email: admin.email,
       password: '',
       firstName: admin.profile?.firstName ?? '',
       lastName: admin.profile?.lastName ?? '',
       phone: admin.phone ?? '',
-      modulePermissions: perms,
+      modulePermissions: moduleKeys,
       mfaEmail: admin.mfaEmail ?? true,
       mfaPhone: admin.mfaPhone ?? false,
+      feeCanEdit: admin.feeCanEdit ?? false,
+      feeCanDelete: admin.feeCanDelete ?? false,
     })
     setPanelOpen(true)
   }
@@ -199,14 +205,20 @@ const AdminProfilesPage = () => {
     if (!form.firstName.trim() || !form.lastName.trim()) { toast.error('First and last name are required.'); return }
     setSaving(true)
     try {
+      const finalPermissions: string[] | null = (() => {
+        if (form.modulePermissions === null) return null
+        return [...form.modulePermissions]
+      })()
       const payload = {
         email: form.email,
         firstName: form.firstName,
         lastName: form.lastName,
         phone: form.phone,
-        modulePermissions: form.modulePermissions,
+        modulePermissions: finalPermissions,
         mfaEmail: form.mfaEmail,
         mfaPhone: form.mfaPhone,
+        feeCanEdit: form.feeCanEdit,
+        feeCanDelete: form.feeCanDelete,
         ...(form.password ? { password: form.password } : {}),
       }
       if (editId) {
@@ -431,6 +443,38 @@ const AdminProfilesPage = () => {
             )}
           </div>
 
+          {/* ── Fee Permissions ── */}
+          <div className="ap-field">
+            <label>💰 Fee Permissions</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.feeCanEdit ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.feeCanEdit ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={form.feeCanEdit}
+                  onChange={(e) => setForm((p) => ({ ...p, feeCanEdit: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>✏️ Edit Fees</span>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Allow modifying fee records</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.feeCanDelete ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.feeCanDelete ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={form.feeCanDelete}
+                  onChange={(e) => setForm((p) => ({ ...p, feeCanDelete: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>🗑️ Delete Fees</span>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Allow permanently removing fee records</span>
+              </label>
+            </div>
+            {!form.feeCanEdit && !form.feeCanDelete && (
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', fontSize: '13px', color: '#92400e' }}>
+                ⚠️ Both fee permissions disabled — this admin can only add fees, not edit or delete.
+              </div>
+            )}
+          </div>
+
           <div className="ap-field">
             <label>{editId ? 'New Password' : 'Password'} {!editId && <span className="req">*</span>}
               {editId && <span className="ap-hint">(leave blank to keep current)</span>}
@@ -540,8 +584,8 @@ const AdminProfilesPage = () => {
               <strong>{deleteTarget.profile?.firstName} {deleteTarget.profile?.lastName}</strong>{' '}
               ({deleteTarget.email}). This action cannot be undone.
             </p>
-            <div className="ap-field">
-              <label>Type <strong>DELETE</strong> to confirm:</label>
+            <div className="ap-field" >
+              <label style={{marginLeft:'20px',marginRight:'20px'}}>Type <strong>DELETE</strong> to confirm:</label>
               <input type="text" value={deleteTyped} onChange={(e) => setDeleteTyped(e.target.value)} placeholder="DELETE" autoComplete="off" className="ap-delete-input" />
             </div>
             <div className="ap-modal-btns">

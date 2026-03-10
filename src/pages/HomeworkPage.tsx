@@ -8,6 +8,7 @@ import { usePagination } from '@/hooks/usePagination'
 import Pagination from '@/components/Pagination'
 import SearchBar from '@/components/SearchBar'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 const HomeworkPage = () => {
   const toast = useToast()
@@ -96,7 +97,6 @@ const HomeworkPage = () => {
     if (h.classId) loadSections(String(h.classId))
     setEditingId(h.id)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async (e) => {
@@ -128,7 +128,7 @@ const HomeworkPage = () => {
   }
 
   const handleDelete = async (id) => {
-    const ok = await confirm('Delete this homework assignment?')
+    const ok = await confirm({ message: 'Are you sure you want to delete this homework assignment? This action cannot be undone.' })
     if (!ok) return
     try {
       await apiClient.deleteHomework(String(id))
@@ -165,11 +165,11 @@ const HomeworkPage = () => {
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>📝 Homework / Assignments</h1>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <button onClick={handleExportCSV} style={exportButtonStyle}>📄 CSV</button>
-          <button onClick={() => { resetForm(); setShowForm(!showForm) }} style={{
+          <button onClick={() => { resetForm(); setShowForm(true) }} style={{
             padding: '8px 16px', borderRadius: '6px', border: 'none',
-            background: showForm ? '#dc2626' : 'var(--primary)', color: '#fff', cursor: 'pointer', fontWeight: 600,
+            background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontWeight: 600,
           }}>
-            {showForm ? '✕ Cancel' : '+ Assign Homework'}
+            + Assign Homework
           </button>
         </div>
       </div>
@@ -188,11 +188,8 @@ const HomeworkPage = () => {
 
       {/* Form */}
       {showForm && (
-        <form onSubmit={handleSubmit} style={{
-          background: 'var(--surface)', borderRadius: '12px', border: '1px solid var(--border)',
-          padding: '1.5rem', marginBottom: '1.5rem',
-        }}>
-          <h3 style={{ marginBottom: '1rem' }}>{editingId ? 'Edit Homework' : 'Assign New Homework'}</h3>
+        <Modal title={editingId ? 'Edit Homework' : 'Assign New Homework'} onClose={() => setShowForm(false)} footer={<button type="submit" form="homework-form" className="btn primary">{editingId ? '💾 Update' : '✅ Assign'}</button>}>
+          <form id="homework-form" onSubmit={handleSubmit}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
             <div>
               <label style={labelStyle}>Class *</label>
@@ -235,13 +232,8 @@ const HomeworkPage = () => {
               <textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }} placeholder="Detailed instructions..." />
             </div>
           </div>
-          <button type="submit" style={{
-            marginTop: '1rem', padding: '8px 20px', borderRadius: '6px', border: 'none',
-            background: 'var(--primary)', color: '#fff', cursor: 'pointer', fontWeight: 600,
-          }}>
-            {editingId ? '💾 Update' : '✅ Assign'}
-          </button>
-        </form>
+          </form>
+        </Modal>
       )}
 
       {/* Cards */}

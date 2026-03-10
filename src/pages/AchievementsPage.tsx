@@ -5,6 +5,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import BulkImportModal from '@/components/BulkImportModal'
 import SearchBar from '@/components/SearchBar'
+import Modal from '../components/Modal'
 
 const AchievementsPage = () => {
   const { confirm } = useConfirm()
@@ -52,10 +53,11 @@ const AchievementsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
+      const payload = { ...formData, category: formData.category?.toLowerCase() }
       if (editingId) {
-        await apiClient.updateAchievement(editingId, formData)
+        await apiClient.updateAchievement(editingId, payload)
       } else {
-        await apiClient.createAchievement(formData)
+        await apiClient.createAchievement(payload)
       }
       setFormData({ studentId: '', title: '', category: 'academic', date: '', description: '' })
       setEditingId(null)
@@ -77,7 +79,6 @@ const AchievementsPage = () => {
       description: '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (achievement) => {
@@ -90,7 +91,6 @@ const AchievementsPage = () => {
     })
     setEditingId(achievement.id)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -159,8 +159,8 @@ const AchievementsPage = () => {
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Achievement'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Achievement
           </button>
         </div>
       </div>
@@ -175,56 +175,66 @@ const AchievementsPage = () => {
 
       <div className="page-content-scrollable">
       {showForm && (
-        <div className="form-card">
-          <h3>{editingId ? 'Edit Achievement' : 'Add New Achievement'}</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <select
-              value={formData.studentId}
-              onChange={(e) => setFormData({ ...formData, studentId: Number(e.target.value) })}
-              required
-            >
-              <option value="">Select Student *</option>
-              {students.map(student => (
-                <option key={student.id} value={student.id}>
-                  {student.firstName} {student.lastName}
-                </option>
-              ))}
-            </select>
-            <input
-              type="text"
-              placeholder="Achievement Title *"
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              required
-            />
-            <select
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            >
-              <option value="">-- Category --</option>
-              {achievementCategories.map(c => (
-                <option key={c.id} value={c.label}>{c.label}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              title="Achievement Date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              required
-            />
-            <textarea
-              placeholder="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              rows="3"
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <button type="submit" className="btn primary">
-              {editingId ? 'Update Achievement' : 'Add Achievement'}
-            </button>
+        <Modal title={editingId ? 'Edit Achievement' : 'Add New Achievement'} onClose={() => setShowForm(false)} footer={<button type="submit" form="achievement-form" className="btn primary">{editingId ? 'Update Achievement' : 'Add Achievement'}</button>}>
+          <form id="achievement-form" onSubmit={handleSubmit} className="form-grid">
+            <label>
+              <span className="field-label">Student *</span>
+              <select
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: Number(e.target.value) })}
+                required
+              >
+                <option value="">Select Student *</option>
+                {students.map(student => (
+                  <option key={student.id} value={student.id}>
+                    {student.firstName} {student.lastName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Achievement Title *</span>
+              <input
+                type="text"
+                placeholder="Achievement Title *"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Category</span>
+              <select
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              >
+                <option value="">-- Category --</option>
+                {achievementCategories.map(c => (
+                  <option key={c.id} value={c.label}>{c.label}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Achievement Date</span>
+              <input
+                type="date"
+                title="Achievement Date"
+                value={formData.date}
+                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                required
+              />
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Description</span>
+              <textarea
+                placeholder="Description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                rows="3"
+              />
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       {showBulkImport && (

@@ -7,6 +7,7 @@ import { useToast } from '@/components/ToastContainer'
 import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
+import Modal from '../components/Modal'
 
 const SupportPage = () => {
   const { confirm } = useConfirm()
@@ -91,8 +92,8 @@ const SupportPage = () => {
       <div className="page-header">
         <h1>Support</h1>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
-          <button className="btn primary" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Cancel' : '+ New Ticket'}
+          <button className="btn primary" onClick={() => setShowForm(true)}>
+            + New Ticket
           </button>
         </div>
       </div>
@@ -102,43 +103,49 @@ const SupportPage = () => {
       </p>
 
       {showForm && (
-        <div className="form-card" style={{ marginBottom: '1.5rem' }}>
-          <h3>Submit a Support Ticket</h3>
-          <form onSubmit={handleSubmit} className="form-grid">
-            <input
-              type="text"
-              placeholder="Subject *"
-              value={formData.subject}
-              onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-              required
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-              <option value="general">General Query</option>
-              <option value="bug">Bug / Issue</option>
-              <option value="feature-request">Feature Request</option>
-              <option value="billing">Billing</option>
-              <option value="other">Other</option>
-            </select>
-            <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })}>
-              <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="high">High Priority</option>
-              <option value="urgent">Urgent</option>
-            </select>
-            <textarea
-              placeholder="Describe your issue in detail *"
-              value={formData.message}
-              onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-              rows="4"
-              required
-              style={{ gridColumn: '1 / -1' }}
-            />
-            <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-              Submit Ticket
-            </button>
+        <Modal title="Submit a Support Ticket" onClose={() => setShowForm(false)} footer={<button type="submit" form="support-form" className="btn primary">Submit Ticket</button>}>
+          <form id="support-form" onSubmit={handleSubmit} className="form-grid">
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Subject *</span>
+              <input
+                type="text"
+                placeholder="Subject *"
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Category</span>
+              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+                <option value="general">General Query</option>
+                <option value="bug">Bug / Issue</option>
+                <option value="feature-request">Feature Request</option>
+                <option value="billing">Billing</option>
+                <option value="other">Other</option>
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Priority</span>
+              <select value={formData.priority} onChange={(e) => setFormData({ ...formData, priority: e.target.value })}>
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="high">High Priority</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Issue Description *</span>
+              <textarea
+                placeholder="Describe your issue in detail *"
+                value={formData.message}
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                rows="4"
+                required
+              />
+            </label>
           </form>
-        </div>
+        </Modal>
       )}
 
       <SearchBar

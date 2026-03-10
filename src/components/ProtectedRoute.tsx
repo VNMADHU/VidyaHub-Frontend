@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children, requiredRole = null }: ProtectedRouteProps) 
         } else if (requiredRole === 'portal-teacher') {
           navigate('/teacher-login')
         } else {
-          navigate('/')
+          navigate('/login')
         }
         return
       }

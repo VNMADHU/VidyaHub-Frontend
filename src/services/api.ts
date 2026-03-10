@@ -220,6 +220,10 @@ export const adminApi = {
     lastName: string
     phone: string
     modulePermissions?: string[] | null
+    mfaEmail?: boolean
+    mfaPhone?: boolean
+    feeCanEdit?: boolean
+    feeCanDelete?: boolean
   }) => api.post<AdminUser>('/admins', data).then((r) => r.data),
   update: (id: number, data: {
     email?: string
@@ -227,6 +231,10 @@ export const adminApi = {
     lastName?: string
     phone?: string
     modulePermissions?: string[] | null
+    mfaEmail?: boolean
+    mfaPhone?: boolean
+    feeCanEdit?: boolean
+    feeCanDelete?: boolean
   }) => api.patch<AdminUser>(`/admins/${id}`, data).then((r) => r.data),
   updatePassword: (id: number, password: string) =>
     api.patch(`/admins/${id}/password`, { password }).then((r) => r.data),

@@ -118,7 +118,7 @@ const TimetablePage = () => {
   }
 
   const handleDelete = async (id) => {
-    const ok = await confirm('Delete this timetable entry?', 'This action cannot be undone.')
+    const ok = await confirm({ message: 'Are you sure you want to delete this timetable entry? This action cannot be undone.' })
     if (!ok) return
     try {
       await apiClient.deleteTimetable(String(id))

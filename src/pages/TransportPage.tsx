@@ -6,6 +6,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
+import Modal from '@/components/Modal'
 import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
@@ -87,7 +88,6 @@ const TransportPage = () => {
       status: v.status || 'active',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteVehicle = async (id) => {
@@ -126,7 +126,6 @@ const TransportPage = () => {
       bloodGroup: d.bloodGroup || '', emergencyContact: d.emergencyContact || '', status: d.status || 'active',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteDriver = async (id) => {
@@ -140,7 +139,6 @@ const TransportPage = () => {
     if (activeTab === 'vehicles') setVehicleForm(emptyVehicleForm)
     else setDriverForm(emptyDriverForm)
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   // ── Filtering ───────────────────────────────────────────
@@ -186,8 +184,8 @@ const TransportPage = () => {
           <button style={exportButtonStyle} onClick={() => exportToPDF(activeTab === 'vehicles' ? filteredVehicles : filteredDrivers, activeTab === 'vehicles' ? 'Vehicles' : 'Drivers', activeTab === 'vehicles' ? vehicleExportCols : driverExportCols, activeTab === 'vehicles' ? 'Vehicles' : 'Drivers')} title="Export PDF">📥 PDF</button>
           <button style={exportButtonStyle} onClick={() => printTable(activeTab === 'vehicles' ? 'transport-print-area' : 'transport-drivers-print-area', activeTab === 'vehicles' ? 'Vehicles' : 'Drivers')} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : activeTab === 'vehicles' ? '+ Add Vehicle' : '+ Add Driver'}
+          <button className="btn primary" onClick={handleAddNew}>
+            {activeTab === 'vehicles' ? '+ Add Vehicle' : '+ Add Driver'}
           </button>
         </div>
       </div>
@@ -208,34 +206,62 @@ const TransportPage = () => {
         {activeTab === 'vehicles' && (
           <>
             {showForm && (
-              <div className="form-card">
-                <h3>{editingId ? 'Edit Vehicle' : 'Add Vehicle'}</h3>
-                <form onSubmit={handleSubmitVehicle} className="form-grid">
-                  <input type="text" placeholder="Vehicle Number (e.g. AP 07 AB 1234) *" value={vehicleForm.vehicleNumber} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicleNumber: e.target.value })} required />
-                  <select value={vehicleForm.vehicleType} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicleType: e.target.value })}>
-                    <option value="bus">Bus</option>
-                    <option value="van">Van</option>
-                    <option value="auto">Auto</option>
-                    <option value="car">Car</option>
-                  </select>
-                  <input type="number" placeholder="Capacity *" value={vehicleForm.capacity} onChange={(e) => setVehicleForm({ ...vehicleForm, capacity: e.target.value })} required min="1" />
-                  <select value={vehicleForm.driverId} onChange={(e) => setVehicleForm({ ...vehicleForm, driverId: e.target.value })}>
-                    <option value="">Assign Driver (optional)</option>
-                    {drivers.map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName} — {d.licenseNumber}</option>)}
-                  </select>
-                  <input type="text" placeholder="Route Name" value={vehicleForm.routeName} onChange={(e) => setVehicleForm({ ...vehicleForm, routeName: e.target.value })} />
-                  <input type="text" placeholder="Route Stops (comma-separated)" value={vehicleForm.routeStops} onChange={(e) => setVehicleForm({ ...vehicleForm, routeStops: e.target.value })} style={{ gridColumn: '1 / -1' }} />
-                  <input type="date" title="Insurance Expiry" value={vehicleForm.insuranceExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, insuranceExpiry: e.target.value })} />
-                  <input type="date" title="Fitness Expiry" value={vehicleForm.fitnessExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, fitnessExpiry: e.target.value })} />
-                  <input type="date" title="Permit Expiry" value={vehicleForm.permitExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, permitExpiry: e.target.value })} />
-                  <select value={vehicleForm.status} onChange={(e) => setVehicleForm({ ...vehicleForm, status: e.target.value })}>
-                    <option value="active">Active</option>
-                    <option value="maintenance">Under Maintenance</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>{editingId ? 'Update Vehicle' : 'Add Vehicle'}</button>
+              <Modal title={editingId ? 'Edit Vehicle' : 'Add Vehicle'} onClose={() => setShowForm(false)} footer={<button type="submit" form="vehicle-form" className="btn primary">{editingId ? 'Update Vehicle' : 'Add Vehicle'}</button>}>
+                <form id="vehicle-form" onSubmit={handleSubmitVehicle} className="form-grid">
+                  <label>
+                    <span className="field-label">Vehicle Number *</span>
+                    <input type="text" placeholder="Vehicle Number (e.g. AP 07 AB 1234)" value={vehicleForm.vehicleNumber} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicleNumber: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Vehicle Type</span>
+                    <select value={vehicleForm.vehicleType} onChange={(e) => setVehicleForm({ ...vehicleForm, vehicleType: e.target.value })}>
+                      <option value="bus">Bus</option>
+                      <option value="van">Van</option>
+                      <option value="auto">Auto</option>
+                      <option value="car">Car</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Capacity *</span>
+                    <input type="number" placeholder="Capacity" value={vehicleForm.capacity} onChange={(e) => setVehicleForm({ ...vehicleForm, capacity: e.target.value })} required min="1" />
+                  </label>
+                  <label>
+                    <span className="field-label">Assign Driver</span>
+                    <select value={vehicleForm.driverId} onChange={(e) => setVehicleForm({ ...vehicleForm, driverId: e.target.value })}>
+                      <option value="">Assign Driver (optional)</option>
+                      {drivers.map((d) => <option key={d.id} value={d.id}>{d.firstName} {d.lastName} — {d.licenseNumber}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Route Name</span>
+                    <input type="text" placeholder="Route Name" value={vehicleForm.routeName} onChange={(e) => setVehicleForm({ ...vehicleForm, routeName: e.target.value })} />
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    <span className="field-label">Route Stops</span>
+                    <input type="text" placeholder="Route Stops (comma-separated)" value={vehicleForm.routeStops} onChange={(e) => setVehicleForm({ ...vehicleForm, routeStops: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Insurance Expiry *</span>
+                    <input type="date" title="Insurance Expiry" value={vehicleForm.insuranceExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, insuranceExpiry: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Fitness Expiry *</span>
+                    <input type="date" title="Fitness Expiry" value={vehicleForm.fitnessExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, fitnessExpiry: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Permit Expiry *</span>
+                    <input type="date" title="Permit Expiry" value={vehicleForm.permitExpiry} onChange={(e) => setVehicleForm({ ...vehicleForm, permitExpiry: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Status</span>
+                    <select value={vehicleForm.status} onChange={(e) => setVehicleForm({ ...vehicleForm, status: e.target.value })}>
+                      <option value="active">Active</option>
+                      <option value="maintenance">Under Maintenance</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? <div className="loading-state">Loading vehicles...</div> : (
@@ -287,42 +313,82 @@ const TransportPage = () => {
         {activeTab === 'drivers' && (
           <>
             {showForm && (
-              <div className="form-card">
-                <h3>{editingId ? 'Edit Driver' : 'Add Driver'}</h3>
-                <form onSubmit={handleSubmitDriver} className="form-grid">
-                  <input type="text" placeholder="First Name *" value={driverForm.firstName} onChange={(e) => setDriverForm({ ...driverForm, firstName: e.target.value })} required />
-                  <input type="text" placeholder="Last Name *" value={driverForm.lastName} onChange={(e) => setDriverForm({ ...driverForm, lastName: e.target.value })} required />
-                  <input type="text" placeholder="Phone Number *" value={driverForm.phoneNumber} onChange={(e) => setDriverForm({ ...driverForm, phoneNumber: e.target.value })} required />
-                  <input type="date" title="Date of Birth" value={driverForm.dateOfBirth} onChange={(e) => setDriverForm({ ...driverForm, dateOfBirth: e.target.value })} />
-                  <input type="text" placeholder="Driving License Number *" value={driverForm.licenseNumber} onChange={(e) => setDriverForm({ ...driverForm, licenseNumber: e.target.value })} required />
-                  <select value={driverForm.licenseType} onChange={(e) => setDriverForm({ ...driverForm, licenseType: e.target.value })}>
-                    <option value="LMV">LMV (Light Motor Vehicle)</option>
-                    <option value="HMV">HMV (Heavy Motor Vehicle)</option>
-                    <option value="HTV">HTV (Heavy Transport Vehicle)</option>
-                    <option value="HGMV">HGMV (Heavy Goods Motor Vehicle)</option>
-                    <option value="MCWG">MCWG (Motorcycle with Gear)</option>
-                  </select>
-                  <input type="date" title="License Expiry" value={driverForm.licenseExpiry} onChange={(e) => setDriverForm({ ...driverForm, licenseExpiry: e.target.value })} />
-                  <input type="text" placeholder="Experience (e.g. 5 years)" value={driverForm.experience} onChange={(e) => setDriverForm({ ...driverForm, experience: e.target.value })} />
-                  <input type="text" placeholder="Aadhaar Number" value={driverForm.aadhaarNumber} onChange={(e) => setDriverForm({ ...driverForm, aadhaarNumber: e.target.value })} />
-                  <input type="text" placeholder="RTO Badge Number" value={driverForm.badgeNumber} onChange={(e) => setDriverForm({ ...driverForm, badgeNumber: e.target.value })} />
-                  <select value={driverForm.bloodGroup} onChange={(e) => setDriverForm({ ...driverForm, bloodGroup: e.target.value })}>
-                    <option value="">Blood Group</option>
-                    <option value="A+">A+</option><option value="A-">A-</option>
-                    <option value="B+">B+</option><option value="B-">B-</option>
-                    <option value="AB+">AB+</option><option value="AB-">AB-</option>
-                    <option value="O+">O+</option><option value="O-">O-</option>
-                  </select>
-                  <input type="text" placeholder="Emergency Contact" value={driverForm.emergencyContact} onChange={(e) => setDriverForm({ ...driverForm, emergencyContact: e.target.value })} />
-                  <input type="text" placeholder="Address" value={driverForm.address} onChange={(e) => setDriverForm({ ...driverForm, address: e.target.value })} style={{ gridColumn: '1 / -1' }} />
-                  <select value={driverForm.status} onChange={(e) => setDriverForm({ ...driverForm, status: e.target.value })}>
-                    <option value="active">Active</option>
-                    <option value="on-leave">On Leave</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>{editingId ? 'Update Driver' : 'Add Driver'}</button>
+              <Modal title={editingId ? 'Edit Driver' : 'Add Driver'} onClose={() => setShowForm(false)} footer={<button type="submit" form="driver-form" className="btn primary">{editingId ? 'Update Driver' : 'Add Driver'}</button>}>
+                <form id="driver-form" onSubmit={handleSubmitDriver} className="form-grid">
+                  <label>
+                    <span className="field-label">First Name *</span>
+                    <input type="text" placeholder="First Name" value={driverForm.firstName} onChange={(e) => setDriverForm({ ...driverForm, firstName: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Last Name *</span>
+                    <input type="text" placeholder="Last Name" value={driverForm.lastName} onChange={(e) => setDriverForm({ ...driverForm, lastName: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Phone Number *</span>
+                    <input type="text" placeholder="Phone Number" value={driverForm.phoneNumber} onChange={(e) => setDriverForm({ ...driverForm, phoneNumber: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Date of Birth *</span>
+                    <input type="date" title="Date of Birth" value={driverForm.dateOfBirth} onChange={(e) => setDriverForm({ ...driverForm, dateOfBirth: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Driving License Number *</span>
+                    <input type="text" placeholder="Driving License Number" value={driverForm.licenseNumber} onChange={(e) => setDriverForm({ ...driverForm, licenseNumber: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">License Type</span>
+                    <select value={driverForm.licenseType} onChange={(e) => setDriverForm({ ...driverForm, licenseType: e.target.value })}>
+                      <option value="LMV">LMV (Light Motor Vehicle)</option>
+                      <option value="HMV">HMV (Heavy Motor Vehicle)</option>
+                      <option value="HTV">HTV (Heavy Transport Vehicle)</option>
+                      <option value="HGMV">HGMV (Heavy Goods Motor Vehicle)</option>
+                      <option value="MCWG">MCWG (Motorcycle with Gear)</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">License Expiry *</span>
+                    <input type="date" title="License Expiry" value={driverForm.licenseExpiry} onChange={(e) => setDriverForm({ ...driverForm, licenseExpiry: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Experience</span>
+                    <input type="text" placeholder="Experience (e.g. 5 years)" value={driverForm.experience} onChange={(e) => setDriverForm({ ...driverForm, experience: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Aadhaar Number</span>
+                    <input type="text" placeholder="Aadhaar Number" value={driverForm.aadhaarNumber} onChange={(e) => setDriverForm({ ...driverForm, aadhaarNumber: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">RTO Badge Number</span>
+                    <input type="text" placeholder="RTO Badge Number" value={driverForm.badgeNumber} onChange={(e) => setDriverForm({ ...driverForm, badgeNumber: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Blood Group</span>
+                    <select value={driverForm.bloodGroup} onChange={(e) => setDriverForm({ ...driverForm, bloodGroup: e.target.value })}>
+                      <option value="">Blood Group</option>
+                      <option value="A+">A+</option><option value="A-">A-</option>
+                      <option value="B+">B+</option><option value="B-">B-</option>
+                      <option value="AB+">AB+</option><option value="AB-">AB-</option>
+                      <option value="O+">O+</option><option value="O-">O-</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Emergency Contact</span>
+                    <input type="text" placeholder="Emergency Contact" value={driverForm.emergencyContact} onChange={(e) => setDriverForm({ ...driverForm, emergencyContact: e.target.value })} />
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    <span className="field-label">Address</span>
+                    <input type="text" placeholder="Address" value={driverForm.address} onChange={(e) => setDriverForm({ ...driverForm, address: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Status</span>
+                    <select value={driverForm.status} onChange={(e) => setDriverForm({ ...driverForm, status: e.target.value })}>
+                      <option value="active">Active</option>
+                      <option value="on-leave">On Leave</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? <div className="loading-state">Loading drivers...</div> : (

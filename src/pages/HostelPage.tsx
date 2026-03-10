@@ -5,6 +5,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
 import SearchBar from '@/components/SearchBar'
+import Modal from '@/components/Modal'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
@@ -28,7 +29,7 @@ const Badge = ({ status }) => (
 )
 
 const emptyHostel = {
-  name: '', type: 'boys', totalCapacity: '', wardenName: '', wardenPhone: '',
+  name: '', type: 'boys', totalCapacity: '', numberOfRooms: '', wardenName: '', wardenPhone: '',
   wardenEmail: '', address: '', description: '', status: 'active',
 }
 
@@ -85,7 +86,7 @@ const HostelPage = () => {
   const handleSubmitHostel = async (e) => {
     e.preventDefault()
     try {
-      const payload = { ...hostelForm, totalCapacity: parseInt(hostelForm.totalCapacity) || 0 }
+      const payload = { ...hostelForm, totalCapacity: parseInt(hostelForm.totalCapacity) || 0, numberOfRooms: parseInt(hostelForm.numberOfRooms) || 0 }
       if (editingId) await apiClient.updateHostel(editingId, payload)
       else await apiClient.createHostel(payload)
       toast.success(editingId ? 'Hostel updated' : 'Hostel created')
@@ -97,11 +98,12 @@ const HostelPage = () => {
     setEditingId(h.id)
     setHostelForm({
       name: h.name || '', type: h.type || 'boys', totalCapacity: h.totalCapacity || '',
+      numberOfRooms: h.numberOfRooms || '',
       wardenName: h.wardenName || '', wardenPhone: h.wardenPhone || '',
       wardenEmail: h.wardenEmail || '', address: h.address || '',
       description: h.description || '', status: h.status || 'active',
     })
-    setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setShowForm(true);
   }
 
   const handleDeleteHostel = async (id) => {
@@ -128,7 +130,7 @@ const HostelPage = () => {
       type: r.type || 'double', capacity: r.capacity || '2',
       amenities: r.amenities || '', status: r.status || 'available',
     })
-    setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setShowForm(true);
   }
 
   const handleDeleteRoom = async (id) => {
@@ -165,7 +167,7 @@ const HostelPage = () => {
       roomFee: a.roomFee || '', messFee: a.messFee || '',
       emergencyContact: a.emergencyContact || '', remarks: a.remarks || '', status: a.status || 'active',
     })
-    setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setShowForm(true);
   }
 
   const handleDeleteAllotment = async (id) => {
@@ -178,7 +180,7 @@ const HostelPage = () => {
     if (activeTab === 'hostels') setHostelForm(emptyHostel)
     else if (activeTab === 'rooms') setRoomForm(emptyRoom)
     else setAllotmentForm(emptyAllotment)
-    setShowForm(true); window.scrollTo({ top: 0, behavior: 'smooth' })
+    setShowForm(true);
   }
 
   // ── Filtering ──────────────────────────────────────────
@@ -221,8 +223,8 @@ const HostelPage = () => {
             activeTab === 'hostels' ? 'hostel-print-area' : activeTab === 'rooms' ? 'rooms-print-area' : 'allotments-print-area',
             activeTab === 'hostels' ? 'Hostels' : activeTab === 'rooms' ? 'Hostel Rooms' : 'Allotments'
           )} title="Print"><Printer size={16} /> Print</button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : activeTab === 'hostels' ? '+ Add Hostel' : activeTab === 'rooms' ? '+ Add Room' : '+ Add Allotment'}
+          <button className="btn primary" onClick={handleAddNew}>
+            {activeTab === 'hostels' ? '+ Add Hostel' : activeTab === 'rooms' ? '+ Add Room' : '+ Add Allotment'}
           </button>
         </div>
       </div>
@@ -263,28 +265,57 @@ const HostelPage = () => {
         {activeTab === 'hostels' && (
           <>
             {showForm && (
-              <div className="form-card">
-                <h3>{editingId ? 'Edit Hostel' : 'Add Hostel'}</h3>
-                <form onSubmit={handleSubmitHostel} className="form-grid">
-                  <input placeholder="Hostel Name *" title="Hostel Name" value={hostelForm.name} onChange={e => setHostelForm({ ...hostelForm, name: e.target.value })} required />
-                  <select title="Hostel Type (Boys / Girls / Mixed)" value={hostelForm.type} onChange={e => setHostelForm({ ...hostelForm, type: e.target.value })}>
-                    <option value="boys">Boys</option>
-                    <option value="girls">Girls</option>
-                    <option value="mixed">Mixed</option>
-                  </select>
-                  <input type="number" placeholder="Total Capacity" title="Total bed capacity of the hostel" value={hostelForm.totalCapacity} onChange={e => setHostelForm({ ...hostelForm, totalCapacity: e.target.value })} min="0" />
-                  <input placeholder="Warden Name" title="Warden Full Name" value={hostelForm.wardenName} onChange={e => setHostelForm({ ...hostelForm, wardenName: e.target.value })} />
-                  <input placeholder="Warden Phone" title="Warden Phone Number" value={hostelForm.wardenPhone} onChange={e => setHostelForm({ ...hostelForm, wardenPhone: e.target.value })} />
-                  <input type="email" placeholder="Warden Email" title="Warden Email Address" value={hostelForm.wardenEmail} onChange={e => setHostelForm({ ...hostelForm, wardenEmail: e.target.value })} />
-                  <select title="Hostel Status (Active / Inactive)" value={hostelForm.status} onChange={e => setHostelForm({ ...hostelForm, status: e.target.value })}>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                  <input placeholder="Address / Block" title="Address or Block location of the hostel" value={hostelForm.address} onChange={e => setHostelForm({ ...hostelForm, address: e.target.value })} />
-                  <textarea placeholder="Description" title="Additional description or notes about the hostel" value={hostelForm.description} onChange={e => setHostelForm({ ...hostelForm, description: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>{editingId ? 'Update Hostel' : 'Add Hostel'}</button>
+              <Modal title={editingId ? 'Edit Hostel' : 'Add Hostel'} onClose={() => setShowForm(false)} footer={<button type="submit" form="hostel-form" className="btn primary">{editingId ? 'Update Hostel' : 'Add Hostel'}</button>}>
+                <form id="hostel-form" onSubmit={handleSubmitHostel} className="form-grid">
+                  <label>
+                    <span className="field-label">Hostel Name *</span>
+                    <input placeholder="Hostel Name *" title="Hostel Name" value={hostelForm.name} onChange={e => setHostelForm({ ...hostelForm, name: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Hostel Type</span>
+                    <select title="Hostel Type (Boys / Girls / Mixed)" value={hostelForm.type} onChange={e => setHostelForm({ ...hostelForm, type: e.target.value })}>
+                      <option value="boys">Boys</option>
+                      <option value="girls">Girls</option>
+                      <option value="mixed">Mixed</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Total Capacity</span>
+                    <input type="number" placeholder="Total Capacity" title="Total bed capacity of the hostel" value={hostelForm.totalCapacity} onChange={e => setHostelForm({ ...hostelForm, totalCapacity: e.target.value })} min="0" />
+                  </label>
+                  <label>
+                    <span className="field-label">Number of Rooms</span>
+                    <input type="number" placeholder="Number of Rooms" title="Total number of rooms in this hostel" value={hostelForm.numberOfRooms} onChange={e => setHostelForm({ ...hostelForm, numberOfRooms: e.target.value })} min="0" />
+                  </label>
+                  <label>
+                    <span className="field-label">Warden Name</span>
+                    <input placeholder="Warden Name" title="Warden Full Name" value={hostelForm.wardenName} onChange={e => setHostelForm({ ...hostelForm, wardenName: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Warden Phone</span>
+                    <input placeholder="Warden Phone" title="Warden Phone Number" value={hostelForm.wardenPhone} onChange={e => setHostelForm({ ...hostelForm, wardenPhone: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Warden Email</span>
+                    <input type="email" placeholder="Warden Email" title="Warden Email Address" value={hostelForm.wardenEmail} onChange={e => setHostelForm({ ...hostelForm, wardenEmail: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Status</span>
+                    <select title="Hostel Status (Active / Inactive)" value={hostelForm.status} onChange={e => setHostelForm({ ...hostelForm, status: e.target.value })}>
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Address / Block</span>
+                    <input placeholder="Address / Block" title="Address or Block location of the hostel" value={hostelForm.address} onChange={e => setHostelForm({ ...hostelForm, address: e.target.value })} />
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    <span className="field-label">Description</span>
+                    <textarea placeholder="Description" title="Additional description or notes about the hostel" value={hostelForm.description} onChange={e => setHostelForm({ ...hostelForm, description: e.target.value })} rows="2" />
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? <div className="loading-state">Loading hostels...</div> : (
@@ -295,8 +326,8 @@ const HostelPage = () => {
                       <th>Name</th>
                       <th>Type</th>
                       <th>Capacity</th>
-                      <th>Rooms</th>
-                      <th>Occupied</th>
+                      <th>No. of Rooms</th>
+                      <th>Allotted</th>
                       <th>Warden</th>
                       <th>Phone</th>
                       <th>Status</th>
@@ -311,7 +342,7 @@ const HostelPage = () => {
                         <td style={{ fontWeight: 600 }}>{h.name}</td>
                         <td style={{ textTransform: 'capitalize' }}>{h.type}</td>
                         <td>{h.totalCapacity}</td>
-                        <td>{h._count?.rooms || 0}</td>
+                        <td>{h.numberOfRooms || 0}</td>
                         <td>{h._count?.allotments || 0}</td>
                         <td>{h.wardenName || '—'}</td>
                         <td>{h.wardenPhone || '—'}</td>
@@ -334,31 +365,50 @@ const HostelPage = () => {
         {activeTab === 'rooms' && (
           <>
             {showForm && (
-              <div className="form-card">
-                <h3>{editingId ? 'Edit Room' : 'Add Room'}</h3>
-                <form onSubmit={handleSubmitRoom} className="form-grid">
-                  <select title="Select the hostel this room belongs to" value={roomForm.hostelId} onChange={e => setRoomForm({ ...roomForm, hostelId: e.target.value })} required>
-                    <option value="">Select Hostel *</option>
-                    {hostels.map(h => <option key={h.id} value={h.id}>{h.name} ({h.type})</option>)}
-                  </select>
-                  <input placeholder="Room Number *" title="Room Number (e.g. 101, A-12, G-05)" value={roomForm.roomNumber} onChange={e => setRoomForm({ ...roomForm, roomNumber: e.target.value })} required />
-                  <input placeholder="Floor (e.g. Ground, 1st)" title="Floor where the room is located (e.g. Ground, 1st, 2nd)" value={roomForm.floor} onChange={e => setRoomForm({ ...roomForm, floor: e.target.value })} />
-                  <select title="Room Type (Single / Double / Triple / Dormitory)" value={roomForm.type} onChange={e => setRoomForm({ ...roomForm, type: e.target.value })}>
-                    <option value="single">Single</option>
-                    <option value="double">Double</option>
-                    <option value="triple">Triple</option>
-                    <option value="dormitory">Dormitory</option>
-                  </select>
-                  <input type="number" placeholder="Capacity *" title="Number of beds / students this room can accommodate" value={roomForm.capacity} onChange={e => setRoomForm({ ...roomForm, capacity: e.target.value })} required min="1" />
-                  <select title="Room Status (Available / Occupied / Under Maintenance)" value={roomForm.status} onChange={e => setRoomForm({ ...roomForm, status: e.target.value })}>
-                    <option value="available">Available</option>
-                    <option value="occupied">Occupied</option>
-                    <option value="maintenance">Under Maintenance</option>
-                  </select>
-                  <input placeholder="Amenities (comma-separated: AC, WiFi, ...)" title="List amenities separated by commas (e.g. AC, WiFi, Attached Bath, Hot Water)" value={roomForm.amenities} onChange={e => setRoomForm({ ...roomForm, amenities: e.target.value })} style={{ gridColumn: '1 / -1' }} />
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>{editingId ? 'Update Room' : 'Add Room'}</button>
+              <Modal title={editingId ? 'Edit Room' : 'Add Room'} onClose={() => setShowForm(false)} footer={<button type="submit" form="room-form" className="btn primary">{editingId ? 'Update Room' : 'Add Room'}</button>}>
+                <form id="room-form" onSubmit={handleSubmitRoom} className="form-grid">
+                  <label>
+                    <span className="field-label">Hostel *</span>
+                    <select title="Select the hostel this room belongs to" value={roomForm.hostelId} onChange={e => setRoomForm({ ...roomForm, hostelId: e.target.value })} required>
+                      <option value="">Select Hostel *</option>
+                      {hostels.map(h => <option key={h.id} value={h.id}>{h.name} ({h.type})</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Room Number *</span>
+                    <input placeholder="Room Number *" title="Room Number (e.g. 101, A-12, G-05)" value={roomForm.roomNumber} onChange={e => setRoomForm({ ...roomForm, roomNumber: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Floor</span>
+                    <input placeholder="Floor (e.g. Ground, 1st)" title="Floor where the room is located (e.g. Ground, 1st, 2nd)" value={roomForm.floor} onChange={e => setRoomForm({ ...roomForm, floor: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Room Type</span>
+                    <select title="Room Type (Single / Double / Triple / Dormitory)" value={roomForm.type} onChange={e => setRoomForm({ ...roomForm, type: e.target.value })}>
+                      <option value="single">Single</option>
+                      <option value="double">Double</option>
+                      <option value="triple">Triple</option>
+                      <option value="dormitory">Dormitory</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Capacity *</span>
+                    <input type="number" placeholder="Capacity *" title="Number of beds / students this room can accommodate" value={roomForm.capacity} onChange={e => setRoomForm({ ...roomForm, capacity: e.target.value })} required min="1" />
+                  </label>
+                  <label>
+                    <span className="field-label">Room Status</span>
+                    <select title="Room Status (Available / Occupied / Under Maintenance)" value={roomForm.status} onChange={e => setRoomForm({ ...roomForm, status: e.target.value })}>
+                      <option value="available">Available</option>
+                      <option value="occupied">Occupied</option>
+                      <option value="maintenance">Under Maintenance</option>
+                    </select>
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    <span className="field-label">Amenities</span>
+                    <input placeholder="Amenities (comma-separated: AC, WiFi, ...)" title="List amenities separated by commas (e.g. AC, WiFi, Attached Bath, Hot Water)" value={roomForm.amenities} onChange={e => setRoomForm({ ...roomForm, amenities: e.target.value })} />
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? <div className="loading-state">Loading rooms...</div> : (
@@ -408,32 +458,63 @@ const HostelPage = () => {
         {activeTab === 'allotments' && (
           <>
             {showForm && (
-              <div className="form-card">
-                <h3>{editingId ? 'Edit Allotment' : 'Allot Room'}</h3>
-                <form onSubmit={handleSubmitAllotment} className="form-grid">
-                  <input placeholder="Student Name *" title="Full name of the student being allotted" value={allotmentForm.studentName} onChange={e => setAllotmentForm({ ...allotmentForm, studentName: e.target.value })} required />
-                  <input placeholder="Admission Number" title="Student Admission / Roll Number" value={allotmentForm.admissionNumber} onChange={e => setAllotmentForm({ ...allotmentForm, admissionNumber: e.target.value })} />
-                  <select title="Select the hostel to allot" value={allotmentForm.hostelId} onChange={e => setAllotmentForm({ ...allotmentForm, hostelId: e.target.value, roomId: '' })} required>
-                    <option value="">Select Hostel *</option>
-                    {hostels.map(h => <option key={h.id} value={h.id}>{h.name} ({h.type})</option>)}
-                  </select>
-                  <select title="Select the room to allot (shows available rooms for chosen hostel)" value={allotmentForm.roomId} onChange={e => setAllotmentForm({ ...allotmentForm, roomId: e.target.value })} required>
-                    <option value="">Select Room *</option>
-                    {roomsForHostel.map(r => <option key={r.id} value={r.id}>Room {r.roomNumber} ({r.floor || ''}) — {r.type} — {r._count?.allotments || 0}/{r.capacity}</option>)}
-                  </select>
-                  <input type="date" title="Allotment Date (date when student moves in)" value={allotmentForm.allotmentDate} onChange={e => setAllotmentForm({ ...allotmentForm, allotmentDate: e.target.value })} />
-                  <input type="date" title="Vacating Date — leave blank if not yet decided" value={allotmentForm.vacatingDate} onChange={e => setAllotmentForm({ ...allotmentForm, vacatingDate: e.target.value })} />
-                  <input type="number" placeholder="Room Fee (₹/month)" title="Monthly room rent in rupees" value={allotmentForm.roomFee} onChange={e => setAllotmentForm({ ...allotmentForm, roomFee: e.target.value })} min="0" />
-                  <input type="number" placeholder="Mess Fee (₹/month)" title="Monthly mess / food fee in rupees" value={allotmentForm.messFee} onChange={e => setAllotmentForm({ ...allotmentForm, messFee: e.target.value })} min="0" />
-                  <input placeholder="Emergency Contact" title="Emergency contact phone number (parent / guardian)" value={allotmentForm.emergencyContact} onChange={e => setAllotmentForm({ ...allotmentForm, emergencyContact: e.target.value })} />
-                  <select title="Allotment Status (Active = currently staying, Vacated = left hostel)" value={allotmentForm.status} onChange={e => setAllotmentForm({ ...allotmentForm, status: e.target.value })}>
-                    <option value="active">Active</option>
-                    <option value="vacated">Vacated</option>
-                  </select>
-                  <textarea placeholder="Remarks" title="Any additional remarks or special notes" value={allotmentForm.remarks} onChange={e => setAllotmentForm({ ...allotmentForm, remarks: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>{editingId ? 'Update Allotment' : 'Allot Room'}</button>
+              <Modal title={editingId ? 'Edit Allotment' : 'Allot Room'} onClose={() => setShowForm(false)} footer={<button type="submit" form="allotment-form" className="btn primary">{editingId ? 'Update Allotment' : 'Allot Room'}</button>}>
+                <form id="allotment-form" onSubmit={handleSubmitAllotment} className="form-grid">
+                  <label>
+                    <span className="field-label">Student Name *</span>
+                    <input placeholder="Student Name *" title="Full name of the student being allotted" value={allotmentForm.studentName} onChange={e => setAllotmentForm({ ...allotmentForm, studentName: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Admission Number</span>
+                    <input placeholder="Admission Number" title="Student Admission / Roll Number" value={allotmentForm.admissionNumber} onChange={e => setAllotmentForm({ ...allotmentForm, admissionNumber: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Hostel *</span>
+                    <select title="Select the hostel to allot" value={allotmentForm.hostelId} onChange={e => setAllotmentForm({ ...allotmentForm, hostelId: e.target.value, roomId: '' })} required>
+                      <option value="">Select Hostel *</option>
+                      {hostels.map(h => <option key={h.id} value={h.id}>{h.name} ({h.type})</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Room *</span>
+                    <select title="Select the room to allot (shows available rooms for chosen hostel)" value={allotmentForm.roomId} onChange={e => setAllotmentForm({ ...allotmentForm, roomId: e.target.value })} required>
+                      <option value="">Select Room *</option>
+                      {roomsForHostel.map(r => <option key={r.id} value={r.id}>Room {r.roomNumber} ({r.floor || ''}) — {r.type} — {r._count?.allotments || 0}/{r.capacity}</option>)}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Allotment Date</span>
+                    <input type="date" title="Allotment Date (date when student moves in)" value={allotmentForm.allotmentDate} onChange={e => setAllotmentForm({ ...allotmentForm, allotmentDate: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Vacating Date</span>
+                    <input type="date" title="Vacating Date — leave blank if not yet decided" value={allotmentForm.vacatingDate} onChange={e => setAllotmentForm({ ...allotmentForm, vacatingDate: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Room Fee (₹/month)</span>
+                    <input type="number" placeholder="Room Fee (₹/month)" title="Monthly room rent in rupees" value={allotmentForm.roomFee} onChange={e => setAllotmentForm({ ...allotmentForm, roomFee: e.target.value })} min="0" />
+                  </label>
+                  <label>
+                    <span className="field-label">Mess Fee (₹/month)</span>
+                    <input type="number" placeholder="Mess Fee (₹/month)" title="Monthly mess / food fee in rupees" value={allotmentForm.messFee} onChange={e => setAllotmentForm({ ...allotmentForm, messFee: e.target.value })} min="0" />
+                  </label>
+                  <label>
+                    <span className="field-label">Emergency Contact</span>
+                    <input placeholder="Emergency Contact" title="Emergency contact phone number (parent / guardian)" value={allotmentForm.emergencyContact} onChange={e => setAllotmentForm({ ...allotmentForm, emergencyContact: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Status</span>
+                    <select title="Allotment Status (Active = currently staying, Vacated = left hostel)" value={allotmentForm.status} onChange={e => setAllotmentForm({ ...allotmentForm, status: e.target.value })}>
+                      <option value="active">Active</option>
+                      <option value="vacated">Vacated</option>
+                    </select>
+                  </label>
+                  <label style={{ gridColumn: '1 / -1' }}>
+                    <span className="field-label">Remarks</span>
+                    <textarea placeholder="Remarks" title="Any additional remarks or special notes" value={allotmentForm.remarks} onChange={e => setAllotmentForm({ ...allotmentForm, remarks: e.target.value })} rows="2" />
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? <div className="loading-state">Loading allotments...</div> : (

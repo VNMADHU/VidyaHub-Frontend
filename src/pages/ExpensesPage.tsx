@@ -9,6 +9,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 const ExpensesPage = () => {
   const { confirm } = useConfirm()
@@ -20,6 +21,7 @@ const ExpensesPage = () => {
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterDate, setFilterDate] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     category: 'maintenance',
@@ -77,7 +79,6 @@ const ExpensesPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (expense) => {
@@ -109,7 +110,6 @@ const ExpensesPage = () => {
   }
 
   // ── Summary ─────────────────────────────────────────────
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
 
   // ── Export ──────────────────────────────────────────────
   const expenseExportColumns = [
@@ -137,9 +137,12 @@ const ExpensesPage = () => {
   }
 
   const filteredExpenses = expenses.filter((e) => {
+    if (filterDate && e.date?.split('T')[0] !== filterDate) return false
     const q = searchQuery.toLowerCase()
     return e.title?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q) || e.paidTo?.toLowerCase().includes(q)
   })
+
+  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
 
   const { paginatedItems, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredExpenses)
 
@@ -155,52 +158,96 @@ const ExpensesPage = () => {
           <button style={exportButtonStyle} onClick={() => exportToPDF(filteredExpenses, 'Expenses', expenseExportColumns, 'School Expenses')} title="Export PDF">📥 PDF</button>
           <button style={exportButtonStyle} onClick={() => printTable('expenses-print-area', 'School Expenses')} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Expense'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Expense
           </button>
         </div>
       </div>
 
-      <SearchBar
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search by title, category, paid to..."
-      />
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '220px' }}>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search by title, category, paid to..."
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', paddingBottom: '1.5rem' }}>
+          <input
+            type="date"
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            style={{ padding: '0.75rem 0.75rem', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--card-bg, #fff)', color: 'var(--text, #1e293b)', cursor: 'pointer' }}
+            title="Filter by expense date"
+          />
+          {filterDate && (
+            <button onClick={() => setFilterDate('')} className="btn outline" style={{ fontSize: '0.8rem', padding: '0.65rem 0.9rem', whiteSpace: 'nowrap' }}>
+              ✕ Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="page-content-scrollable">
         {showForm && (
-          <div className="form-card">
-            <h3>{editingId ? 'Edit Expense' : 'Add Expense'}</h3>
-            <form onSubmit={handleSubmit} className="form-grid">
-              <input type="text" placeholder="Title / Description *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
-              <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                <option value="">-- Category --</option>
-                {expenseCategories.map(c => (
-                  <option key={c.id} value={c.label}>{c.label.charAt(0).toUpperCase() + c.label.slice(1)}</option>
-                ))}
-              </select>
-              <input type="number" placeholder="Amount (₹) *" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required min="0" step="0.01" />
-              <input type="date" title="Expense Date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
-              <input type="text" placeholder="Paid To (vendor / person)" value={formData.paidTo} onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })} />
-              <select value={formData.paymentMode} onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}>
-                <option value="cash">Cash</option>
-                <option value="online">Online Transfer</option>
-                <option value="cheque">Cheque</option>
-                <option value="upi">UPI</option>
-              </select>
-              <input type="text" placeholder="Receipt / Bill No." value={formData.receiptNo} onChange={(e) => setFormData({ ...formData, receiptNo: e.target.value })} />
-              <input type="text" placeholder="Approved By" value={formData.approvedBy} onChange={(e) => setFormData({ ...formData, approvedBy: e.target.value })} />
-              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <textarea placeholder="Notes / Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
-              <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-                {editingId ? 'Update Expense' : 'Add Expense'}
-              </button>
+          <Modal title={editingId ? 'Edit Expense' : 'Add Expense'} onClose={() => setShowForm(false)} footer={<button type="submit" form="expense-form" className="btn primary">{editingId ? 'Update Expense' : 'Add Expense'}</button>}>
+            <form id="expense-form" onSubmit={handleSubmit} className="form-grid">
+              <label>
+                <span className="field-label">Title / Description *</span>
+                <input type="text" placeholder="Title / Description *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+              </label>
+              <label>
+                <span className="field-label">Category</span>
+                <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+                  <option value="">-- Category --</option>
+                  {expenseCategories.map(c => (
+                    <option key={c.id} value={c.label}>{c.label.charAt(0).toUpperCase() + c.label.slice(1)}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="field-label">Amount (₹) *</span>
+                <input type="number" placeholder="Amount (₹) *" value={formData.amount} onChange={(e) => setFormData({ ...formData, amount: e.target.value })} required min="0" step="0.01" />
+              </label>
+              <label>
+                <span className="field-label">Expense Date</span>
+                <input type="date" title="Expense Date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+              </label>
+              <label>
+                <span className="field-label">Paid To</span>
+                <input type="text" placeholder="Paid To (vendor / person)" value={formData.paidTo} onChange={(e) => setFormData({ ...formData, paidTo: e.target.value })} />
+              </label>
+              <label>
+                <span className="field-label">Payment Mode</span>
+                <select value={formData.paymentMode} onChange={(e) => setFormData({ ...formData, paymentMode: e.target.value })}>
+                  <option value="cash">Cash</option>
+                  <option value="online">Online Transfer</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="upi">UPI</option>
+                </select>
+              </label>
+              <label>
+                <span className="field-label">Receipt / Bill No.</span>
+                <input type="text" placeholder="Receipt / Bill No." value={formData.receiptNo} onChange={(e) => setFormData({ ...formData, receiptNo: e.target.value })} />
+              </label>
+              <label>
+                <span className="field-label">Approved By</span>
+                <input type="text" placeholder="Approved By" value={formData.approvedBy} onChange={(e) => setFormData({ ...formData, approvedBy: e.target.value })} />
+              </label>
+              <label>
+                <span className="field-label">Status</span>
+                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </label>
+              <label style={{ gridColumn: '1 / -1' }}>
+                <span className="field-label">Notes / Description</span>
+                <textarea placeholder="Notes / Description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="2" />
+              </label>
             </form>
-          </div>
+          </Modal>
         )}
 
         {loading ? (

@@ -46,7 +46,7 @@ const MasterDataSection = ({ category, title, description }) => {
   }
 
   const handleDelete = async (id) => {
-    const ok = await confirm('Delete this item?')
+    const ok = await confirm({ message: 'Are you sure you want to delete this item? This action cannot be undone.' })
     if (!ok) return
     try {
       await apiClient.deleteMasterData(id)
@@ -271,7 +271,7 @@ const SettingsPage = () => {
   }
 
   const handleDeleteSubject = async (id) => {
-    const ok = await confirm('Delete this subject?')
+    const ok = await confirm({ message: 'Are you sure you want to delete this subject? This action cannot be undone.' })
     if (!ok) return
     try {
       await apiClient.deleteSubject(String(id))
@@ -317,7 +317,7 @@ const SettingsPage = () => {
   }
 
   const handleDeletePeriod = async (id) => {
-    const ok = await confirm('Delete this period?')
+    const ok = await confirm({ message: 'Are you sure you want to delete this period? This action cannot be undone.' })
     if (!ok) return
     try {
       await apiClient.deletePeriod(String(id))

@@ -5,6 +5,7 @@ import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
 import BulkImportModal from '@/components/BulkImportModal'
+import Modal from '@/components/Modal'
 import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
@@ -92,7 +93,6 @@ const LibraryPage = () => {
     setEditingId(null)
     resetBookForm()
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEditBook = (book) => {
@@ -109,7 +109,6 @@ const LibraryPage = () => {
       shelfLocation: book.shelfLocation || '',
     })
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDeleteBook = async (bookId) => {
@@ -221,14 +220,14 @@ const LibraryPage = () => {
           {activeTab === 'books' && (
             <>
               <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
-              <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-                {showForm ? 'Cancel' : '+ Add Book'}
+              <button className="btn primary" onClick={handleAddNew}>
+                + Add Book
               </button>
             </>
           )}
           {activeTab === 'issues' && (
-            <button className="btn primary" onClick={() => showIssueForm ? setShowIssueForm(false) : setShowIssueForm(true)}>
-              {showIssueForm ? 'Cancel' : '+ Issue Book'}
+            <button className="btn primary" onClick={() => setShowIssueForm(true)}>
+              + Issue Book
             </button>
           )}
         </div>
@@ -251,28 +250,51 @@ const LibraryPage = () => {
         {activeTab === 'books' && (
           <>
             {showForm && (
-              <div className="form-card">
-                <h3>{editingId ? 'Edit Book' : 'Add New Book'}</h3>
-                <form onSubmit={handleSubmitBook} className="form-grid">
-                  <input type="text" placeholder="Title *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
-                  <input type="text" placeholder="Author *" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} required />
-                  <input type="text" placeholder="ISBN" value={formData.isbn} onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
-                  <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
-                    <option value="">-- Category --</option>
-                    {bookCategories.map(c => (
-                      <option key={c.id} value={c.label}>{c.label.charAt(0).toUpperCase() + c.label.slice(1)}</option>
-                    ))}
-                  </select>
-                  <input type="text" placeholder="Publisher" value={formData.publisher} onChange={(e) => setFormData({ ...formData, publisher: e.target.value })} />
-                  <input type="text" placeholder="Edition" value={formData.edition} onChange={(e) => setFormData({ ...formData, edition: e.target.value })} />
-                  <input type="text" placeholder="Language" value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })} />
-                  <input type="number" placeholder="Total Copies" value={formData.totalCopies} onChange={(e) => setFormData({ ...formData, totalCopies: e.target.value })} min="1" />
-                  <input type="text" placeholder="Shelf Location (e.g. Rack A-3)" value={formData.shelfLocation} onChange={(e) => setFormData({ ...formData, shelfLocation: e.target.value })} />
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-                    {editingId ? 'Update Book' : 'Add Book'}
-                  </button>
+              <Modal title={editingId ? 'Edit Book' : 'Add New Book'} onClose={() => setShowForm(false)} footer={<button type="submit" form="book-form" className="btn primary">{editingId ? 'Update Book' : 'Add Book'}</button>}>
+                <form id="book-form" onSubmit={handleSubmitBook} className="form-grid">
+                  <label>
+                    <span className="field-label">Title *</span>
+                    <input type="text" placeholder="Title *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">Author *</span>
+                    <input type="text" placeholder="Author *" value={formData.author} onChange={(e) => setFormData({ ...formData, author: e.target.value })} required />
+                  </label>
+                  <label>
+                    <span className="field-label">ISBN</span>
+                    <input type="text" placeholder="ISBN" value={formData.isbn} onChange={(e) => setFormData({ ...formData, isbn: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Category</span>
+                    <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+                      <option value="">-- Category --</option>
+                      {bookCategories.map(c => (
+                        <option key={c.id} value={c.label}>{c.label.charAt(0).toUpperCase() + c.label.slice(1)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Publisher</span>
+                    <input type="text" placeholder="Publisher" value={formData.publisher} onChange={(e) => setFormData({ ...formData, publisher: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Edition</span>
+                    <input type="text" placeholder="Edition" value={formData.edition} onChange={(e) => setFormData({ ...formData, edition: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Language</span>
+                    <input type="text" placeholder="Language" value={formData.language} onChange={(e) => setFormData({ ...formData, language: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Total Copies</span>
+                    <input type="number" placeholder="Total Copies" value={formData.totalCopies} onChange={(e) => setFormData({ ...formData, totalCopies: e.target.value })} min="1" />
+                  </label>
+                  <label>
+                    <span className="field-label">Shelf Location</span>
+                    <input type="text" placeholder="Shelf Location (e.g. Rack A-3)" value={formData.shelfLocation} onChange={(e) => setFormData({ ...formData, shelfLocation: e.target.value })} />
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? (
@@ -326,25 +348,32 @@ const LibraryPage = () => {
         {activeTab === 'issues' && (
           <>
             {showIssueForm && (
-              <div className="form-card">
-                <h3>Issue a Book</h3>
-                <form onSubmit={handleIssueBook} className="form-grid">
-                  <select value={issueFormData.bookId} onChange={(e) => setIssueFormData({ ...issueFormData, bookId: e.target.value })} required>
-                    <option value="">Select Book *</option>
-                    {availableBooks.map((b) => (
-                      <option key={b.id} value={b.id}>{b.title} — {b.author} ({b.availableCopies} available)</option>
-                    ))}
-                  </select>
-                  <select value={issueFormData.studentId} onChange={(e) => setIssueFormData({ ...issueFormData, studentId: e.target.value })} required>
-                    <option value="">Select Student *</option>
-                    {students.map((s) => (
-                      <option key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.admissionNumber}</option>
-                    ))}
-                  </select>
-                  <input type="date" title="Due Date" value={issueFormData.dueDate} onChange={(e) => setIssueFormData({ ...issueFormData, dueDate: e.target.value })} required />
-                  <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>Issue Book</button>
+              <Modal title="Issue a Book" onClose={() => setShowIssueForm(false)} footer={<button type="submit" form="issue-form" className="btn primary">Issue Book</button>}>
+                <form id="issue-form" onSubmit={handleIssueBook} className="form-grid">
+                  <label>
+                    <span className="field-label">Book *</span>
+                    <select value={issueFormData.bookId} onChange={(e) => setIssueFormData({ ...issueFormData, bookId: e.target.value })} required>
+                      <option value="">Select Book *</option>
+                      {availableBooks.map((b) => (
+                        <option key={b.id} value={b.id}>{b.title} — {b.author} ({b.availableCopies} available)</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Student *</span>
+                    <select value={issueFormData.studentId} onChange={(e) => setIssueFormData({ ...issueFormData, studentId: e.target.value })} required>
+                      <option value="">Select Student *</option>
+                      {students.map((s) => (
+                        <option key={s.id} value={s.id}>{s.firstName} {s.lastName} — {s.admissionNumber}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="field-label">Due Date</span>
+                    <input type="date" title="Due Date" value={issueFormData.dueDate} onChange={(e) => setIssueFormData({ ...issueFormData, dueDate: e.target.value })} required />
+                  </label>
                 </form>
-              </div>
+              </Modal>
             )}
 
             {loading ? (

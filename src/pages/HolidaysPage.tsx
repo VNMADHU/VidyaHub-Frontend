@@ -9,6 +9,7 @@ import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
+import Modal from '../components/Modal'
 
 const HOLIDAY_TYPES = ['national', 'regional', 'school', 'religious', 'seasonal']
 const TYPE_COLORS = {
@@ -79,7 +80,6 @@ const HolidaysPage = () => {
     setEditingId(null)
     resetForm()
     setShowForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = (holiday) => {
@@ -172,8 +172,8 @@ const HolidaysPage = () => {
           <button style={exportButtonStyle} onClick={() => exportToPDF(filteredHolidays, 'Holidays', exportColumns, 'School Holidays')} title="Export PDF">📥 PDF</button>
           <button style={exportButtonStyle} onClick={handlePrint} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
-          <button className="btn primary" onClick={() => showForm ? setShowForm(false) : handleAddNew()}>
-            {showForm ? 'Cancel' : '+ Add Holiday'}
+          <button className="btn primary" onClick={handleAddNew}>
+            + Add Holiday
           </button>
         </div>
       </div>
@@ -182,23 +182,34 @@ const HolidaysPage = () => {
 
       <div className="page-content-scrollable">
         {showForm && (
-          <div className="form-card">
-            <h3>{editingId ? 'Edit Holiday' : 'Add Holiday'}</h3>
-            <form onSubmit={handleSubmit} className="form-grid">
-              <input type="text" placeholder="Holiday Name *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
-              <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
-                {HOLIDAY_TYPES.map((t) => (
-                  <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
-                ))}
-              </select>
-              <input type="date" title="From Date" placeholder="From Date *" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
-              <input type="date" title="To Date (optional)" placeholder="To Date" value={formData.toDate} onChange={(e) => setFormData({ ...formData, toDate: e.target.value })} />
-              <textarea placeholder="Description (optional)" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="2" style={{ gridColumn: '1 / -1' }} />
-              <button type="submit" className="btn primary" style={{ gridColumn: '1 / -1' }}>
-                {editingId ? 'Update Holiday' : 'Add Holiday'}
-              </button>
+          <Modal title={editingId ? 'Edit Holiday' : 'Add Holiday'} onClose={() => setShowForm(false)} footer={<button type="submit" form="holiday-form" className="btn primary">{editingId ? 'Update Holiday' : 'Add Holiday'}</button>}>
+            <form id="holiday-form" onSubmit={handleSubmit} className="form-grid">
+              <label>
+                <span className="field-label">Holiday Name *</span>
+                <input type="text" placeholder="Holiday Name *" value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+              </label>
+              <label>
+                <span className="field-label">Holiday Type</span>
+                <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })}>
+                  {HOLIDAY_TYPES.map((t) => (
+                    <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="field-label">From Date *</span>
+                <input type="date" title="From Date" placeholder="From Date *" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+              </label>
+              <label>
+                <span className="field-label">To Date</span>
+                <input type="date" title="To Date (optional)" placeholder="To Date" value={formData.toDate} onChange={(e) => setFormData({ ...formData, toDate: e.target.value })} />
+              </label>
+              <label style={{ gridColumn: '1 / -1' }}>
+                <span className="field-label">Description</span>
+                <textarea placeholder="Description (optional)" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows="2" />
+              </label>
             </form>
-          </div>
+          </Modal>
         )}
 
         {loading ? (
