@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { adminApi } from '@/services/api'
 import { useToast } from '@/components/ToastContainer'
+import SearchBar from '@/components/SearchBar'
 import type { AdminUser } from '@/types'
 
 /* ── Module definitions ────────────────────────────────────────────── */
@@ -303,33 +304,19 @@ const AdminProfilesPage = () => {
 
   /* ═══════════════════ RENDER ═══════════════════════════════════════ */
   return (
-    <div className="ap-page">
+    <div className="page">
       {/* ── Header ── */}
-      <div className="ap-header">
-        <div>
-          <h1 className="ap-title">Admin Profiles</h1>
-          <p className="ap-subtitle">
-            {admins.length} admin{admins.length !== 1 ? 's' : ''} in your school
-          </p>
-        </div>
+      <div className="page-header">
+        <h1>Admin Profiles</h1>
         <button className="btn primary" onClick={openCreate}>+ Add Admin</button>
       </div>
 
       {/* ── Search bar ── */}
-      {admins.length > 0 && (
-        <div className="ap-search">
-          <input
-            type="text"
-            placeholder="Search by name, email, or phone..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="ap-search-input"
-          />
-          {search && (
-            <button className="ap-search-clear" onClick={() => setSearch('')} type="button">{'\u2715'}</button>
-          )}
-        </div>
-      )}
+      <SearchBar
+        value={search}
+        onChange={setSearch}
+        placeholder="Search by name, email, or phone..."
+      />
 
       {/* ── Cards grid ── */}
       {loading ? (

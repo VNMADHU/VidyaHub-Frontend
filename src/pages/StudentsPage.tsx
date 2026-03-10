@@ -423,14 +423,15 @@ const EMPTY_STUDENT_FORM = {
               />
             </label>
             <label>
-              <span className="field-label">Class</span>
+              <span className="field-label">Class *</span>
               <select
                 value={formData.classId}
                 onChange={(e) => {
                   setFormData({ ...formData, classId: e.target.value, sectionId: '' })
                 }}
+                required
               >
-                <option value="">Select Class</option>
+                <option value="">Select Class *</option>
                 {classes.map(cls => (
                   <option key={cls.id} value={cls.id}>
                     Class {cls.name}

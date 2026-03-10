@@ -4923,7 +4923,7 @@ select {
    ═══════════════════════════════════════════════════════════════════ */
 
 /* Page layout */
-.ap-page { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+.ap-page { padding: 2rem; }
 .ap-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap; }
 .ap-title { font-size: 1.5rem; font-weight: 700; color: var(--text-primary, #111827); margin: 0; }
 .ap-subtitle { font-size: 0.875rem; color: var(--text-secondary, #6b7280); margin: 0.25rem 0 0; }

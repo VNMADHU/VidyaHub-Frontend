@@ -36,11 +36,14 @@ const FeesPage = () => {
   const [filterDate, setFilterDate] = useState('')
   const [filterClass, setFilterClass] = useState('')
   const [classes, setClasses] = useState([])
+  const [sections, setSections] = useState([])
   const [showPayModal, setShowPayModal] = useState(null)
   const [paymentData, setPaymentData] = useState({ paymentMode: 'online', paidAmount: '', transactionId: '' })
   const [school, setSchool] = useState(null)
   const [formData, setFormData] = useState({
     studentId: '',
+    classId: '',
+    sectionId: '',
     feeType: 'tuition',
     description: '',
     amount: '',
@@ -55,6 +58,16 @@ const FeesPage = () => {
     loadData()
     loadSchool()
   }, [])
+
+  useEffect(() => {
+    if (formData.classId) {
+      apiClient.listSections(formData.classId)
+        .then((res) => setSections(Array.isArray(res) ? res : res?.data || []))
+        .catch(() => setSections([]))
+    } else {
+      setSections([])
+    }
+  }, [formData.classId])
 
   const loadSchool = async () => {
     try {
@@ -104,6 +117,8 @@ const FeesPage = () => {
   const resetForm = () => {
     setFormData({
       studentId: '',
+      classId: '',
+      sectionId: '',
       feeType: 'tuition',
       description: '',
       amount: '',
@@ -125,6 +140,8 @@ const FeesPage = () => {
     setEditingId(fee.id)
     setFormData({
       studentId: fee.studentId,
+      classId: fee.classId ? String(fee.classId) : '',
+      sectionId: fee.sectionId ? String(fee.sectionId) : '',
       feeType: fee.feeType,
       description: fee.description || '',
       amount: fee.amount,
@@ -406,7 +423,16 @@ const FeesPage = () => {
                 <span className="field-label">Student *</span>
                 <select
                   value={formData.studentId}
-                  onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                  onChange={(e) => {
+                    const sid = e.target.value
+                    const student = students.find((s) => String(s.id) === sid)
+                    setFormData({
+                      ...formData,
+                      studentId: sid,
+                      classId: student?.classId ? String(student.classId) : '',
+                      sectionId: student?.sectionId ? String(student.sectionId) : '',
+                    })
+                  }}
                   required
                 >
                   <option value="">Select Student *</option>
@@ -426,6 +452,31 @@ const FeesPage = () => {
                 >
                   {feeTypes.map(t => (
                     <option key={t.id} value={t.label}>{t.label.charAt(0).toUpperCase() + t.label.slice(1)} Fee</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="field-label">Class *</span>
+                <select
+                  value={formData.classId}
+                  onChange={(e) => setFormData({ ...formData, classId: e.target.value, sectionId: '' })}
+                  required
+                >
+                  <option value="">Select Class *</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={String(c.id)}>{c.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="field-label">Section</span>
+                <select
+                  value={formData.sectionId}
+                  onChange={(e) => setFormData({ ...formData, sectionId: e.target.value })}
+                >
+                  <option value="">Select Section (optional)</option>
+                  {sections.map((sec) => (
+                    <option key={sec.id} value={String(sec.id)}>{sec.name}</option>
                   ))}
                 </select>
               </label>

@@ -36,38 +36,58 @@ const SchoolPortalLayout = () => {
     : (typeof user?.modulePermissions === 'string' && user.modulePermissions)
       ? JSON.parse(user.modulePermissions)
       : null // null = full access
+const menuItems = [
+  // Dashboard
+  { path: '/portal/dashboard', icon: '📊', label: 'Dashboard' },
 
-  const menuItems = [
-    { path: '/portal/dashboard',         icon: '📊', label: 'Dashboard' },                              // always visible
-    { path: '/portal/students',          icon: '👥', label: 'Students',      module: 'students' },
-    { path: '/portal/admissions',        icon: '📋', label: 'Admissions',    module: 'admissions' },
-    { path: '/portal/teachers',          icon: '👨‍🏫', label: 'Teachers',      module: 'teachers' },
-    { path: '/portal/staff',             icon: '🧹', label: 'Staff',         module: 'staff' },
-    { path: '/portal/hostel',            icon: '🏠', label: 'Hostel',        module: 'hostel' },
-    { path: '/portal/classes',           icon: '🏫', label: 'Classes',       module: 'classes' },
-    { path: '/portal/exam-management',   icon: '📋', label: 'Exams',         module: 'exams' },
-    { path: '/portal/exams',             icon: '📝', label: 'Marks',         module: 'exams' },
-    { path: '/portal/report-card',       icon: '📄', label: 'Report Card',   module: 'exams' },
-    { path: '/portal/attendance',        icon: '✓',  label: 'Attendance',    module: 'attendance' },
-    { path: '/portal/attendance-report', icon: '📊', label: 'Att. Report',   module: 'attendance' },
-    { path: '/portal/fees',              icon: '💰', label: 'Fees',          module: 'fees' },
-    { path: '/portal/timetable',         icon: '📅', label: 'Timetable',     module: 'classes' },
-    { path: '/portal/homework',          icon: '📝', label: 'Homework',      module: 'students' },
-    { path: '/portal/notifications',     icon: '📨', label: 'Notifications', module: 'announcements' },
-    { path: '/portal/events',            icon: '🎉', label: 'Events',        module: 'events' },
-    { path: '/portal/announcements',     icon: '📣', label: 'Announcements', module: 'announcements' },
-    { path: '/portal/achievements',      icon: '🏆', label: 'Awards',        module: 'achievements' },
-    { path: '/portal/sports',            icon: '⚽', label: 'Sports',        module: 'sports' },
-    { path: '/portal/library',           icon: '📚', label: 'Library',       module: 'library' },
-    { path: '/portal/transport',         icon: '🚌', label: 'Transport',     module: 'transport' },
-    { path: '/portal/expenses',          icon: '💸', label: 'Expenses',      module: 'expenses' },
-    { path: '/portal/holidays',          icon: '🏖️', label: 'Holidays',      module: 'holidays' },
-    { path: '/portal/leaves',            icon: '📋', label: 'Leaves',        module: 'leaves' },
-    { path: '/portal/transfer-certificate', icon: '📜', label: 'TC',         module: 'students' },
-    ...(role === 'super-admin' ? [{ path: '/portal/admin-profiles', icon: '🔑', label: 'Admin Profiles' }] : []),
-    { path: '/portal/settings',          icon: '⚙️', label: 'Settings' },                               // always visible
-    { path: '/portal/support',           icon: '🛟', label: 'Support' },                                // always visible
-  
+  // ACADEMICS
+  { path: '/portal/admissions', icon: '📋', label: 'Admissions', module: 'admissions' },
+  { path: '/portal/classes', icon: '🏫', label: 'Classes', module: 'classes' },
+  { path: '/portal/students', icon: '👥', label: 'Students', module: 'students' },
+  { path: '/portal/teachers', icon: '👨‍🏫', label: 'Teachers', module: 'teachers' },
+  { path: '/portal/attendance', icon: '✓', label: 'Attendance', module: 'attendance' },
+  { path: '/portal/timetable', icon: '📅', label: 'Timetable', module: 'classes' },
+  { path: '/portal/homework', icon: '📝', label: 'Homework', module: 'students' },
+
+  // ATTENDANCE
+
+  // EXAMINATION
+  { path: '/portal/exam-management', icon: '📋', label: 'Exams', module: 'exams' },
+  { path: '/portal/exams', icon: '📝', label: 'Marks', module: 'exams' },
+  { path: '/portal/report-card', icon: '📄', label: 'Report Card', module: 'exams' },
+  { path: '/portal/attendance-report', icon: '📊', label: 'Att. Report', module: 'attendance' },
+
+  // FINANCE
+  { path: '/portal/fees', icon: '💰', label: 'Fees', module: 'fees' },
+  { path: '/portal/expenses', icon: '💸', label: 'Expenses', module: 'expenses' },
+
+  // STAFF / HR
+  { path: '/portal/staff', icon: '🧹', label: 'Staff', module: 'staff' },
+  { path: '/portal/leaves', icon: '📋', label: 'Leaves', module: 'leaves' },
+
+  // FACILITIES
+  { path: '/portal/library', icon: '📚', label: 'Library', module: 'library' },
+  { path: '/portal/transport', icon: '🚌', label: 'Transport', module: 'transport' },
+  { path: '/portal/hostel', icon: '🏠', label: 'Hostel', module: 'hostel' },
+
+  // ACTIVITIES
+  { path: '/portal/events', icon: '🎉', label: 'Events', module: 'events' },
+  { path: '/portal/sports', icon: '⚽', label: 'Sports', module: 'sports' },
+  { path: '/portal/achievements', icon: '🏆', label: 'Awards', module: 'achievements' },
+  { path: '/portal/holidays', icon: '🏖️', label: 'Holidays', module: 'holidays' },
+
+  // COMMUNICATION
+  { path: '/portal/notifications', icon: '📨', label: 'Notifications', module: 'announcements' },
+  { path: '/portal/announcements', icon: '📣', label: 'Announcements', module: 'announcements' },
+  { path: '/portal/transfer-certificate', icon: '📜', label: 'TC', module: 'students' },
+  // ADMIN
+  ...(role === 'super-admin'
+    ? [{ path: '/portal/admin-profiles', icon: '🔑', label: 'Admin Profiles' }]
+    : []),
+
+  // SYSTEM
+  { path: '/portal/settings', icon: '⚙️', label: 'Settings' },
+  { path: '/portal/support', icon: '🛟', label: 'Support' }
   ].filter((item) => {
     // super-admin always sees everything
     if (role === 'super-admin') return true
