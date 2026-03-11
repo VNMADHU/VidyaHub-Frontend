@@ -21,6 +21,7 @@ interface DialogState {
   message: string
   confirmText: string
   cancelText: string
+  confirmVariant: 'danger' | 'success' | 'primary'
   onConfirm: (() => void) | null
   onCancel: (() => void) | null
 }
@@ -34,6 +35,7 @@ export const ConfirmDialogProvider = ({ children }: { children: ReactNode }) => 
     onCancel: null,
     confirmText: 'Delete',
     cancelText: 'Cancel',
+    confirmVariant: 'danger',
   })
 
   const confirm = ({
@@ -42,6 +44,7 @@ export const ConfirmDialogProvider = ({ children }: { children: ReactNode }) => 
     onConfirm: onConfirmCallback,
     confirmText = 'Delete',
     cancelText = 'Cancel',
+    confirmVariant = 'danger',
   }: ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
       setDialogState({
@@ -50,6 +53,7 @@ export const ConfirmDialogProvider = ({ children }: { children: ReactNode }) => 
         message,
         confirmText,
         cancelText,
+        confirmVariant,
         onConfirm: () => {
           resolve(true)
           onConfirmCallback?.()
@@ -96,7 +100,7 @@ export const ConfirmDialogProvider = ({ children }: { children: ReactNode }) => 
                 {dialogState.cancelText}
               </button>
               <button
-                className="btn danger"
+                className={`btn ${dialogState.confirmVariant === 'success' ? 'success' : dialogState.confirmVariant === 'primary' ? 'primary' : 'danger'}`}
                 onClick={dialogState.onConfirm ?? undefined}
               >
                 {dialogState.confirmText}

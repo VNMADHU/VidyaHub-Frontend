@@ -808,7 +808,7 @@ select {
 }
 
 .sidebar-brand {
-  padding: 1.5rem;
+  padding: 1rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -2637,6 +2637,15 @@ select {
 
 .btn.danger:hover {
   background: #dc2626;
+}
+
+.btn.success {
+  background: #22c55e;
+  color: white;
+}
+
+.btn.success:hover {
+  background: #16a34a;
 }
 
 /* ============================================

@@ -79,7 +79,7 @@ const menuItems = [
   // COMMUNICATION
   { path: '/portal/notifications', icon: '📨', label: 'Notifications', module: 'announcements' },
   { path: '/portal/announcements', icon: '📣', label: 'Announcements', module: 'announcements' },
-  { path: '/portal/transfer-certificate', icon: '📜', label: 'TC', module: 'students' },
+  { path: '/portal/transfer-certificate', icon: '📜', label: 'Certificates', module: 'students' },
   // ADMIN
   ...(role === 'super-admin'
     ? [{ path: '/portal/admin-profiles', icon: '🔑', label: 'Admin Profiles' }]

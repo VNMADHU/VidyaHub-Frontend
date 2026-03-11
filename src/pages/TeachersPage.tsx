@@ -18,6 +18,18 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const validateTeacherForm = (data) => {
   const errors = []
+  if (!data.teacherId) {
+    errors.push('Teacher ID is required.')
+  }
+  if (!data.gender) {
+    errors.push('Gender is required.')
+  }
+  if (!data.dateOfBirth) {
+    errors.push('Date of Birth is required.')
+  }
+  if (!data.joiningDate) {
+    errors.push('Joining Date is required.')
+  }
   if (data.email && !EMAIL_REGEX.test(data.email)) {
     errors.push('Please enter a valid email address.')
   }
@@ -331,28 +343,31 @@ const TeachersPage = () => {
               />
             </label>
             <label>
-              <span className="field-label">Teacher ID</span>
+              <span className="field-label">Teacher ID *</span>
               <input
                 type="text"
-                placeholder="Teacher ID (for teacher login)"
+                placeholder="Teacher ID (for teacher login) *"
                 value={formData.teacherId}
                 onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                required
               />
             </label>
             <label>
-              <span className="field-label">Date of Birth</span>
+              <span className="field-label">Date of Birth *</span>
               <input
                 type="date"
                 title="Date of Birth"
                 value={formData.dateOfBirth}
                 onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                required
               />
             </label>
             <label>
-              <span className="field-label">Gender</span>
+              <span className="field-label">Gender *</span>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                required
               >
                 <option value="">Gender</option>
                 <option value="male">Male</option>
@@ -382,12 +397,13 @@ const TeachersPage = () => {
               />
             </label>
             <label>
-              <span className="field-label">Joining Date</span>
+              <span className="field-label">Joining Date *</span>
               <input
                 type="date"
                 title="Joining Date"
                 value={formData.joiningDate}
                 onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
+                required
               />
             </label>
             <label>

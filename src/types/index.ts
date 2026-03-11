@@ -315,4 +315,5 @@ export interface ConfirmOptions {
   onConfirm?: () => void
   confirmText?: string
   cancelText?: string
+  confirmVariant?: 'danger' | 'success' | 'primary'
 }

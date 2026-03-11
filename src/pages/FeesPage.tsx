@@ -150,6 +150,7 @@ const FeesPage = () => {
       status: fee.status,
       academicYear: fee.academicYear || '2025-2026',
       term: fee.term || 'Term 1',
+      paidDate: fee.paidDate ? fee.paidDate.split('T')[0] : '',
     })
     setShowForm(true)
   }
@@ -566,43 +567,59 @@ const FeesPage = () => {
           </Modal>
         )}
 
-        {/* Payment Modal */}
+        {/* Payment Modal — now a proper popup */}
         {showPayModal && (
-          <div className="form-card" style={{ border: '2px solid var(--primary)', marginBottom: '1.5rem' }}>
-            <h3>💳 Record Payment — {showPayModal.student?.firstName} {showPayModal.student?.lastName}</h3>
-            <p style={{ color: 'var(--muted)', margin: '0 0 1rem' }}>
-              {showPayModal.feeType} Fee — Amount: ₹{showPayModal.amount}{showPayModal.discount > 0 ? ` (disc: -₹${showPayModal.discount})` : ''} | Net: ₹{(showPayModal.amount - (showPayModal.discount || 0)).toLocaleString()} | Already Paid: ₹{showPayModal.paidAmount || 0} | Balance: ₹{(showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)).toLocaleString()}
-            </p>
-            <form onSubmit={handlePay} className="form-grid">
-              <input
-                type="number"
-                placeholder={`Amount to pay (₹${(showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)).toLocaleString()})`}
-                value={paymentData.paidAmount}
-                onChange={(e) => setPaymentData({ ...paymentData, paidAmount: e.target.value })}
-                max={showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)}
-                min="1"
-              />
-              <select
-                value={paymentData.paymentMode}
-                onChange={(e) => setPaymentData({ ...paymentData, paymentMode: e.target.value })}
-              >
-                <option value="online">Online</option>
-                <option value="cash">Cash</option>
-                <option value="cheque">Cheque</option>
-                <option value="upi">UPI</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Transaction ID / Receipt No. (optional)"
-                value={paymentData.transactionId}
-                onChange={(e) => setPaymentData({ ...paymentData, transactionId: e.target.value })}
-              />
-              <div style={{ display: 'flex', gap: '0.75rem', gridColumn: '1 / -1' }}>
-                <button type="submit" className="btn primary">✓ Confirm Payment</button>
-                <button type="button" className="btn outline" onClick={() => setShowPayModal(null)}>Cancel</button>
-              </div>
+          <Modal
+            title={`💳 Record Payment — ${showPayModal.student?.firstName} ${showPayModal.student?.lastName}`}
+            onClose={() => { setShowPayModal(null); setPaymentData({ paymentMode: 'online', paidAmount: '', transactionId: '' }) }}
+            size="md"
+            footer={
+              <button type="submit" form="pay-form" className="btn primary">✓ Confirm Payment</button>
+            }
+          >
+            <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '8px', padding: '10px 14px', marginBottom: '1.25rem', fontSize: '13px', color: '#0369a1', lineHeight: 1.6 }}>
+              <strong style={{ textTransform: 'capitalize' }}>{showPayModal.feeType} Fee</strong> &nbsp;|&nbsp;
+              Amount: <strong>₹{showPayModal.amount?.toLocaleString()}</strong>
+              {showPayModal.discount > 0 && <> &nbsp;(disc: <strong>-₹{showPayModal.discount.toLocaleString()}</strong>)</>}
+              &nbsp;|&nbsp; Net: <strong>₹{(showPayModal.amount - (showPayModal.discount || 0)).toLocaleString()}</strong>
+              &nbsp;|&nbsp; Already Paid: <strong>₹{(showPayModal.paidAmount || 0).toLocaleString()}</strong>
+              &nbsp;|&nbsp; Balance: <strong>₹{(showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)).toLocaleString()}</strong>
+            </div>
+            <form id="pay-form" onSubmit={handlePay} className="form-grid">
+              <label>
+                <span className="field-label">Amount to Pay (₹)</span>
+                <input
+                  type="number"
+                  placeholder={`Amount to pay (₹${(showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)).toLocaleString()})`}
+                  value={paymentData.paidAmount}
+                  onChange={(e) => setPaymentData({ ...paymentData, paidAmount: e.target.value })}
+                  max={showPayModal.amount - (showPayModal.discount || 0) - (showPayModal.paidAmount || 0)}
+                  min="1"
+                />
+              </label>
+              <label>
+                <span className="field-label">Payment Mode</span>
+                <select
+                  value={paymentData.paymentMode}
+                  onChange={(e) => setPaymentData({ ...paymentData, paymentMode: e.target.value })}
+                >
+                  <option value="online">Online</option>
+                  <option value="cash">Cash</option>
+                  <option value="cheque">Cheque</option>
+                  <option value="upi">UPI</option>
+                </select>
+              </label>
+              <label style={{ gridColumn: '1 / -1' }}>
+                <span className="field-label">Transaction ID / Receipt No. (optional)</span>
+                <input
+                  type="text"
+                  placeholder="Transaction ID / Receipt No."
+                  value={paymentData.transactionId}
+                  onChange={(e) => setPaymentData({ ...paymentData, transactionId: e.target.value })}
+                />
+              </label>
             </form>
-          </div>
+          </Modal>
         )}
 
         {loading ? (
@@ -620,7 +637,9 @@ const FeesPage = () => {
                   <th>Amount</th>
                   <th>Paid</th>
                   <th>Balance</th>
+                  <th>Created</th>
                   <th>Due Date</th>
+                  <th>Paid Date</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
@@ -628,7 +647,7 @@ const FeesPage = () => {
               <tbody>
                 {filteredFees.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="empty-row">
+                    <td colSpan="12" className="empty-row">
                       {searchQuery ? 'No fees match your search.' : 'No fee records found. Assign fees to students!'}
                     </td>
                   </tr>
@@ -651,7 +670,15 @@ const FeesPage = () => {
                       <td style={{ color: (() => { const net = fee.amount - (fee.discount || 0); const paid = fee.status === 'paid' ? net : (fee.paidAmount || 0); return net - paid > 0 ? '#dc2626' : '#16a34a' })(), fontWeight: 600 }}>
                         {(() => { const net = fee.amount - (fee.discount || 0); const paid = fee.status === 'paid' ? net : (fee.paidAmount || 0); return `₹${(net - paid).toLocaleString()}` })()}
                       </td>
-                      <td>{fee.dueDate ? new Date(fee.dueDate).toLocaleDateString() : '-'}</td>
+                      <td style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
+                        {fee.createdAt ? new Date(fee.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                      </td>
+                      <td>{fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                      <td>
+                        {fee.paidDate
+                          ? <span style={{ color: '#16a34a', fontWeight: 600 }}>{new Date(fee.paidDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                          : <span style={{ color: 'var(--muted)' }}>—</span>}
+                      </td>
                       <td>
                         <span
                           style={{

@@ -20,6 +20,9 @@ const TODAY = new Date().toISOString().split('T')[0]
 
 const validateStudentForm = (data) => {
   const errors = []
+  if (!data.rollNumber) {
+    errors.push('Roll Number is required.')
+  }
   if (data.dateOfBirth && data.dateOfBirth > TODAY) {
     errors.push('Date of Birth cannot be a future date.')
   }
@@ -233,12 +236,12 @@ const EMPTY_STUDENT_FORM = {
   ]
 
   const mapStudentRow = (row) => {
-    if (!row.firstName || !row.lastName || !row.email || !row.admissionNumber) {
+    if (!row.firstName || !row.lastName || !row.admissionNumber) {
       return null
     }
 
-    const email = String(row.email).trim()
-    if (!EMAIL_REGEX.test(email)) return null
+    const email = row.email ? String(row.email).trim() : ''
+    if (email && !EMAIL_REGEX.test(email)) return null
 
     const parentEmail = row.parentEmail ? String(row.parentEmail).trim() : ''
     if (parentEmail && !EMAIL_REGEX.test(parentEmail)) return null
@@ -371,13 +374,12 @@ const EMPTY_STUDENT_FORM = {
               />
             </label>
             <label>
-              <span className="field-label">Email *</span>
+              <span className="field-label">Email</span>
               <input
                 type="email"
-                placeholder="Email *"
+                placeholder="Email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                required
               />
             </label>
             <label>
@@ -414,12 +416,13 @@ const EMPTY_STUDENT_FORM = {
               />
             </label>
             <label>
-              <span className="field-label">Roll Number</span>
+              <span className="field-label">Roll Number *</span>
               <input
                 type="text"
-                placeholder="Roll Number"
+                placeholder="Roll Number *"
                 value={formData.rollNumber}
                 onChange={(e) => setFormData({ ...formData, rollNumber: e.target.value })}
+                required
               />
             </label>
             <label>

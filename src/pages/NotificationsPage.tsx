@@ -94,6 +94,8 @@ const NotificationsPage = () => {
     const ok = await confirm({
       title: 'Send Notification?',
       message: `This will send ${form.channel === 'both' ? 'email & SMS' : form.channel} to ${recipientPreview.count} recipient(s). Continue?`,
+      confirmText: 'Send',
+      confirmVariant: 'success',
     })
     if (!ok) return
 

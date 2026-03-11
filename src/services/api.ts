@@ -250,6 +250,9 @@ export const schoolApi = {
   update: (id: string, data: Partial<School>) =>
     api.patch<School>(`/schools/${id}`, data).then((r) => r.data),
   delete: (id: string) => api.delete(`/schools/${id}`).then((r) => r.data),
+  getSmsSettings: (id: string) => api.get(`/schools/${id}/sms-settings`).then((r) => r.data),
+  updateSmsSettings: (id: string, data: Record<string, boolean>) =>
+    api.patch(`/schools/${id}/sms-settings`, data).then((r) => r.data),
 }
 
 // Students
@@ -599,6 +602,8 @@ const apiClient = {
   createSchool: schoolApi.create,
   updateSchool: schoolApi.update,
   deleteSchool: schoolApi.delete,
+  getSmsSettings: schoolApi.getSmsSettings,
+  updateSmsSettings: schoolApi.updateSmsSettings,
   // Students
   listStudents: studentApi.list,
   getStudent: studentApi.getById,

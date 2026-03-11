@@ -132,7 +132,7 @@ const router = createBrowserRouter([
     ),
     errorElement: <NotFound />,
     children: [
-      { path: 'dashboard', element: <PortalDashboard /> },
+      { path: 'dashboard', element: <AdminDashboard /> },
       { path: 'students', element: <StudentsPage /> },
       { path: 'students/:studentId', element: <StudentDetailPage /> },
       { path: 'teachers', element: <TeachersPage /> },

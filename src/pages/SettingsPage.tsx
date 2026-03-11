@@ -166,6 +166,11 @@ const SettingsPage = () => {
   const [mfaMsg, setMfaMsg] = useState('')
   const [mfaLoading, setMfaLoading] = useState(false)
 
+  // SMS notification settings
+  const [smsSettings, setSmsSettings] = useState({ smsEnabled: false, smsOnAbsent: false, smsOnFeeAssigned: false, smsOnLeaveApproved: false, smsOnAnnouncement: false })
+  const [smsMsg, setSmsMsg] = useState('')
+  const [smsLoading, setSmsLoading] = useState(false)
+
   // Subject management
   const [subjects, setSubjects] = useState([])
   const [newSubject, setNewSubject] = useState({ name: '', code: '' })
@@ -186,6 +191,22 @@ const SettingsPage = () => {
       setMfa({ mfaEmail: data.mfaEmail ?? true, mfaPhone: data.mfaPhone ?? false })
     }).catch(() => {})
   }, [])
+
+  // Load SMS settings whenever school is loaded
+  useEffect(() => {
+    if (school?.id) {
+      apiClient.getSmsSettings(String(school.id)).then((res) => {
+        const d = res?.data || res || {}
+        setSmsSettings({
+          smsEnabled: d.smsEnabled ?? false,
+          smsOnAbsent: d.smsOnAbsent ?? false,
+          smsOnFeeAssigned: d.smsOnFeeAssigned ?? false,
+          smsOnLeaveApproved: d.smsOnLeaveApproved ?? false,
+          smsOnAnnouncement: d.smsOnAnnouncement ?? false,
+        })
+      }).catch(() => {})
+    }
+  }, [school?.id])
 
   const loadSchool = async () => {
     try {
@@ -730,6 +751,82 @@ const SettingsPage = () => {
             </button>
 
             <hr style={{ border: 'none', borderTop: '1px solid var(--border, #e5e7eb)', margin: '2rem 0' }} />
+
+            {/* SMS Notifications — only visible to super-admin */}
+            {user?.role === 'super-admin' && (
+              <>
+                <h3>📲 SMS Notifications</h3>
+                <p style={{ color: 'var(--muted)', marginBottom: '1.25rem', fontSize: '0.9rem' }}>
+                  Configure automatic SMS alerts sent to parents and staff when key events occur in the school.
+                </p>
+                {smsMsg && (
+                  <div style={{ padding: '0.5rem 0.75rem', marginBottom: '1rem', borderRadius: '8px', background: smsMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2', fontSize: '0.875rem' }}>
+                    {smsMsg}
+                  </div>
+                )}
+                {/* Master toggle */}
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', cursor: 'pointer', padding: '1rem', borderRadius: '10px', border: `2px solid ${smsSettings.smsEnabled ? '#16a34a' : 'var(--border, #e5e7eb)'}`, background: smsSettings.smsEnabled ? '#f0fdf4' : 'var(--surface)', marginBottom: '1rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={smsSettings.smsEnabled}
+                    onChange={(e) => setSmsSettings({ ...smsSettings, smsEnabled: e.target.checked })}
+                    style={{ marginTop: '2px', width: '18px', height: '18px', accentColor: '#16a34a', flexShrink: 0 }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '1rem' }}>🔔 Enable SMS Notifications</div>
+                    <div style={{ fontSize: '0.825rem', color: 'var(--muted)', marginTop: '2px' }}>
+                      Master switch — turn this on to allow SMS to be sent for the events below.
+                    </div>
+                  </div>
+                </label>
+
+                {/* Sub-toggles — only shown when master is on */}
+                {smsSettings.smsEnabled && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem', paddingLeft: '0.5rem' }}>
+                    {[
+                      { key: 'smsOnAbsent', icon: '🏫', label: 'Absent Student Alert', desc: 'Send SMS to parent when their child is marked absent.' },
+                      { key: 'smsOnFeeAssigned', icon: '💳', label: 'Fee Assignment Alert', desc: 'Send SMS to parent when a fee is assigned to their child.' },
+                      { key: 'smsOnLeaveApproved', icon: '📋', label: 'Leave Status Alert', desc: 'Send SMS to the employee when their leave is approved or rejected.' },
+                      { key: 'smsOnAnnouncement', icon: '📢', label: 'Announcement Broadcast', desc: 'Send SMS to all parents and staff when a new announcement is created.' },
+                    ].map(({ key, icon, label, desc }) => (
+                      <label key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', cursor: 'pointer', padding: '0.85rem 1rem', borderRadius: '10px', border: `1.5px solid ${smsSettings[key] ? '#3b82f6' : 'var(--border, #e5e7eb)'}`, background: smsSettings[key] ? '#eff6ff' : 'var(--surface)' }}>
+                        <input
+                          type="checkbox"
+                          checked={smsSettings[key]}
+                          onChange={(e) => setSmsSettings({ ...smsSettings, [key]: e.target.checked })}
+                          style={{ marginTop: '2px', width: '17px', height: '17px', accentColor: '#3b82f6', flexShrink: 0 }}
+                        />
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--text)' }}>{icon} {label}</div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: '2px' }}>{desc}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <button
+                  className="btn primary"
+                  disabled={smsLoading || !school}
+                  onClick={async () => {
+                    setSmsLoading(true)
+                    try {
+                      await apiClient.updateSmsSettings(String(school.id), smsSettings)
+                      setSmsMsg('✅ SMS settings saved!')
+                    } catch (err) {
+                      setSmsMsg('❌ ' + (err?.response?.data?.message || 'Failed to save'))
+                    } finally {
+                      setSmsLoading(false)
+                      setTimeout(() => setSmsMsg(''), 4000)
+                    }
+                  }}
+                >
+                  {smsLoading ? 'Saving…' : 'Save SMS Settings'}
+                </button>
+
+                <hr style={{ border: 'none', borderTop: '1px solid var(--border, #e5e7eb)', margin: '2rem 0' }} />
+              </>
+            )}
 
             <h3>🔒 Change Password</h3>
             {passwordMsg && <div style={{ padding: '0.5rem', marginBottom: '1rem', borderRadius: '8px', background: passwordMsg.startsWith('✅') ? '#d1fae5' : '#fee2e2' }}>{passwordMsg}</div>}
