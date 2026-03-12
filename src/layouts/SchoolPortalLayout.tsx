@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
+import { ClipboardCheck, LifeBuoy } from 'lucide-react'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 import usePreventBackNavigation from '@/hooks/usePreventBackNavigation'
@@ -15,7 +16,7 @@ const menuItems = [
   { path: '/portal/classes',      icon: '🏫', label: 'Classes',       moduleKey: 'classes' },
   { path: '/portal/exam-management', icon: '📋', label: 'Exams',      moduleKey: 'exams' },
   { path: '/portal/exams',        icon: '📝', label: 'Marks',         moduleKey: 'exams' },
-  { path: '/portal/attendance',   icon: '✓',  label: 'Attendance',    moduleKey: 'attendance' },
+  { path: '/portal/attendance',   icon: <ClipboardCheck size={18} />,  label: 'Attendance',    moduleKey: 'attendance' },
   { path: '/portal/fees',         icon: '💰', label: 'Fees',          moduleKey: 'fees' },
   { path: '/portal/events',       icon: '🎉', label: 'Events',        moduleKey: 'events' },
   { path: '/portal/announcements',icon: '📣', label: 'Announcements', moduleKey: 'announcements' },
@@ -28,7 +29,7 @@ const menuItems = [
   { path: '/portal/leaves',       icon: '📋', label: 'Leaves',        moduleKey: 'leaves' },
   { path: '/portal/about',        icon: 'ℹ️', label: 'About',         moduleKey: null },
   { path: '/portal/settings',     icon: '⚙️', label: 'Settings',     moduleKey: null },
-  { path: '/portal/support',      icon: '🛟', label: 'Support',       moduleKey: null },
+  { path: '/portal/support',      icon: <LifeBuoy size={18} />,  label: 'Support',       moduleKey: null },
 ]
 
 const SchoolPortalLayout = () => {

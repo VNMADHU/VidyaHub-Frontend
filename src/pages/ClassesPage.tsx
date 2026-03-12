@@ -211,50 +211,44 @@ const ClassesPage = () => {
       )}
 
       {showSectionForm && (
-        <div className="modal-overlay" onClick={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingSectionId ? 'Edit Section' : 'Add Section'}</h3>
-              <button className="modal-close" onClick={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }}>✕</button>
-            </div>
-            <form id="section-form" onSubmit={handleSubmitSection} className="form-grid">
-              <label>
-                <span className="field-label">Class *</span>
-                <select
-                  value={sectionForm.classId || ''}
-                  onChange={(e) => setSectionForm({ ...sectionForm, classId: Number(e.target.value) })}
-                  required
-                  disabled={editingSectionId}
-                >
-                  <option value="">Select Class *</option>
-                  {classes.map(cls => (
-                    <option key={cls.id} value={cls.id}>
-                      Class {cls.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                <span className="field-label">Section Name *</span>
-                <input
-                  type="text"
+        <Modal
+          title={editingSectionId ? 'Edit Section' : 'Add Section'}
+          onClose={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }}
+          footer={
+            <button type="submit" form="section-form" className="btn primary">
+              {editingSectionId ? 'Update Section' : 'Add Section'}
+            </button>
+          }
+        >
+          <form id="section-form" onSubmit={handleSubmitSection} className="form-grid">
+            <label>
+              <span className="field-label">Class *</span>
+              <select
+                value={sectionForm.classId || ''}
+                onChange={(e) => setSectionForm({ ...sectionForm, classId: Number(e.target.value) })}
+                required
+                disabled={editingSectionId}
+              >
+                <option value="">Select Class *</option>
+                {classes.map(cls => (
+                  <option key={cls.id} value={cls.id}>
+                    Class {cls.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span className="field-label">Section Name *</span>
+              <input
+                type="text"
                 placeholder="Section Name * (e.g., A, B, C)"
-                  value={sectionForm.name}
-                  onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })}
-                  required
-                />
-              </label>
-              <button type="button" onClick={() => { setShowSectionForm(false); setSectionForm({ classId: null, name: '' }); setEditingSectionId(null) }} className="btn outline" style={{ gridColumn: '1 / -1' }}>
-                Cancel
-              </button>
-            </form>
-            <div className="modal-footer">
-              <button type="submit" form="section-form" className="btn primary">
-                {editingSectionId ? 'Update Section' : 'Add Section'}
-              </button>
-            </div>
-          </div>
-        </div>
+                value={sectionForm.name}
+                onChange={(e) => setSectionForm({ ...sectionForm, name: e.target.value })}
+                required
+              />
+            </label>
+          </form>
+        </Modal>
       )}
 
       {filteredClasses.length === 0 ? (
