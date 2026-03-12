@@ -10,7 +10,9 @@ import SearchBar from '@/components/SearchBar'
 import { useToast } from '@/components/ToastContainer'
 import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
-import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
+import { exportButtonStyle } from '@/utils/exportUtils'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import Modal from '../components/Modal'
 
 // Validation helpers
@@ -52,11 +54,14 @@ const StudentsPage = () => {
   const [students, setStudents] = useState([])
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
+  const [filterSections, setFilterSections] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [filterClass, setFilterClass] = useState('')
+  const [filterSection, setFilterSection] = useState('')
   const [formErrors, setFormErrors] = useState([])
 const EMPTY_STUDENT_FORM = {
     firstName: '',
@@ -102,6 +107,19 @@ const EMPTY_STUDENT_FORM = {
       loadSections(formData.classId)
     }
   }, [formData.classId])
+
+  useEffect(() => {
+    // Load sections for class filter dropdown
+    if (filterClass) {
+      apiClient.listSections(filterClass)
+        .then((res) => setFilterSections(res?.data || []))
+        .catch(() => setFilterSections([]))
+      setFilterSection('')
+    } else {
+      setFilterSections([])
+      setFilterSection('')
+    }
+  }, [filterClass])
 
   const loadData = async () => {
     try {
@@ -236,7 +254,7 @@ const EMPTY_STUDENT_FORM = {
   ]
 
   const mapStudentRow = (row) => {
-    if (!row.firstName || !row.lastName || !row.admissionNumber) {
+    if (!row.firstName || !row.lastName) {
       return null
     }
 
@@ -265,7 +283,7 @@ const EMPTY_STUDENT_FORM = {
       email,
       dateOfBirth,
       gender: row.gender ? String(row.gender).toLowerCase().trim() : 'male',
-      admissionNumber: String(row.admissionNumber).trim(),
+      admissionNumber: row.admissionNumber ? String(row.admissionNumber).trim() : '',
       classId: row.classId ? Number(row.classId) : undefined,
       sectionId: row.sectionId ? Number(row.sectionId) : undefined,
       fatherName: row.fatherName ? String(row.fatherName).trim() : '',
@@ -279,29 +297,152 @@ const EMPTY_STUDENT_FORM = {
   }
 
   const studentExportColumns = [
-    { key: 'rollNumber', label: 'Roll No' },
-    { key: 'firstName', label: 'First Name' },
-    { key: 'lastName', label: 'Last Name' },
-    { key: 'email', label: 'Email' },
-    { key: 'gender', label: 'Gender' },
+    { key: 'rollNumber',      label: 'Roll No' },
+    { key: 'firstName',       label: 'First Name' },
+    { key: 'lastName',        label: 'Last Name' },
+    { key: 'email',           label: 'Email' },
+    { key: 'gender',          label: 'Gender' },
     { key: 'admissionNumber', label: 'Admission No' },
-    { key: 'dateOfBirth', label: 'DOB' },
-    { key: 'fatherName', label: 'Father' },
-    { key: 'motherName', label: 'Mother' },
-    { key: 'category', label: 'Category' },
+    { key: 'dateOfBirth',     label: 'DOB' },
+    { key: 'fatherName',      label: 'Father' },
+    { key: 'motherName',      label: 'Mother' },
+    { key: 'category',        label: 'Category' },
   ]
 
+  const mapStudentsForExport = (data) => data.map((s) => ({
+    rollNumber:      s.rollNumber || '',
+    firstName:       s.firstName || '',
+    lastName:        s.lastName || '',
+    email:           s.email || '',
+    gender:          s.gender || '',
+    admissionNumber: s.admissionNumber || '',
+    dateOfBirth:     s.dateOfBirth ? new Date(s.dateOfBirth).toLocaleDateString('en-IN') : '',
+    fatherName:      s.fatherName || '',
+    motherName:      s.motherName || '',
+    category:        s.category || '',
+  }))
+
+  const buildStudentFilterLabel = () => {
+    const parts = []
+    const cls = filterClass ? classes.find((c) => String(c.id) === filterClass)?.name : null
+    if (cls) parts.push(`Class: ${cls}`)
+    const sec = filterSection ? filterSections.find((s) => String(s.id) === filterSection)?.name : null
+    if (sec) parts.push(`Section: ${sec}`)
+    if (searchQuery) parts.push(`Search: "${searchQuery}"`)
+    return parts.length ? parts.join('  |  ') : 'All Students'
+  }
+
   const handleExportCSV = () => {
-    exportToCSV(filteredStudents, 'Students', studentExportColumns)
+    const rows = mapStudentsForExport(filteredStudents)
+    const filterLabel = buildStudentFilterLabel()
+    const headers = studentExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) => studentExportColumns.map((c) => r[c.key] ?? ''))
+    const csvLines = [
+      ['Students List'],
+      [`Filter: ${filterLabel}`],
+      [`Generated: ${new Date().toLocaleDateString('en-IN')}`],
+      [],
+      headers,
+      ...dataRows,
+      [],
+      [`Total Records: ${filteredStudents.length}`],
+    ]
+    const csv = csvLines.map((line) => line.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Students_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleExportPDF = () => {
-    exportToPDF(filteredStudents, 'Students', studentExportColumns, 'Students List', 'landscape')
+    const rows = mapStudentsForExport(filteredStudents)
+    const filterLabel = buildStudentFilterLabel()
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(37, 99, 235)
+    doc.text('Students List', 14, 16)
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Filter: ${filterLabel}`, 14, 24)
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, pageW - 14, 24, { align: 'right' })
+
+    // Summary box
+    const summaryY = 30
+    doc.setFillColor(37, 99, 235)
+    doc.roundedRect(14, summaryY, 60, 12, 2, 2, 'F')
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(255, 255, 255)
+    doc.text('Total Students', 44, summaryY + 4, { align: 'center' })
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'bold')
+    doc.text(String(filteredStudents.length), 44, summaryY + 9.5, { align: 'center' })
+
+    const headers = studentExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) => studentExportColumns.map((c) => String(r[c.key] ?? '')))
+
+    autoTable(doc, {
+      head: [headers],
+      body: dataRows,
+      startY: summaryY + 17,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      margin: { left: 14, right: 14 },
+    })
+
+    doc.save(`Students_${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
+  const handlePrint = () => {
+    const filterLabel = buildStudentFilterLabel()
+    const rows = mapStudentsForExport(filteredStudents)
+    const headers = studentExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) =>
+      `<tr>${studentExportColumns.map((c) => `<td>${r[c.key] ?? ''}</td>`).join('')}</tr>`
+    ).join('')
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write(`
+      <html><head><title>Students List</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin: 0 0 4px; color: #1e293b; }
+        .meta { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+        .summary { display: inline-block; background: #eff6ff; color: #2563eb; padding: 8px 20px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; }
+        .summary b { display: block; font-size: 16px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+        th { background: #2563eb; color: white; font-weight: 600; }
+        tr:nth-child(even) { background: #f8fafc; }
+      </style></head><body>
+      <h2>Students List</h2>
+      <div class="meta">Filter: ${filterLabel} &nbsp;|&nbsp; Generated: ${new Date().toLocaleDateString('en-IN')}</div>
+      <div class="summary"><span>Total Students</span><b>${filteredStudents.length}</b></div>
+      <table>
+        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${dataRows}</tbody>
+      </table>
+      </body></html>
+    `)
+    printWindow.document.close()
+    printWindow.print()
   }
 
   const filteredStudents = students.filter((student) => {
+    if (filterClass && String(student.classId) !== filterClass) return false
+    if (filterSection && String(student.sectionId) !== filterSection) return false
     const query = searchQuery.toLowerCase()
     return (
+      !query ||
       student.firstName?.toLowerCase().includes(query) ||
       student.lastName?.toLowerCase().includes(query) ||
       student.email?.toLowerCase().includes(query) ||
@@ -326,7 +467,7 @@ const EMPTY_STUDENT_FORM = {
           <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
             📥 PDF
           </button>
-          <button style={exportButtonStyle} onClick={() => printTable('students-print-area', 'Students List')} title="Print"><Printer size={16} /> Print</button>
+          <button style={exportButtonStyle} onClick={handlePrint} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>
             Bulk Import
           </button>
@@ -336,11 +477,48 @@ const EMPTY_STUDENT_FORM = {
         </div>
       </div>
 
-      <SearchBar 
-        value={searchQuery}
-        onChange={setSearchQuery}
-        placeholder="Search students by name, email, admission number, or parent details..."
-      />
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: '0' }}>
+        <div style={{ flex: 1, minWidth: '220px' }}>
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search students by name, email, admission number, or parent details..."
+          />
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', paddingBottom: '1.5rem' }}>
+          <select
+            value={filterClass}
+            onChange={(e) => setFilterClass(e.target.value)}
+            style={{ padding: '0.75rem 0.75rem', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--card-bg, #fff)', color: 'var(--text, #1e293b)', cursor: 'pointer', minWidth: '140px' }}
+          >
+            <option value="">All Classes</option>
+            {classes.map((c) => (
+              <option key={c.id} value={String(c.id)}>{c.name}</option>
+            ))}
+          </select>
+          {filterClass && (
+            <select
+              value={filterSection}
+              onChange={(e) => setFilterSection(e.target.value)}
+              style={{ padding: '0.75rem 0.75rem', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--card-bg, #fff)', color: 'var(--text, #1e293b)', cursor: 'pointer', minWidth: '130px' }}
+            >
+              <option value="">All Sections</option>
+              {filterSections.map((s) => (
+                <option key={s.id} value={String(s.id)}>{s.name}</option>
+              ))}
+            </select>
+          )}
+          {(filterClass || filterSection || searchQuery) && (
+            <button
+              onClick={() => { setFilterClass(''); setFilterSection(''); setSearchQuery('') }}
+              className="btn outline"
+              style={{ fontSize: '0.8rem', padding: '0.65rem 0.9rem', whiteSpace: 'nowrap' }}
+            >
+              ✕ Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       <div className="page-content-scrollable">
       {showForm && (
@@ -406,13 +584,12 @@ const EMPTY_STUDENT_FORM = {
               </select>
             </label>
             <label>
-              <span className="field-label">Admission Number *</span>
+              <span className="field-label">Admission Number</span>
               <input
                 type="text"
-                placeholder="Admission Number *"
+                placeholder="Admission Number"
                 value={formData.admissionNumber}
                 onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
-                required
               />
             </label>
             <label>

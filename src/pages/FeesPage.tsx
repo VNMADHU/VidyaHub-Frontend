@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Trash2, SquarePen, CreditCard, Printer, FileText } from 'lucide-react'
 import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import SearchBar from '@/components/SearchBar'
@@ -311,31 +312,215 @@ const FeesPage = () => {
   const totalPending = totalFees - totalPaid
 
   const feeExportColumns = [
-    { key: 'studentName', label: 'Student Name' },
-    { key: 'feeType', label: 'Fee Type' },
-    { key: 'amount', label: 'Amount (₹)' },
-    { key: 'dueDate', label: 'Due Date' },
-    { key: 'status', label: 'Status' },
-    { key: 'paidAmount', label: 'Paid (₹)' },
+    { key: 'studentName', label: 'Student' },
+    { key: 'rollNumber',  label: 'Roll No.' },
+    { key: 'feeType',     label: 'Fee Type' },
+    { key: 'term',        label: 'Term' },
+    { key: 'netAmount',   label: 'Net Amount (₹)' },
+    { key: 'paid',        label: 'Paid (₹)' },
+    { key: 'balance',     label: 'Balance (₹)' },
+    { key: 'dueDate',     label: 'Due Date' },
+    { key: 'paidDate',    label: 'Paid Date' },
+    { key: 'status',      label: 'Status' },
     { key: 'paymentMode', label: 'Payment Mode' },
   ]
 
-  const mapFeesForExport = (data) => data.map(fee => ({
-    studentName: `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.trim(),
-    feeType: fee.feeType,
-    amount: fee.amount,
-    dueDate: fee.dueDate ? new Date(fee.dueDate).toLocaleDateString('en-IN') : '',
-    status: fee.status,
-    paidAmount: fee.paidAmount || 0,
-    paymentMode: fee.paymentMode || '',
-  }))
+  const mapFeesForExport = (data) => data.map(fee => {
+    const net = fee.amount - (fee.discount || 0)
+    const paid = fee.status === 'paid' ? net : (fee.paidAmount || 0)
+    return {
+      studentName: `${fee.student?.firstName || ''} ${fee.student?.lastName || ''}`.trim(),
+      rollNumber:  fee.student?.rollNumber || '-',
+      feeType:     fee.feeType,
+      term:        fee.term || '',
+      netAmount:   net,
+      paid,
+      balance:     net - paid,
+      dueDate:     fee.dueDate  ? new Date(fee.dueDate).toLocaleDateString('en-IN')  : '',
+      paidDate:    fee.paidDate ? new Date(fee.paidDate).toLocaleDateString('en-IN') : '',
+      status:      fee.status,
+      paymentMode: fee.paymentMode || '',
+    }
+  })
+
+  // Build a readable filter description for headers
+  const buildFilterLabel = () => {
+    const parts = []
+    if (filterDate) parts.push(`Due Date: ${new Date(filterDate).toLocaleDateString('en-IN')}`)
+    const cls = filterClass ? classes.find((c) => String(c.id) === filterClass)?.name : null
+    if (cls) parts.push(`Class: ${cls}`)
+    if (searchQuery) parts.push(`Search: "${searchQuery}"`)
+    return parts.length ? parts.join('  |  ') : 'All Records'
+  }
 
   const handleExportCSV = () => {
-    exportToCSV(mapFeesForExport(filteredFees), 'Fees', feeExportColumns)
+    const rows = mapFeesForExport(filteredFees)
+    const filterLabel = buildFilterLabel()
+    // Build CSV manually so we can prepend summary rows
+    const headers = feeExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) => feeExportColumns.map((c) => r[c.key] ?? ''))
+    const totalsRow = feeExportColumns.map((c) => {
+      if (c.key === 'studentName') return 'TOTAL'
+      if (c.key === 'netAmount')   return totalFees
+      if (c.key === 'paid')        return totalPaid
+      if (c.key === 'balance')     return totalPending
+      return ''
+    })
+    const csvLines = [
+      [`Fee Records — ${school?.name || 'Vidya Hub'}`],
+      [`Filter: ${filterLabel}`],
+      [`Generated: ${new Date().toLocaleDateString('en-IN')}`],
+      [],
+      headers,
+      ...dataRows,
+      [],
+      totalsRow,
+    ]
+    const csv = csvLines.map((line) => line.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Fees_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleExportPDF = () => {
-    exportToPDF(mapFeesForExport(filteredFees), 'Fees', feeExportColumns, 'Fee Records', 'landscape')
+    const rows = mapFeesForExport(filteredFees)
+    const filterLabel = buildFilterLabel()
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    // Title
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(37, 99, 235)
+    doc.text('Fee Records', 14, 16)
+
+    // School name
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(80, 80, 80)
+    doc.text(school?.name || '', 14, 23)
+
+    // Filter line
+    doc.setFontSize(9)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Filter: ${filterLabel}`, 14, 30)
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, pageW - 14, 30, { align: 'right' })
+
+    // Summary boxes
+    const summaryY = 36
+    const boxW = 52, boxH = 12, gap = 4
+    const summaries = [
+      { label: 'Total Net',  value: `₹${totalFees.toLocaleString()}`,    color: [37, 99, 235] },
+      { label: 'Collected',  value: `₹${totalPaid.toLocaleString()}`,    color: [22, 163, 74] },
+      { label: 'Pending',    value: `₹${totalPending.toLocaleString()}`, color: [220, 38, 38] },
+      { label: 'Records',    value: String(filteredFees.length),          color: [100, 116, 139] },
+    ]
+    summaries.forEach(({ label, value, color }, i) => {
+      const x = 14 + i * (boxW + gap)
+      doc.setFillColor(color[0], color[1], color[2])
+      doc.roundedRect(x, summaryY, boxW, boxH, 2, 2, 'F')
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(255, 255, 255)
+      doc.text(label, x + boxW / 2, summaryY + 4, { align: 'center' })
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text(value, x + boxW / 2, summaryY + 9.5, { align: 'center' })
+    })
+
+    // Data table
+    const headers = feeExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) => feeExportColumns.map((c) =>
+      r[c.key] !== null && r[c.key] !== undefined ? String(r[c.key]) : ''
+    ))
+
+    // Totals footer row
+    const totalsRow = feeExportColumns.map((c) => {
+      if (c.key === 'studentName') return 'TOTAL'
+      if (c.key === 'netAmount')   return `₹${totalFees.toLocaleString()}`
+      if (c.key === 'paid')        return `₹${totalPaid.toLocaleString()}`
+      if (c.key === 'balance')     return `₹${totalPending.toLocaleString()}`
+      return ''
+    })
+
+    autoTable(doc, {
+      head: [headers],
+      body: [...dataRows, totalsRow],
+      startY: summaryY + boxH + 5,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      didParseCell: (data) => {
+        // Bold + blue bg for totals row
+        if (data.row.index === dataRows.length) {
+          data.cell.styles.fontStyle = 'bold'
+          data.cell.styles.fillColor = [239, 246, 255]
+          data.cell.styles.textColor = [37, 99, 235]
+        }
+      },
+      margin: { left: 14, right: 14 },
+    })
+
+    doc.save(`Fees_${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
+  const handlePrint = () => {
+    const filterLabel = buildFilterLabel()
+    const rows = mapFeesForExport(filteredFees)
+    const headers = feeExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) =>
+      `<tr>${feeExportColumns.map((c) => `<td>${r[c.key] ?? ''}</td>`).join('')}</tr>`
+    ).join('')
+    const totalsRow = `<tr style="font-weight:bold;background:#eff6ff;color:#2563eb;">` +
+      feeExportColumns.map((c) => {
+        if (c.key === 'studentName') return `<td>TOTAL</td>`
+        if (c.key === 'netAmount')   return `<td>₹${totalFees.toLocaleString()}</td>`
+        if (c.key === 'paid')        return `<td>₹${totalPaid.toLocaleString()}</td>`
+        if (c.key === 'balance')     return `<td>₹${totalPending.toLocaleString()}</td>`
+        return `<td></td>`
+      }).join('') + `</tr>`
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write(`
+      <html><head><title>Fee Records</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin: 0 0 4px; color: #1e293b; }
+        .meta { font-size: 12px; color: #64748b; margin-bottom: 6px; }
+        .summary { display: flex; gap: 16px; margin-bottom: 14px; }
+        .summary-box { padding: 8px 16px; border-radius: 6px; font-size: 12px; }
+        .summary-box b { display: block; font-size: 15px; }
+        .box-total   { background: #eff6ff; color: #2563eb; }
+        .box-paid    { background: #f0fdf4; color: #16a34a; }
+        .box-pending { background: #fef2f2; color: #dc2626; }
+        .box-records { background: #f8fafc; color: #475569; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+        th { background: #2563eb; color: white; font-weight: 600; }
+        tr:nth-child(even) { background: #f8fafc; }
+        @media print { .no-print { display: none !important; } }
+      </style></head><body>
+      <h2>Fee Records — ${school?.name || 'Vidya Hub'}</h2>
+      <div class="meta">Filter: ${filterLabel} &nbsp;|&nbsp; Generated: ${new Date().toLocaleDateString('en-IN')}</div>
+      <div class="summary">
+        <div class="summary-box box-total"><span>Total Net</span><b>₹${totalFees.toLocaleString()}</b></div>
+        <div class="summary-box box-paid"><span>Collected</span><b>₹${totalPaid.toLocaleString()}</b></div>
+        <div class="summary-box box-pending"><span>Pending</span><b>₹${totalPending.toLocaleString()}</b></div>
+        <div class="summary-box box-records"><span>Records</span><b>${filteredFees.length}</b></div>
+      </div>
+      <table>
+        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${dataRows}${totalsRow}</tbody>
+      </table>
+      </body></html>
+    `)
+    printWindow.document.close()
+    printWindow.print()
   }
 
   const { paginatedItems: paginatedFees, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredFees)
@@ -351,7 +536,7 @@ const FeesPage = () => {
           <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">
             📥 PDF
           </button>
-          <button style={exportButtonStyle} onClick={() => printTable('fees-print-area', 'Fee Records')} title="Print"><Printer size={16} /> Print</button>
+          <button style={exportButtonStyle} onClick={handlePrint} title="Print"><Printer size={16} /> Print</button>
           <button className="btn primary" onClick={handleAddNew}>
             + Assign Fee
           </button>

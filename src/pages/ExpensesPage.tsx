@@ -1,6 +1,8 @@
 // @ts-nocheck
 import { useEffect, useState } from 'react'
 import { SquarePen, Trash2, Printer } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
@@ -113,14 +115,173 @@ const ExpensesPage = () => {
 
   // ── Export ──────────────────────────────────────────────
   const expenseExportColumns = [
-    { key: 'title', label: 'Title' },
-    { key: 'category', label: 'Category' },
-    { key: 'amount', label: 'Amount (₹)' },
-    { key: 'date', label: 'Date' },
-    { key: 'paidTo', label: 'Paid To' },
+    { key: 'title',       label: 'Title' },
+    { key: 'category',    label: 'Category' },
+    { key: 'amount',      label: 'Amount (₹)' },
+    { key: 'date',        label: 'Date' },
+    { key: 'paidTo',      label: 'Paid To' },
     { key: 'paymentMode', label: 'Payment Mode' },
-    { key: 'status', label: 'Status' },
+    { key: 'receiptNo',   label: 'Receipt No.' },
+    { key: 'approvedBy',  label: 'Approved By' },
+    { key: 'status',      label: 'Status' },
   ]
+
+  const mapExpensesForExport = (data) => data.map((e) => ({
+    title:       e.title || '',
+    category:    e.category || '',
+    amount:      e.amount || 0,
+    date:        e.date ? new Date(e.date).toLocaleDateString('en-IN') : '',
+    paidTo:      e.paidTo || '',
+    paymentMode: e.paymentMode || '',
+    receiptNo:   e.receiptNo || '',
+    approvedBy:  e.approvedBy || '',
+    status:      e.status || '',
+  }))
+
+  const buildExpenseFilterLabel = () => {
+    const parts = []
+    if (filterDate) parts.push(`Date: ${new Date(filterDate).toLocaleDateString('en-IN')}`)
+    if (searchQuery) parts.push(`Search: "${searchQuery}"`)
+    return parts.length ? parts.join('  |  ') : 'All Records'
+  }
+
+  const handleExportCSV = () => {
+    const rows = mapExpensesForExport(filteredExpenses)
+    const filterLabel = buildExpenseFilterLabel()
+    const headers = expenseExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) => expenseExportColumns.map((c) => r[c.key] ?? ''))
+    const totalsRow = expenseExportColumns.map((c) =>
+      c.key === 'title' ? 'TOTAL' : c.key === 'amount' ? totalExpenses : ''
+    )
+    const csvLines = [
+      [`School Expenses`],
+      [`Filter: ${filterLabel}`],
+      [`Generated: ${new Date().toLocaleDateString('en-IN')}`],
+      [],
+      headers,
+      ...dataRows,
+      [],
+      totalsRow,
+    ]
+    const csv = csvLines.map((line) => line.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url  = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `Expenses_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportPDF = () => {
+    const rows = mapExpensesForExport(filteredExpenses)
+    const filterLabel = buildExpenseFilterLabel()
+    const doc = new jsPDF({ orientation: 'landscape' })
+    const pageW = doc.internal.pageSize.getWidth()
+
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.setTextColor(37, 99, 235)
+    doc.text('School Expenses', 14, 16)
+
+    doc.setFontSize(9)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Filter: ${filterLabel}`, 14, 24)
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, pageW - 14, 24, { align: 'right' })
+
+    // Summary boxes
+    const summaryY = 30
+    const boxW = 60, boxH = 12, gap = 6
+    const summaries = [
+      { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}`, color: [37, 99, 235] },
+      { label: 'Records',        value: String(filteredExpenses.length),               color: [100, 116, 139] },
+    ]
+    summaries.forEach(({ label, value, color }, i) => {
+      const x = 14 + i * (boxW + gap)
+      doc.setFillColor(color[0], color[1], color[2])
+      doc.roundedRect(x, summaryY, boxW, boxH, 2, 2, 'F')
+      doc.setFontSize(7)
+      doc.setFont('helvetica', 'normal')
+      doc.setTextColor(255, 255, 255)
+      doc.text(label, x + boxW / 2, summaryY + 4, { align: 'center' })
+      doc.setFontSize(9)
+      doc.setFont('helvetica', 'bold')
+      doc.text(value, x + boxW / 2, summaryY + 9.5, { align: 'center' })
+    })
+
+    const headers = expenseExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) => expenseExportColumns.map((c) => String(r[c.key] ?? '')))
+    const totalsRow = expenseExportColumns.map((c) =>
+      c.key === 'title' ? 'TOTAL' : c.key === 'amount' ? `₹${totalExpenses.toLocaleString('en-IN')}` : ''
+    )
+
+    autoTable(doc, {
+      head: [headers],
+      body: [...dataRows, totalsRow],
+      startY: summaryY + boxH + 5,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      didParseCell: (data) => {
+        if (data.row.index === dataRows.length) {
+          data.cell.styles.fontStyle = 'bold'
+          data.cell.styles.fillColor = [239, 246, 255]
+          data.cell.styles.textColor = [37, 99, 235]
+        }
+      },
+      margin: { left: 14, right: 14 },
+    })
+
+    doc.save(`Expenses_${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
+  const handlePrint = () => {
+    const filterLabel = buildExpenseFilterLabel()
+    const rows = mapExpensesForExport(filteredExpenses)
+    const headers = expenseExportColumns.map((c) => c.label)
+    const dataRows = rows.map((r) =>
+      `<tr>${expenseExportColumns.map((c) => `<td>${r[c.key] ?? ''}</td>`).join('')}</tr>`
+    ).join('')
+    const totalsRow = `<tr style="font-weight:bold;background:#eff6ff;color:#2563eb;">` +
+      expenseExportColumns.map((c) =>
+        c.key === 'title'  ? `<td>TOTAL</td>` :
+        c.key === 'amount' ? `<td>₹${totalExpenses.toLocaleString('en-IN')}</td>` : `<td></td>`
+      ).join('') + `</tr>`
+
+    const printWindow = window.open('', '_blank')
+    if (!printWindow) return
+    printWindow.document.write(`
+      <html><head><title>School Expenses</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        h2 { margin: 0 0 4px; color: #1e293b; }
+        .meta { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+        .summary { display: flex; gap: 16px; margin-bottom: 14px; }
+        .summary-box { padding: 8px 16px; border-radius: 6px; font-size: 12px; }
+        .summary-box b { display: block; font-size: 15px; }
+        .box-total   { background: #eff6ff; color: #2563eb; }
+        .box-records { background: #f8fafc; color: #475569; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        th, td { border: 1px solid #e2e8f0; padding: 6px 8px; text-align: left; }
+        th { background: #2563eb; color: white; font-weight: 600; }
+        tr:nth-child(even) { background: #f8fafc; }
+      </style></head><body>
+      <h2>School Expenses</h2>
+      <div class="meta">Filter: ${filterLabel} &nbsp;|&nbsp; Generated: ${new Date().toLocaleDateString('en-IN')}</div>
+      <div class="summary">
+        <div class="summary-box box-total"><span>Total Expenses</span><b>₹${totalExpenses.toLocaleString('en-IN')}</b></div>
+        <div class="summary-box box-records"><span>Records</span><b>${filteredExpenses.length}</b></div>
+      </div>
+      <table>
+        <thead><tr>${headers.map((h) => `<th>${h}</th>`).join('')}</tr></thead>
+        <tbody>${dataRows}${totalsRow}</tbody>
+      </table>
+      </body></html>
+    `)
+    printWindow.document.close()
+    printWindow.print()
+  }
 
   const templateHeaders = ['title', 'category', 'amount', 'date', 'paidTo', 'paymentMode', 'description']
   const mapRow = (row) => {
@@ -154,9 +315,9 @@ const ExpensesPage = () => {
           <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#1e40af', background: '#dbeafe', padding: '0.4rem 0.8rem', borderRadius: '8px' }}>
             Total: ₹{totalExpenses.toLocaleString('en-IN')}
           </span>
-          <button style={exportButtonStyle} onClick={() => exportToCSV(filteredExpenses, 'Expenses', expenseExportColumns)} title="Export CSV">📄 CSV</button>
-          <button style={exportButtonStyle} onClick={() => exportToPDF(filteredExpenses, 'Expenses', expenseExportColumns, 'School Expenses')} title="Export PDF">📥 PDF</button>
-          <button style={exportButtonStyle} onClick={() => printTable('expenses-print-area', 'School Expenses')} title="Print"><Printer size={16} /> Print</button>
+          <button style={exportButtonStyle} onClick={handleExportCSV} title="Export CSV">📄 CSV</button>
+          <button style={exportButtonStyle} onClick={handleExportPDF} title="Export PDF">📥 PDF</button>
+          <button style={exportButtonStyle} onClick={handlePrint} title="Print"><Printer size={16} /> Print</button>
           <button className="btn outline" onClick={() => setShowBulkImport(true)}>Bulk Import</button>
           <button className="btn primary" onClick={handleAddNew}>
             + Add Expense
