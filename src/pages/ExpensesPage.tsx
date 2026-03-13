@@ -117,7 +117,7 @@ const ExpensesPage = () => {
   const expenseExportColumns = [
     { key: 'title',       label: 'Title' },
     { key: 'category',    label: 'Category' },
-    { key: 'amount',      label: 'Amount (₹)' },
+    { key: 'amount',      label: 'Amount (Rs.)' },
     { key: 'date',        label: 'Date' },
     { key: 'paidTo',      label: 'Paid To' },
     { key: 'paymentMode', label: 'Payment Mode' },
@@ -194,7 +194,7 @@ const ExpensesPage = () => {
     const summaryY = 30
     const boxW = 60, boxH = 12, gap = 6
     const summaries = [
-      { label: 'Total Expenses', value: `₹${totalExpenses.toLocaleString('en-IN')}`, color: [37, 99, 235] },
+      { label: 'Total Expenses', value: `Rs.${totalExpenses.toLocaleString('en-IN')}`, color: [37, 99, 235] },
       { label: 'Records',        value: String(filteredExpenses.length),               color: [100, 116, 139] },
     ]
     summaries.forEach(({ label, value, color }, i) => {
@@ -213,7 +213,7 @@ const ExpensesPage = () => {
     const headers = expenseExportColumns.map((c) => c.label)
     const dataRows = rows.map((r) => expenseExportColumns.map((c) => String(r[c.key] ?? '')))
     const totalsRow = expenseExportColumns.map((c) =>
-      c.key === 'title' ? 'TOTAL' : c.key === 'amount' ? `₹${totalExpenses.toLocaleString('en-IN')}` : ''
+      c.key === 'title' ? 'TOTAL' : c.key === 'amount' ? `Rs.${totalExpenses.toLocaleString('en-IN')}` : ''
     )
 
     autoTable(doc, {

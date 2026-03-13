@@ -244,11 +244,11 @@ const FeesPage = () => {
       ['Fee Type', fee.feeType ? fee.feeType.charAt(0).toUpperCase() + fee.feeType.slice(1) + ' Fee' : '-'],
       ['Academic Year', fee.academicYear || '-'],
       ['Term', fee.term || '-'],
-      ['Total Amount', `\u20B9${(fee.amount || 0).toLocaleString('en-IN')}`],
-      ...(fee.discount > 0 ? [['Discount', `-\u20B9${(fee.discount || 0).toLocaleString('en-IN')}`]] : []),
-      ...(fee.discount > 0 ? [['Net Payable', `\u20B9${((fee.amount || 0) - (fee.discount || 0)).toLocaleString('en-IN')}`]] : []),
-      ['Amount Paid', `\u20B9${(fee.status === 'paid' ? ((fee.amount || 0) - (fee.discount || 0)) : (fee.paidAmount || 0)).toLocaleString('en-IN')}`],
-      ['Balance', `\u20B9${(Math.max(0, (fee.amount || 0) - (fee.discount || 0) - (fee.status === 'paid' ? ((fee.amount || 0) - (fee.discount || 0)) : (fee.paidAmount || 0)))).toLocaleString('en-IN')}`],
+      ['Total Amount', `Rs.${(fee.amount || 0).toLocaleString('en-IN')}`],
+      ...(fee.discount > 0 ? [['Discount', `-Rs.${(fee.discount || 0).toLocaleString('en-IN')}`]] : []),
+      ...(fee.discount > 0 ? [['Net Payable', `Rs.${((fee.amount || 0) - (fee.discount || 0)).toLocaleString('en-IN')}`]] : []),
+      ['Amount Paid', `Rs.${(fee.status === 'paid' ? ((fee.amount || 0) - (fee.discount || 0)) : (fee.paidAmount || 0)).toLocaleString('en-IN')}`],
+      ['Balance', `Rs.${(Math.max(0, (fee.amount || 0) - (fee.discount || 0) - (fee.status === 'paid' ? ((fee.amount || 0) - (fee.discount || 0)) : (fee.paidAmount || 0)))).toLocaleString('en-IN')}`],
       ['Payment Mode', fee.paymentMode || '-'],
       ['Transaction ID', fee.transactionId || '-'],
       ['Status', (fee.status || '').toUpperCase()],
@@ -316,9 +316,9 @@ const FeesPage = () => {
     { key: 'rollNumber',  label: 'Roll No.' },
     { key: 'feeType',     label: 'Fee Type' },
     { key: 'term',        label: 'Term' },
-    { key: 'netAmount',   label: 'Net Amount (₹)' },
-    { key: 'paid',        label: 'Paid (₹)' },
-    { key: 'balance',     label: 'Balance (₹)' },
+    { key: 'netAmount',   label: 'Net Amount (Rs.)' },
+    { key: 'paid',        label: 'Paid (Rs.)' },
+    { key: 'balance',     label: 'Balance (Rs.)' },
     { key: 'dueDate',     label: 'Due Date' },
     { key: 'paidDate',    label: 'Paid Date' },
     { key: 'status',      label: 'Status' },
@@ -414,9 +414,9 @@ const FeesPage = () => {
     const summaryY = 36
     const boxW = 52, boxH = 12, gap = 4
     const summaries = [
-      { label: 'Total Net',  value: `₹${totalFees.toLocaleString()}`,    color: [37, 99, 235] },
-      { label: 'Collected',  value: `₹${totalPaid.toLocaleString()}`,    color: [22, 163, 74] },
-      { label: 'Pending',    value: `₹${totalPending.toLocaleString()}`, color: [220, 38, 38] },
+      { label: 'Total Net',  value: `Rs.${totalFees.toLocaleString()}`,    color: [37, 99, 235] },
+      { label: 'Collected',  value: `Rs.${totalPaid.toLocaleString()}`,    color: [22, 163, 74] },
+      { label: 'Pending',    value: `Rs.${totalPending.toLocaleString()}`, color: [220, 38, 38] },
       { label: 'Records',    value: String(filteredFees.length),          color: [100, 116, 139] },
     ]
     summaries.forEach(({ label, value, color }, i) => {
@@ -441,9 +441,9 @@ const FeesPage = () => {
     // Totals footer row
     const totalsRow = feeExportColumns.map((c) => {
       if (c.key === 'studentName') return 'TOTAL'
-      if (c.key === 'netAmount')   return `₹${totalFees.toLocaleString()}`
-      if (c.key === 'paid')        return `₹${totalPaid.toLocaleString()}`
-      if (c.key === 'balance')     return `₹${totalPending.toLocaleString()}`
+      if (c.key === 'netAmount')   return `Rs.${totalFees.toLocaleString()}`
+      if (c.key === 'paid')        return `Rs.${totalPaid.toLocaleString()}`
+      if (c.key === 'balance')     return `Rs.${totalPending.toLocaleString()}`
       return ''
     })
 

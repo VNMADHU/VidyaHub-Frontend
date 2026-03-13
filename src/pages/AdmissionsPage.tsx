@@ -11,13 +11,6 @@ import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils
 import Modal from '../components/Modal'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const CLASS_OPTIONS = [
-  'Nursery', 'LKG', 'UKG',
-  'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
-  'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
-  'Class 11', 'Class 12',
-]
-
 const CATEGORY_OPTIONS = ['General', 'OBC', 'SC', 'ST', 'EWS']
 
 const STATUS_OPTIONS = ['pending', 'shortlisted', 'approved', 'rejected', 'enrolled']
@@ -34,7 +27,7 @@ const EMPTY_FORM = {
   applicantName:    '',
   dateOfBirth:      '',
   gender:           '',
-  applyingForClass: 'Class 1',
+  applyingForClass: '',
   academicYear:     '2025-26',
   guardianName:     '',
   guardianPhone:    '',
@@ -72,8 +65,12 @@ const AdmissionsPage = () => {
   const [filterStatus, setFilterStatus]   = useState('')
   const [filterClass, setFilterClass]     = useState('')
   const [formData, setFormData]       = useState(EMPTY_FORM)
+  const [classes, setClasses]         = useState([])
 
-  useEffect(() => { loadAdmissions() }, [])
+  useEffect(() => {
+    loadAdmissions()
+    apiClient.listClasses().then((res) => setClasses(res?.data || [])).catch(() => {})
+  }, [])
 
   const loadAdmissions = async () => {
     try {
@@ -123,7 +120,7 @@ const AdmissionsPage = () => {
       applicantName:    record.applicantName    || '',
       dateOfBirth:      record.dateOfBirth      ? record.dateOfBirth.split('T')[0]    : '',
       gender:           record.gender           || '',
-      applyingForClass: record.applyingForClass || 'Class 1',
+      applyingForClass: record.applyingForClass || '',
       academicYear:     record.academicYear     || '2025-26',
       guardianName:     record.guardianName     || '',
       guardianPhone:    record.guardianPhone    || '',
@@ -180,7 +177,7 @@ const AdmissionsPage = () => {
     <div className="page-container">
       {/* ── Header ── */}
       <div className="page-header">
-        <h1>📋 Admissions</h1>
+        <h1>Admissions</h1>
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <span style={{ background: '#fef3c7', color: '#92400e', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600 }}>
             Pending: {pendingCount}
@@ -232,7 +229,8 @@ const AdmissionsPage = () => {
             <label>
               <span className="field-label">Applying For Class *</span>
               <select value={formData.applyingForClass} onChange={(e) => setFormData({ ...formData, applyingForClass: e.target.value })} required>
-                {CLASS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                <option value="">— Select Class —</option>
+                {classes.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
               </select>
             </label>
             <label>
@@ -312,7 +310,7 @@ const AdmissionsPage = () => {
         </select>
         <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px', marginTop: '0.4rem' }}>
           <option value="">All Classes</option>
-          {CLASS_OPTIONS.map((c) => <option key={c} value={c}>{c}</option>)}
+          {classes.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
         </select>
       </div>
 
@@ -322,9 +320,7 @@ const AdmissionsPage = () => {
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <p>No admission applications found.</p>
-          <button className="btn primary" onClick={() => { setFormData(EMPTY_FORM); setEditingId(null); setShowForm(true) }}>
-            + New Application
-          </button>
+         
         </div>
       ) : (
         <div id="admissions-print-area">

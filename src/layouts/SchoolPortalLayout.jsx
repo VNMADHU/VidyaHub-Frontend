@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { ClipboardCheck, LifeBuoy } from 'lucide-react'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 import usePreventBackNavigation from '../hooks/usePreventBackNavigation'
@@ -46,7 +45,7 @@ const menuItems = [
   { path: '/portal/classes', icon: '🏫', label: 'Classes', module: 'classes' },
   { path: '/portal/students', icon: '👥', label: 'Students', module: 'students' },
   { path: '/portal/teachers', icon: '👨‍🏫', label: 'Teachers', module: 'teachers' },
-  { path: '/portal/attendance', icon: <ClipboardCheck size={18} />, label: 'Attendance', module: 'attendance' },
+  { path: '/portal/attendance', icon: '✅', label: 'Attendance', module: 'attendance' },
   { path: '/portal/timetable', icon: '📅', label: 'Timetable', module: 'classes' },
   { path: '/portal/homework', icon: '📝', label: 'Homework', module: 'students' },
 
@@ -63,7 +62,7 @@ const menuItems = [
   { path: '/portal/expenses', icon: '💸', label: 'Expenses', module: 'expenses' },
 
   // STAFF / HR
-  { path: '/portal/staff', icon: '🧹', label: 'Staff', module: 'staff' },
+  { path: '/portal/staff', icon: '🧑‍💼', label: 'Staff', module: 'staff' },
   { path: '/portal/leaves', icon: '📋', label: 'Leaves', module: 'leaves' },
 
   // FACILITIES
@@ -83,12 +82,12 @@ const menuItems = [
   { path: '/portal/transfer-certificate', icon: '📜', label: 'Certificates', module: 'students' },
   // ADMIN
   ...(role === 'super-admin'
-    ? [{ path: '/portal/admin-profiles', icon: '🔑', label: 'Admin Profiles' }]
+    ? [{ path: '/portal/admin-profiles', icon: '👤', label: 'Admin Profiles' }]
     : []),
 
   // SYSTEM
   { path: '/portal/settings', icon: '⚙️', label: 'Settings' },
-  { path: '/portal/support', icon: <LifeBuoy size={18} />, label: 'Support' }
+  { path: '/portal/support', icon: 'ℹ️', label: 'Support' }
   ].filter((item) => {
     // super-admin always sees everything
     if (role === 'super-admin') return true

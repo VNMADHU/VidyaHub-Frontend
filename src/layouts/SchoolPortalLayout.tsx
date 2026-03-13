@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
-import { ClipboardCheck, LifeBuoy } from 'lucide-react'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 import usePreventBackNavigation from '@/hooks/usePreventBackNavigation'
@@ -11,12 +10,12 @@ const menuItems = [
   { path: '/portal/students',     icon: '👥', label: 'Students',      moduleKey: 'students' },
   { path: '/portal/admissions',   icon: '📋', label: 'Admissions',    moduleKey: 'admissions' },
   { path: '/portal/teachers',     icon: '👨‍🏫', label: 'Teachers',     moduleKey: 'teachers' },
-  { path: '/portal/staff',        icon: '🧹', label: 'Staff',         moduleKey: 'staff' },
+  { path: '/portal/staff',        icon: '🧑‍💼', label: 'Staff',         moduleKey: 'staff' },
   { path: '/portal/hostel',       icon: '🏠', label: 'Hostel',        moduleKey: 'hostel' },
   { path: '/portal/classes',      icon: '🏫', label: 'Classes',       moduleKey: 'classes' },
   { path: '/portal/exam-management', icon: '📋', label: 'Exams',      moduleKey: 'exams' },
   { path: '/portal/exams',        icon: '📝', label: 'Marks',         moduleKey: 'exams' },
-  { path: '/portal/attendance',   icon: <ClipboardCheck size={18} />,  label: 'Attendance',    moduleKey: 'attendance' },
+  { path: '/portal/attendance',   icon: '✅', label: 'Attendance',    moduleKey: 'attendance' },
   { path: '/portal/fees',         icon: '💰', label: 'Fees',          moduleKey: 'fees' },
   { path: '/portal/events',       icon: '🎉', label: 'Events',        moduleKey: 'events' },
   { path: '/portal/announcements',icon: '📣', label: 'Announcements', moduleKey: 'announcements' },
@@ -29,7 +28,7 @@ const menuItems = [
   { path: '/portal/leaves',       icon: '📋', label: 'Leaves',        moduleKey: 'leaves' },
   { path: '/portal/about',        icon: 'ℹ️', label: 'About',         moduleKey: null },
   { path: '/portal/settings',     icon: '⚙️', label: 'Settings',     moduleKey: null },
-  { path: '/portal/support',      icon: <LifeBuoy size={18} />,  label: 'Support',       moduleKey: null },
+  { path: '/portal/support',      icon: 'ℹ️', label: 'Support',       moduleKey: null },
 ]
 
 const SchoolPortalLayout = () => {
@@ -140,7 +139,7 @@ const SchoolPortalLayout = () => {
               className={`sidebar-link ${isActive('/portal/admin-management') ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
             >
-              <span className="link-icon">👤</span>
+              <span className="link-icon">�️</span>
               <span className="link-label">Manage Admins</span>
             </Link>
           )}
@@ -160,7 +159,7 @@ const SchoolPortalLayout = () => {
             style={{ textAlign: 'center', display: 'block', marginBottom: '0.5rem', textDecoration: 'none' }}
             onClick={() => setSidebarOpen(false)}
           >
-            👤 My Profile
+            🪺 My Profile
           </Link>
           <button className="btn-logout" onClick={handleLogout} type="button">
             🚪 Logout

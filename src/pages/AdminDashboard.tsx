@@ -274,7 +274,7 @@ const AdminDashboard = () => {
         <div className="form-card" style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ margin: 0, fontWeight: 700 }}>📊 Weekly Attendance</h3>
-            <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Last 30 days</span>
+            <span style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>Last 7 days</span>
           </div>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={attendanceWeek} barCategoryGap="35%">
