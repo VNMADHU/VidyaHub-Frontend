@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { useEffect, useState, useMemo } from 'react'
-import { Send, Mail, MessageSquare, Users, ChevronDown, Trash2, CheckCircle, AlertCircle, Clock } from 'lucide-react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
+import { Send, Mail, MessageSquare, Users, ChevronDown, Trash2, CheckCircle, AlertCircle, Clock, RefreshCw, Paperclip, X } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
@@ -47,7 +47,123 @@ const NotificationsPage = () => {
   const [search, setSearch] = useState('')
 
   // Tabs
-  const [tab, setTab] = useState('compose') // compose | history
+  const [tab, setTab] = useState('compose') // compose | whatsapp | history
+
+  // ── WhatsApp State ──────────────────────────────────────
+  const [waStatus, setWaStatus]               = useState('disconnected') // disconnected|connecting|qr|ready
+  const [waAudience, setWaAudience]           = useState('all-parents')
+  const [waClassId, setWaClassId]             = useState('')
+  const [waCustomNumbers, setWaCustomNumbers] = useState('') // newline-separated, never saved
+  const [waMessage, setWaMessage]             = useState('')
+  const [waAttachment, setWaAttachment]       = useState(null) // { name, b64, mime }
+  const [waSending, setWaSending]             = useState(false)
+  const [waPreview, setWaPreview]             = useState([])  // { name, phone }[]
+  const waFileRef = useRef(null)
+  const waPollerRef = useRef(null)
+
+  // Poll WhatsApp status every 3s when connecting or qr
+  const pollWaStatus = useCallback(async () => {
+    try {
+      const s = await apiClient.waStatus()
+      setWaStatus(s.status)
+      if (s.status === 'ready' || s.status === 'disconnected') {
+        clearInterval(waPollerRef.current)
+      }
+    } catch { /* backend may not have whatsapp route yet */ }
+  }, [])
+
+  useEffect(() => {
+    if (tab === 'whatsapp') {
+      pollWaStatus()
+      waPollerRef.current = setInterval(pollWaStatus, 3000)
+    } else {
+      clearInterval(waPollerRef.current)
+    }
+    return () => clearInterval(waPollerRef.current)
+  }, [tab, pollWaStatus])
+
+  // Reload recipient preview when whatsapp audience changes
+  useEffect(() => {
+    if (tab !== 'whatsapp') return
+    if (waAudience === 'custom') { setWaPreview([]); return }
+    const aud = waAudience === 'class' ? (waClassId ? `class:${waClassId}` : '') : waAudience
+    if (!aud) { setWaPreview([]); return }
+    apiClient.waRecipients(aud).then((r) => setWaPreview(r.contacts || [])).catch(() => {})
+  }, [waAudience, waClassId, tab])
+
+  const handleWaConnect = async () => {
+    setWaStatus('connecting')
+    try {
+      await apiClient.waConnect()
+      waPollerRef.current = setInterval(pollWaStatus, 3000)
+    } catch (err) {
+      toast.error(err.message || 'Failed to start WhatsApp')
+      setWaStatus('disconnected')
+    }
+  }
+
+  const handleWaDisconnect = async () => {
+    try {
+      await apiClient.waDisconnect()
+      setWaStatus('disconnected')
+    } catch (err) {
+      toast.error(err.message)
+    }
+  }
+
+  const handleWaFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = () => {
+      const b64 = reader.result.split(',')[1]
+      setWaAttachment({ name: file.name, b64, mime: file.type })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleWaSend = async () => {
+    if (!waMessage.trim()) return toast.error('Please enter a message')
+    if (waAudience === 'custom' && !waCustomNumbers.trim()) return toast.error('Please enter at least one phone number')
+    if (waAudience === 'class' && !waClassId) return toast.error('Please select a class')
+
+    const targetCount = waAudience === 'custom'
+      ? waCustomNumbers.split('\n').filter((n) => n.trim()).length
+      : waPreview.length
+
+    const ok = await confirm({
+      title: 'Send WhatsApp Messages?',
+      message: `Send to ${targetCount} number(s) via WhatsApp. Continue?`,
+      confirmText: 'Send',
+      confirmVariant: 'success',
+    })
+    if (!ok) return
+
+    setWaSending(true)
+    try {
+      const audience = waAudience === 'class' ? `class:${waClassId}` : waAudience
+      const customNumbers = waAudience === 'custom'
+        ? waCustomNumbers.split('\n').map((n) => n.trim()).filter(Boolean)
+        : undefined
+
+      const result = await apiClient.waSend({
+        audience,
+        customNumbers,
+        message: waMessage,
+        attachmentB64: waAttachment?.b64,
+        attachmentMime: waAttachment?.mime,
+        attachmentName: waAttachment?.name,
+      })
+      toast.success(result.message || 'WhatsApp messages sent!')
+      setWaMessage('')
+      setWaAttachment(null)
+      setWaCustomNumbers('')
+    } catch (err) {
+      toast.error(err.message || 'Failed to send WhatsApp messages')
+    } finally {
+      setWaSending(false)
+    }
+  }
 
   // Load classes + history on mount
   useEffect(() => {
@@ -225,6 +341,21 @@ const NotificationsPage = () => {
           ✍️ Compose
         </button>
         <button
+          onClick={() => setTab('whatsapp')}
+          style={{
+            padding: '0.5rem 1.25rem',
+            borderRadius: '8px',
+            border: tab === 'whatsapp' ? '2px solid #25d366' : '1px solid var(--border)',
+            background: tab === 'whatsapp' ? '#25d366' : 'var(--surface)',
+            color: tab === 'whatsapp' ? '#fff' : 'var(--text)',
+            fontWeight: 600,
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+          }}
+        >
+          💬 WhatsApp
+        </button>
+        <button
           onClick={() => setTab('history')}
           style={{
             padding: '0.5rem 1.25rem',
@@ -373,6 +504,178 @@ const NotificationsPage = () => {
             <Send size={18} />
             {sending ? 'Sending...' : 'Send Notification'}
           </button>
+        </div>
+      )}
+
+      {/* ── WhatsApp Tab ──────────────────────────────────── */}
+      {tab === 'whatsapp' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+          {/* Connection Status Banner */}
+          <div style={{
+            ...cardStyle,
+            border: waStatus === 'ready' ? '1px solid #25d366' : waStatus === 'qr' || waStatus === 'connecting' ? '1px solid #f59e0b' : '1px solid var(--border)',
+            background: waStatus === 'ready' ? 'rgba(37,211,102,0.06)' : 'var(--surface)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.6rem' }}>
+                  {waStatus === 'ready' ? '🟢' : waStatus === 'qr' ? '🟡' : waStatus === 'connecting' ? '🟡' : '🔴'}
+                </span>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem' }}>
+                    {waStatus === 'ready' && 'WhatsApp Connected'}
+                    {waStatus === 'qr' && 'Scan QR Code to Link WhatsApp'}
+                    {waStatus === 'connecting' && 'Starting WhatsApp...'}
+                    {waStatus === 'disconnected' && 'WhatsApp Not Connected'}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted)' }}>
+                    {waStatus === 'ready' && 'You can now send WhatsApp messages to parents & staff'}
+                    {waStatus === 'qr' && 'Open WhatsApp on your phone → Linked Devices → Link a Device → Scan QR'}
+                    {waStatus === 'connecting' && 'Please wait while the WhatsApp session initializes...'}
+                    {waStatus === 'disconnected' && 'Click Connect to link your WhatsApp account'}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                {waStatus === 'disconnected' && (
+                  <button onClick={handleWaConnect} style={{ padding: '0.5rem 1.25rem', background: '#25d366', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.9rem' }}>
+                    📲 Connect WhatsApp
+                  </button>
+                )}
+                {(waStatus === 'connecting' || waStatus === 'qr') && (
+                  <button onClick={pollWaStatus} style={{ padding: '0.45rem 0.9rem', background: 'var(--surface-alt,#f1f5f9)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <RefreshCw size={14} /> Refresh
+                  </button>
+                )}
+                {waStatus === 'ready' && (
+                  <button onClick={handleWaDisconnect} style={{ padding: '0.45rem 0.9rem', background: 'var(--surface-alt,#f1f5f9)', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                    Disconnect
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Browser-window QR instruction */}
+            {waStatus === 'qr' && (
+              <div style={{ marginTop: '1.25rem', padding: '1rem 1.25rem', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>📱</span>
+                <div>
+                  <p style={{ margin: '0 0 0.3rem', fontWeight: 600, color: '#166534', fontSize: '0.95rem' }}>Scan the QR code in the browser window that just opened</p>
+                  <p style={{ margin: 0, color: '#15803d', fontSize: '0.82rem' }}>Open WhatsApp on your phone → tap ⋮ or Settings → Linked Devices → Link a Device, then scan the QR.</p>
+                </div>
+              </div>
+            )}
+            {waStatus === 'connecting' && (
+              <div style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                ⏳ Opening browser window... This may take 15–30 seconds on first run.
+              </div>
+            )}
+          </div>
+
+          {/* Compose WhatsApp Message (only when ready) */}
+          {waStatus === 'ready' && (<>
+            {/* Audience */}
+            <div style={cardStyle}>
+              <label style={labelStyle}>Send To</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                {[
+                  { value: 'all-parents', label: '👨‍👩‍👧 All Parents' },
+                  { value: 'all-teachers', label: '👨‍🏫 All Teachers' },
+                  { value: 'class', label: '🏫 By Class' },
+                  { value: 'custom', label: '📱 Custom Numbers' },
+                ].map((a) => (
+                  <button key={a.value} type="button" onClick={() => setWaAudience(a.value)} style={chipStyle(waAudience === a.value)}>
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+
+              {waAudience === 'class' && (
+                <select style={selectStyle} value={waClassId} onChange={(e) => setWaClassId(e.target.value)}>
+                  <option value="">— Select Class —</option>
+                  {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              )}
+
+              {waAudience === 'custom' && (
+                <div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: '100px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.85rem' }}
+                    placeholder={'Enter phone numbers (one per line)\n10-digit numbers get +91 auto-added.\nFor other countries include code, e.g.:\n+447979733801  or  447979733801'}
+                    value={waCustomNumbers}
+                    onChange={(e) => setWaCustomNumbers(e.target.value)}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
+                    ⚠️ These numbers are used for this send only and are not saved to the database.
+                  </p>
+                </div>
+              )}
+
+              {/* Recipient preview */}
+              {waAudience !== 'custom' && (
+                <div style={{ ...previewBoxStyle, marginTop: '0.75rem' }}>
+                  <Users size={16} />
+                  <span><strong>{waPreview.length}</strong> phone number(s) found</span>
+                  {waPreview.length > 0 && waPreview.length <= 5 && (
+                    <span style={{ color: 'var(--text)', fontSize: '0.8rem' }}>
+                      — {waPreview.slice(0, 5).map((r) => r.name).join(', ')}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Message */}
+            <div style={cardStyle}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={labelStyle}>Message *</label>
+                <textarea
+                  style={{ ...inputStyle, minHeight: '120px', resize: 'vertical', fontFamily: 'inherit' }}
+                  placeholder={'Dear Parent,\n\nWrite your WhatsApp message here...'}
+                  value={waMessage}
+                  onChange={(e) => setWaMessage(e.target.value)}
+                />
+              </div>
+
+              {/* Attachment */}
+              <div>
+                <label style={labelStyle}>Attachment (optional)</label>
+                <input ref={waFileRef} type="file" accept="image/*,application/pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleWaFile} />
+                {waAttachment ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.9rem', background: 'rgba(37,211,102,0.08)', border: '1px solid #86efac', borderRadius: '8px' }}>
+                    <Paperclip size={16} style={{ color: '#25d366' }} />
+                    <span style={{ fontSize: '0.85rem', flex: 1 }}>{waAttachment.name}</span>
+                    <button onClick={() => setWaAttachment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0 }}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => waFileRef.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.9rem', border: '1px dashed var(--border)', borderRadius: '8px', background: 'var(--surface-alt,#f8fafc)', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>
+                    <Paperclip size={14} /> Attach Image / PDF
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Send Button */}
+            <button
+              onClick={handleWaSend}
+              disabled={waSending}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                padding: '0.85rem 2rem', borderRadius: '10px', border: 'none',
+                background: waSending ? '#94a3b8' : 'linear-gradient(135deg, #25d366, #128c7e)',
+                color: '#fff', fontWeight: 700, fontSize: '1rem',
+                cursor: waSending ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 12px rgba(37,211,102,0.3)',
+                alignSelf: 'flex-start',
+              }}
+            >
+              <Send size={18} />
+              {waSending ? 'Sending...' : '💬 Send WhatsApp'}
+            </button>
+          </>)}
         </div>
       )}
 

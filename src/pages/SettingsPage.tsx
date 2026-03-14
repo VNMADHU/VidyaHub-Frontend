@@ -151,6 +151,7 @@ const SettingsPage = () => {
   const { confirm } = useConfirm()
   const [activeTab, setActiveTab] = useState('school')
   const user = useAppSelector((state) => state.auth.user)
+  const role = useAppSelector((state) => state.auth.role)
 
   // School settings
   const [school, setSchool] = useState(null)
@@ -362,7 +363,7 @@ const SettingsPage = () => {
           { id: 'designations', label: '🏷️ Designations' },
           { id: 'finance', label: '💰 Finance Types' },
           { id: 'lookups', label: '📋 Lookups' },
-          { id: 'security', label: '🔒 Security' },
+          ...(role === 'super-admin' ? [{ id: 'security', label: '🔒 Security' }] : []),
         ].map(({ id, label }) => (
           <button
             key={id}
@@ -557,15 +558,16 @@ const SettingsPage = () => {
                   style={{ width: '100%' }}
                 />
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', paddingBottom: '0.35rem' }}>
+              <label htmlFor="isBreak" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', alignSelf: 'flex-end', height: '38px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
                 <input
                   type="checkbox"
                   id="isBreak"
                   checked={newPeriod.isBreak}
                   onChange={(e) => setNewPeriod({ ...newPeriod, isBreak: e.target.checked })}
+                  style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: 'var(--primary)' }}
                 />
-                <label htmlFor="isBreak" style={{ fontSize: '0.85rem', cursor: 'pointer' }}>Break</label>
-              </div>
+                Break
+              </label>
               <button type="submit" className="btn primary">{editingPeriodId ? '✓ Update' : '+ Add Period'}</button>
               {editingPeriodId && (
                 <button type="button" className="btn outline" onClick={() => { setEditingPeriodId(null); setNewPeriod({ name: '', startTime: '', endTime: '', sortOrder: periods.length + 1, isBreak: false }) }}>Cancel</button>

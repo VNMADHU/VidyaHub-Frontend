@@ -166,7 +166,7 @@ const menuItems = [
           >
             ☰
           </button>
-          <h1 className="portal-title">{schoolName ? (/school/i.test(schoolName) ? `${schoolName} Portal` : `${schoolName} School Portal`) : 'School Portal'}</h1>
+          <h1 className="portal-title">{schoolName ? (/school/i.test(schoolName) ? `${schoolName} Portal` : `${schoolName} Portal`) : 'Portal'}</h1>
           <div className="header-user">
             <span className="header-email">{user?.email}</span>
             <div className="header-avatar">

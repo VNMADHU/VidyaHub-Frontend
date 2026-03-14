@@ -186,7 +186,7 @@ const SchoolPortalLayout = () => {
           >
             ☰
           </button>
-          <h1 className="portal-title">{schoolName ? `${schoolName} Portal` : 'School Portal'}</h1>
+          <h1 className="portal-title">{schoolName ? `${schoolName} Portal` : 'Portal'}</h1>
           <div className="header-user">
             <span className="header-email">{user?.email}</span>
             <div className="header-avatar">

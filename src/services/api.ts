@@ -224,6 +224,8 @@ export const adminApi = {
     mfaPhone?: boolean
     feeCanEdit?: boolean
     feeCanDelete?: boolean
+    expenseCanEdit?: boolean
+    expenseCanDelete?: boolean
   }) => api.post<AdminUser>('/admins', data).then((r) => r.data),
   update: (id: number, data: {
     email?: string
@@ -235,6 +237,8 @@ export const adminApi = {
     mfaPhone?: boolean
     feeCanEdit?: boolean
     feeCanDelete?: boolean
+    expenseCanEdit?: boolean
+    expenseCanDelete?: boolean
   }) => api.patch<AdminUser>(`/admins/${id}`, data).then((r) => r.data),
   updatePassword: (id: number, password: string) =>
     api.patch(`/admins/${id}/password`, { password }).then((r) => r.data),
@@ -774,6 +778,12 @@ const apiClient = {
   createAdmission: admissionApi.create,
   updateAdmission: admissionApi.update,
   deleteAdmission: admissionApi.delete,
+  // WhatsApp
+  waStatus:      () => api.get('/whatsapp/status').then((r) => r.data),
+  waConnect:     () => api.post('/whatsapp/connect').then((r) => r.data),
+  waDisconnect:  () => api.post('/whatsapp/disconnect').then((r) => r.data),
+  waRecipients:  (audience: string) => api.get('/whatsapp/recipients', { params: { audience } }).then((r) => r.data),
+  waSend:        (data: any) => api.post('/whatsapp/send', data).then((r) => r.data),
 }
 
 export default apiClient

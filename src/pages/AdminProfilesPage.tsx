@@ -69,6 +69,8 @@ const emptyForm = {
   mfaPhone: false,
   feeCanEdit: false,
   feeCanDelete: false,
+  expenseCanEdit: false,
+  expenseCanDelete: false,
 }
 type FormData = typeof emptyForm
 
@@ -169,6 +171,8 @@ const AdminProfilesPage = () => {
       mfaPhone: admin.mfaPhone ?? false,
       feeCanEdit: admin.feeCanEdit ?? false,
       feeCanDelete: admin.feeCanDelete ?? false,
+      expenseCanEdit: admin.expenseCanEdit ?? false,
+      expenseCanDelete: admin.expenseCanDelete ?? false,
     })
     setPanelOpen(true)
   }
@@ -220,6 +224,8 @@ const AdminProfilesPage = () => {
         mfaPhone: form.mfaPhone,
         feeCanEdit: form.feeCanEdit,
         feeCanDelete: form.feeCanDelete,
+        expenseCanEdit: form.expenseCanEdit,
+        expenseCanDelete: form.expenseCanDelete,
         ...(form.password ? { password: form.password } : {}),
       }
       if (editId) {
@@ -458,6 +464,38 @@ const AdminProfilesPage = () => {
             {!form.feeCanEdit && !form.feeCanDelete && (
               <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', fontSize: '13px', color: '#92400e' }}>
                 ⚠️ Both fee permissions disabled — this admin can only add fees, not edit or delete.
+              </div>
+            )}
+          </div>
+
+          {/* ── Expense Permissions ── */}
+          <div className="ap-field">
+            <label>💸 Expense Permissions</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.expenseCanEdit ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.expenseCanEdit ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={form.expenseCanEdit}
+                  onChange={(e) => setForm((p) => ({ ...p, expenseCanEdit: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>✏️ Edit Expenses</span>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Allow modifying expense records</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.expenseCanDelete ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.expenseCanDelete ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={form.expenseCanDelete}
+                  onChange={(e) => setForm((p) => ({ ...p, expenseCanDelete: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>🗑️ Delete Expenses</span>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Allow permanently removing expense records</span>
+              </label>
+            </div>
+            {!form.expenseCanEdit && !form.expenseCanDelete && (
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', fontSize: '13px', color: '#92400e' }}>
+                ⚠️ Both expense permissions disabled — this admin can only add expenses, not edit or delete.
               </div>
             )}
           </div>

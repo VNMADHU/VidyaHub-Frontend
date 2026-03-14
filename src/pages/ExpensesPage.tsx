@@ -12,10 +12,16 @@ import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 import Modal from '../components/Modal'
+import { useAppSelector } from '@/store'
 
 const ExpensesPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
+  const authRole = useAppSelector((state) => state.auth.role)
+  const authUser = useAppSelector((state) => state.auth.user)
+  const isSuperAdmin = authRole === 'super-admin'
+  const canEditExpenses   = isSuperAdmin || authUser?.expenseCanEdit === true
+  const canDeleteExpenses = isSuperAdmin || authUser?.expenseCanDelete === true
   const [expenses, setExpenses] = useState([])
   const [expenseCategories, setExpenseCategories] = useState([])
   const [loading, setLoading] = useState(true)
@@ -34,7 +40,7 @@ const ExpensesPage = () => {
     receiptNo: '',
     description: '',
     approvedBy: '',
-    status: 'approved',
+    status: 'pending',
   })
 
   useEffect(() => {
@@ -74,7 +80,7 @@ const ExpensesPage = () => {
   }
 
   const resetForm = () => {
-    setFormData({ title: '', category: 'maintenance', amount: '', date: '', paidTo: '', paymentMode: 'cash', receiptNo: '', description: '', approvedBy: '', status: 'approved' })
+    setFormData({ title: '', category: 'maintenance', amount: '', date: '', paidTo: '', paymentMode: 'cash', receiptNo: '', description: '', approvedBy: '', status: 'pending' })
   }
 
   const handleAddNew = () => {
@@ -95,7 +101,7 @@ const ExpensesPage = () => {
       receiptNo: expense.receiptNo || '',
       description: expense.description || '',
       approvedBy: expense.approvedBy || '',
-      status: expense.status || 'approved',
+      status: expense.status || 'pending',
     })
     setShowForm(true)
   }
@@ -396,12 +402,22 @@ const ExpensesPage = () => {
                 <input type="text" placeholder="Approved By" value={formData.approvedBy} onChange={(e) => setFormData({ ...formData, approvedBy: e.target.value })} />
               </label>
               <label>
-                <span className="field-label">Status</span>
-                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                <span className="field-label">Status {!isSuperAdmin && '🔒'}</span>
+                {isSuperAdmin ? (
+                  <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+                    readOnly
+                    style={{ background: '#f9fafb', cursor: 'not-allowed' }}
+                    title="Only Super Admin can approve or reject expenses"
+                  />
+                )}
               </label>
               <label style={{ gridColumn: '1 / -1' }}>
                 <span className="field-label">Notes / Description</span>
@@ -448,8 +464,15 @@ const ExpensesPage = () => {
                         }}>{expense.status}</span>
                       </td>
                       <td>
-                        <button className="btn-icon edit" onClick={() => handleEdit(expense)}><SquarePen size={16} /></button>
-                        <button className="btn-icon danger" onClick={() => handleDelete(expense.id)}><Trash2 size={16} /></button>
+                        {canEditExpenses && (
+                          <button className="btn-icon edit" onClick={() => handleEdit(expense)}><SquarePen size={16} /></button>
+                        )}
+                        {canDeleteExpenses && (
+                          <button className="btn-icon danger" onClick={() => handleDelete(expense.id)}><Trash2 size={16} /></button>
+                        )}
+                        {!canEditExpenses && !canDeleteExpenses && (
+                          <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>View only</span>
+                        )}
                       </td>
                     </tr>
                   ))

@@ -10,6 +10,7 @@ import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle } from '@/utils/exportUtils'
 import Modal from '../components/Modal'
+import { useAppSelector } from '@/store'
 
 const EMPLOYEE_TYPES = ['teacher', 'driver', 'staff']
 // Leave types loaded dynamically from Settings > Lookups
@@ -24,6 +25,8 @@ const STATUS_COLORS = {
 const LeavesPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
+  const authRole = useAppSelector((state) => state.auth.role)
+  const isSuperAdmin = authRole === 'super-admin'
   const [leaves, setLeaves] = useState([])
   const [teachers, setTeachers] = useState([])
   const [drivers, setDrivers] = useState([])
@@ -361,12 +364,22 @@ const LeavesPage = () => {
               {editingId && (
                 <>
                   <label>
-                    <span className="field-label">Status</span>
-                    <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                      ))}
-                    </select>
+                    <span className="field-label">Status {!isSuperAdmin && '🔒'}</span>
+                    {isSuperAdmin ? (
+                      <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })}>
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        value={formData.status.charAt(0).toUpperCase() + formData.status.slice(1)}
+                        readOnly
+                        style={{ background: '#f9fafb', cursor: 'not-allowed' }}
+                        title="Only Super Admin can approve or reject leave applications"
+                      />
+                    )}
                   </label>
                   <label>
                     <span className="field-label">Approved By</span>
@@ -424,7 +437,7 @@ const LeavesPage = () => {
                         </td>
                         <td className="no-print">
                           <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                            {leave.status === 'pending' && (
+                            {leave.status === 'pending' && isSuperAdmin && (
                               <>
                                 <button className="btn-icon edit" onClick={() => handleStatusChange(leave.id, 'approved')} title="Approve" style={{ color: '#065f46' }}>✓</button>
                                 <button className="btn-icon danger" onClick={() => handleStatusChange(leave.id, 'rejected')} title="Reject" style={{ color: '#991b1b' }}>✕</button>

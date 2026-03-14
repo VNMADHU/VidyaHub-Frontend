@@ -9,6 +9,7 @@ import Pagination from '@/components/Pagination'
 import { usePagination } from '@/hooks/usePagination'
 import { exportToCSV, exportToPDF, exportButtonStyle, printTable } from '@/utils/exportUtils'
 import Modal from '../components/Modal'
+import { useAppSelector } from '@/store'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CATEGORY_OPTIONS = ['General', 'OBC', 'SC', 'ST', 'EWS']
@@ -56,6 +57,8 @@ const exportCols = [
 const AdmissionsPage = () => {
   const { confirm } = useConfirm()
   const toast = useToast()
+  const authRole = useAppSelector((state) => state.auth.role)
+  const isSuperAdmin = authRole === 'super-admin'
 
   const [admissions, setAdmissions]   = useState([])
   const [loading, setLoading]         = useState(true)
@@ -281,10 +284,20 @@ const AdmissionsPage = () => {
               📊 Application Status
             </h4>
             <label>
-              <span className="field-label">Status *</span>
-              <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} required>
-                {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>)}
-              </select>
+              <span className="field-label">Status * {!isSuperAdmin && '🔒'}</span>
+              {isSuperAdmin ? (
+                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} required>
+                  {STATUS_OPTIONS.map((o) => (
+                    <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+                  ))}
+                </select>
+              ) : (
+                <select value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} required>
+                  {STATUS_OPTIONS.filter((o) => !['approved', 'rejected'].includes(o)).map((o) => (
+                    <option key={o} value={o}>{o.charAt(0).toUpperCase() + o.slice(1)}</option>
+                  ))}
+                </select>
+              )}
             </label>
             <label>
               <span className="field-label">Interview Date</span>

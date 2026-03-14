@@ -12,6 +12,8 @@ export interface User {
   modulePermissions?: string | null
   feeCanEdit?: boolean
   feeCanDelete?: boolean
+  expenseCanEdit?: boolean
+  expenseCanDelete?: boolean
   firstName?: string
   lastName?: string
   isEmailVerified?: boolean
@@ -88,6 +90,8 @@ export interface AdminUser {
   mfaPhone?: boolean
   feeCanEdit?: boolean
   feeCanDelete?: boolean
+  expenseCanEdit?: boolean
+  expenseCanDelete?: boolean
   createdAt: string
 }
 
