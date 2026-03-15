@@ -82,8 +82,10 @@ export function exportToPDF(
 // ── Export Button Component Helper ────────────────────────
 // Use this inline style object for export buttons
 export const exportButtonStyle: React.CSSProperties = {
-  padding: '6px 14px',
+  padding: '12px 14px',
   borderRadius: '6px',
+  // marginTop: '8px',
+
   border: '1px solid var(--border)',
   background: 'var(--surface)',
   color: 'var(--text)',

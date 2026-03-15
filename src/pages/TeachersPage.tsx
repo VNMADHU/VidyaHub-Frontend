@@ -69,6 +69,7 @@ const TeachersPage = () => {
     panNumber: '',
     gender: '',
     bloodGroup: '',
+    salary: '',
   }
   const [formData, setFormData] = useState(EMPTY_TEACHER_FORM)
   const [subjects, setSubjects] = useState([])
@@ -146,6 +147,7 @@ const TeachersPage = () => {
       panNumber: teacher.panNumber || '',
       gender: teacher.gender || '',
       bloodGroup: teacher.bloodGroup || '',
+      salary: teacher.salary || '',
     })
     setShowForm(true)
   }
@@ -441,6 +443,16 @@ const TeachersPage = () => {
                 value={formData.panNumber}
                 onChange={(e) => setFormData({ ...formData, panNumber: e.target.value.toUpperCase().slice(0, 10) })}
                 maxLength={10}
+              />
+            </label>
+            <label>
+              <span className="field-label">Salary (₹)</span>
+              <input
+                type="number"
+                placeholder="Monthly Salary (₹)"
+                value={formData.salary}
+                onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                min="0"
               />
             </label>
             <label style={{ gridColumn: '1 / -1' }}>

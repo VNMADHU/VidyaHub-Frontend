@@ -226,6 +226,8 @@ export const adminApi = {
     feeCanDelete?: boolean
     expenseCanEdit?: boolean
     expenseCanDelete?: boolean
+    incomeCanEdit?: boolean
+    incomeCanDelete?: boolean
   }) => api.post<AdminUser>('/admins', data).then((r) => r.data),
   update: (id: number, data: {
     email?: string
@@ -239,6 +241,8 @@ export const adminApi = {
     feeCanDelete?: boolean
     expenseCanEdit?: boolean
     expenseCanDelete?: boolean
+    incomeCanEdit?: boolean
+    incomeCanDelete?: boolean
   }) => api.patch<AdminUser>(`/admins/${id}`, data).then((r) => r.data),
   updatePassword: (id: number, password: string) =>
     api.patch(`/admins/${id}/password`, { password }).then((r) => r.data),
@@ -497,6 +501,13 @@ export const expenseApi = {
   delete: (id: string) => api.delete(`/expenses/${id}`).then((r) => r.data),
 }
 
+export const incomeApi = {
+  list: () => api.get('/incomes').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/incomes', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/incomes/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/incomes/${id}`).then((r) => r.data),
+}
+
 export const supportApi = {
   list: () => api.get('/support').then((r) => r.data),
   create: (data: Record<string, unknown>) => api.post('/support', data).then((r) => r.data),
@@ -738,6 +749,11 @@ const apiClient = {
   createExpense: expenseApi.create,
   updateExpense: expenseApi.update,
   deleteExpense: expenseApi.delete,
+  // Incomes
+  listIncomes: incomeApi.list,
+  createIncome: incomeApi.create,
+  updateIncome: incomeApi.update,
+  deleteIncome: incomeApi.delete,
   // Support
   listTickets: supportApi.list,
   createTicket: supportApi.create,

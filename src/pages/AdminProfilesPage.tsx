@@ -71,6 +71,8 @@ const emptyForm = {
   feeCanDelete: false,
   expenseCanEdit: false,
   expenseCanDelete: false,
+  incomeCanEdit: false,
+  incomeCanDelete: false,
 }
 type FormData = typeof emptyForm
 
@@ -173,6 +175,8 @@ const AdminProfilesPage = () => {
       feeCanDelete: admin.feeCanDelete ?? false,
       expenseCanEdit: admin.expenseCanEdit ?? false,
       expenseCanDelete: admin.expenseCanDelete ?? false,
+      incomeCanEdit: admin.incomeCanEdit ?? false,
+      incomeCanDelete: admin.incomeCanDelete ?? false,
     })
     setPanelOpen(true)
   }
@@ -226,6 +230,8 @@ const AdminProfilesPage = () => {
         feeCanDelete: form.feeCanDelete,
         expenseCanEdit: form.expenseCanEdit,
         expenseCanDelete: form.expenseCanDelete,
+        incomeCanEdit: form.incomeCanEdit,
+        incomeCanDelete: form.incomeCanDelete,
         ...(form.password ? { password: form.password } : {}),
       }
       if (editId) {
@@ -496,6 +502,38 @@ const AdminProfilesPage = () => {
             {!form.expenseCanEdit && !form.expenseCanDelete && (
               <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', fontSize: '13px', color: '#92400e' }}>
                 ⚠️ Both expense permissions disabled — this admin can only add expenses, not edit or delete.
+              </div>
+            )}
+          </div>
+
+          {/* ── Income Permissions ── */}
+          <div className="ap-field">
+            <label>📈 Income Permissions</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.incomeCanEdit ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.incomeCanEdit ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={form.incomeCanEdit}
+                  onChange={(e) => setForm((p) => ({ ...p, incomeCanEdit: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>✏️ Edit Income</span>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Allow modifying income records</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.incomeCanDelete ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.incomeCanDelete ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  checked={form.incomeCanDelete}
+                  onChange={(e) => setForm((p) => ({ ...p, incomeCanDelete: e.target.checked }))}
+                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
+                />
+                <span style={{ fontSize: '14px', fontWeight: 500 }}>🗑️ Delete Income</span>
+                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Allow permanently removing income records</span>
+              </label>
+            </div>
+            {!form.incomeCanEdit && !form.incomeCanDelete && (
+              <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', fontSize: '13px', color: '#92400e' }}>
+                ⚠️ Both income permissions disabled — this admin can only view income, not edit or delete.
               </div>
             )}
           </div>

@@ -17,6 +17,7 @@ const menuItems = [
   { path: '/portal/exams',        icon: '📝', label: 'Marks',         moduleKey: 'exams' },
   { path: '/portal/attendance',   icon: '✅', label: 'Attendance',    moduleKey: 'attendance' },
   { path: '/portal/fees',         icon: '💰', label: 'Fees',          moduleKey: 'fees' },
+  { path: '/portal/income',        icon: '📈', label: 'Income',         moduleKey: 'income' },
   { path: '/portal/events',       icon: '🎉', label: 'Events',        moduleKey: 'events' },
   { path: '/portal/announcements',icon: '📣', label: 'Announcements', moduleKey: 'announcements' },
   { path: '/portal/achievements', icon: '🏆', label: 'Awards',        moduleKey: 'achievements' },

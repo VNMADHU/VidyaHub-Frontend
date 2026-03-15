@@ -27,6 +27,7 @@ import ExamManagementPage from './pages/ExamManagementPage'
 import StudentDetailPage from './pages/StudentDetailPage'
 import TeacherDetailPage from './pages/TeacherDetailPage'
 import FeesPage from './pages/FeesPage'
+import IncomePage from './pages/IncomePage'
 import TimetablePage from './pages/TimetablePage'
 import ReportCardPage from './pages/ReportCardPage'
 import AttendanceReportPage from './pages/AttendanceReportPage'
@@ -142,6 +143,7 @@ const router = createBrowserRouter([
       { path: 'exam-management', element: <ExamManagementPage /> },
       { path: 'attendance', element: <AttendancePage /> },
       { path: 'fees', element: <FeesPage /> },
+      { path: 'income', element: <IncomePage /> },
       { path: 'timetable', element: <TimetablePage /> },
       { path: 'report-card', element: <ReportCardPage /> },
       { path: 'attendance-report', element: <AttendanceReportPage /> },

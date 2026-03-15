@@ -4,6 +4,7 @@ import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 import usePreventBackNavigation from '../hooks/usePreventBackNavigation'
 import apiClient from '@/services/api'
+import path from 'node:path'
 
 const SchoolPortalLayout = () => {
   const dispatch = useAppDispatch()
@@ -59,7 +60,9 @@ const menuItems = [
 
   // FINANCE
   { path: '/portal/fees', icon: '💰', label: 'Fees', module: 'fees' },
+  { path: '/portal/income', icon: '📈', label: 'Income', moduleKey: 'income' },
   { path: '/portal/expenses', icon: '💸', label: 'Expenses', module: 'expenses' },
+
 
   // STAFF / HR
   { path: '/portal/staff', icon: '🧑‍💼', label: 'Staff', module: 'staff' },

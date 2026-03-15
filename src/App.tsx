@@ -27,6 +27,7 @@ import ExamManagementPage from './pages/ExamManagementPage'
 import StudentDetailPage from './pages/StudentDetailPage'
 import TeacherDetailPage from './pages/TeacherDetailPage'
 import FeesPage from './pages/FeesPage'
+import IncomePage from './pages/IncomePage'
 import ProtectedRoute from './components/ProtectedRoute'
 import StudentLoginPage from './pages/StudentLoginPage'
 import TeacherLoginPage from './pages/TeacherLoginPage'
@@ -87,6 +88,7 @@ const router = createBrowserRouter([
       { path: 'exam-management', element: <ExamManagementPage /> },
       { path: 'attendance', element: <AttendancePage /> },
       { path: 'fees', element: <FeesPage /> },
+      { path: 'income', element: <IncomePage /> },
       { path: 'events', element: <EventsPage /> },
       { path: 'announcements', element: <AnnouncementsPage /> },
       { path: 'achievements', element: <AchievementsPage /> },

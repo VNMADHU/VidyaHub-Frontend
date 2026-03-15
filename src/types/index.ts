@@ -14,6 +14,8 @@ export interface User {
   feeCanDelete?: boolean
   expenseCanEdit?: boolean
   expenseCanDelete?: boolean
+  incomeCanEdit?: boolean
+  incomeCanDelete?: boolean
   firstName?: string
   lastName?: string
   isEmailVerified?: boolean
@@ -92,6 +94,8 @@ export interface AdminUser {
   feeCanDelete?: boolean
   expenseCanEdit?: boolean
   expenseCanDelete?: boolean
+  incomeCanEdit?: boolean
+  incomeCanDelete?: boolean
   createdAt: string
 }
 

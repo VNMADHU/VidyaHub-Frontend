@@ -32,7 +32,7 @@ const TransportPage = () => {
   const emptyDriverForm = {
     firstName: '', lastName: '', phoneNumber: '', dateOfBirth: '', address: '', experience: '',
     licenseNumber: '', licenseType: 'HMV', licenseExpiry: '', aadhaarNumber: '', badgeNumber: '',
-    bloodGroup: '', emergencyContact: '', status: 'active',
+    bloodGroup: '', emergencyContact: '', status: 'active', salary: '',
   }
 
   const [vehicleForm, setVehicleForm] = useState(emptyVehicleForm)
@@ -124,6 +124,7 @@ const TransportPage = () => {
       licenseExpiry: d.licenseExpiry ? d.licenseExpiry.split('T')[0] : '',
       aadhaarNumber: d.aadhaarNumber || '', badgeNumber: d.badgeNumber || '',
       bloodGroup: d.bloodGroup || '', emergencyContact: d.emergencyContact || '', status: d.status || 'active',
+      salary: d.salary || '',
     })
     setShowForm(true)
   }
@@ -374,6 +375,10 @@ const TransportPage = () => {
                   <label>
                     <span className="field-label">Emergency Contact</span>
                     <input type="text" placeholder="Emergency Contact" value={driverForm.emergencyContact} onChange={(e) => setDriverForm({ ...driverForm, emergencyContact: e.target.value })} />
+                  </label>
+                  <label>
+                    <span className="field-label">Salary (₹)</span>
+                    <input type="number" placeholder="Monthly Salary (₹)" value={driverForm.salary} onChange={(e) => setDriverForm({ ...driverForm, salary: e.target.value })} min="0" />
                   </label>
                   <label style={{ gridColumn: '1 / -1' }}>
                     <span className="field-label">Address</span>

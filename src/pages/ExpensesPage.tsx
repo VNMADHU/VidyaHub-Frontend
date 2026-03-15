@@ -1,6 +1,9 @@
 // @ts-nocheck
-import { useEffect, useState } from 'react'
-import { SquarePen, Trash2, Printer } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { SquarePen, Trash2, Printer, CalendarRange, X, FileDown } from 'lucide-react'
+import { DayPicker } from 'react-day-picker'
+import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns'
+import 'react-day-picker/dist/style.css'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import apiClient from '@/services/api'
@@ -29,7 +32,9 @@ const ExpensesPage = () => {
   const [showBulkImport, setShowBulkImport] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterDate, setFilterDate] = useState('')
+  const [dateRange, setDateRange] = useState({ from: undefined, to: undefined })
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const datePickerRef = useRef(null)
   const [formData, setFormData] = useState({
     title: '',
     category: 'maintenance',
@@ -79,6 +84,51 @@ const ExpensesPage = () => {
     }
   }
 
+  const genReceiptNo = () => Math.floor(100000000000 + Math.random() * 900000000000).toString()
+
+  const downloadExpenseReceipt = (expense) => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' })
+    const pw = doc.internal.pageSize.getWidth()
+    // Header bar
+    doc.setFillColor(239, 68, 68); doc.rect(0, 0, pw, 22, 'F')
+    doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(13)
+    doc.text('EXPENSE RECEIPT', pw / 2, 10, { align: 'center' })
+    doc.setFontSize(8); doc.setFont('helvetica', 'normal')
+    doc.text('School Management System', pw / 2, 16, { align: 'center' })
+    // Receipt no & date
+    doc.setTextColor(60, 60, 60); doc.setFontSize(8)
+    doc.text(`Receipt No: ${expense.receiptNo || 'N/A'}`, 10, 30)
+    doc.text(`Date: ${expense.date ? new Date(expense.date).toLocaleDateString('en-IN') : 'N/A'}`, pw - 10, 30, { align: 'right' })
+    // Divider
+    doc.setDrawColor(220, 220, 220); doc.line(10, 33, pw - 10, 33)
+    // Details table
+    const fields = [
+      ['Title', expense.title || '-'],
+      ['Category', expense.category ? expense.category.charAt(0).toUpperCase() + expense.category.slice(1) : '-'],
+      ['Amount', `Rs. ${(expense.amount || 0).toLocaleString('en-IN')}`],
+      ['Paid To', expense.paidTo || '-'],
+      ['Payment Mode', expense.paymentMode ? expense.paymentMode.charAt(0).toUpperCase() + expense.paymentMode.slice(1) : '-'],
+      ['Approved By', expense.approvedBy || '-'],
+      ['Status', expense.status ? expense.status.charAt(0).toUpperCase() + expense.status.slice(1) : '-'],
+      ['Description', expense.description || '-'],
+    ]
+    let y = 40
+    fields.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(100, 100, 100)
+      doc.text(label, 12, y)
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(30, 30, 30)
+      const lines = doc.splitTextToSize(String(value), pw - 60)
+      doc.text(lines, 60, y)
+      y += Math.max(7, lines.length * 5)
+      doc.setDrawColor(240, 240, 240); doc.line(10, y - 2, pw - 10, y - 2)
+    })
+    // Footer
+    doc.setFillColor(248, 248, 248); doc.rect(0, doc.internal.pageSize.getHeight() - 14, pw, 14, 'F')
+    doc.setFontSize(7); doc.setTextColor(150, 150, 150); doc.setFont('helvetica', 'italic')
+    doc.text('This is a computer-generated receipt.', pw / 2, doc.internal.pageSize.getHeight() - 6, { align: 'center' })
+    doc.save(`Expense_Receipt_${expense.receiptNo || expense.id}.pdf`)
+  }
+
   const resetForm = () => {
     setFormData({ title: '', category: 'maintenance', amount: '', date: '', paidTo: '', paymentMode: 'cash', receiptNo: '', description: '', approvedBy: '', status: 'pending' })
   }
@@ -86,6 +136,7 @@ const ExpensesPage = () => {
   const handleAddNew = () => {
     setEditingId(null)
     resetForm()
+    setFormData((prev) => ({ ...prev, receiptNo: genReceiptNo() }))
     setShowForm(true)
   }
 
@@ -146,7 +197,11 @@ const ExpensesPage = () => {
 
   const buildExpenseFilterLabel = () => {
     const parts = []
-    if (filterDate) parts.push(`Date: ${new Date(filterDate).toLocaleDateString('en-IN')}`)
+    if (dateRange.from && dateRange.to) {
+      parts.push(`Date: ${format(dateRange.from, 'dd MMM yyyy')} – ${format(dateRange.to, 'dd MMM yyyy')}`)
+    } else if (dateRange.from) {
+      parts.push(`Date: from ${format(dateRange.from, 'dd MMM yyyy')}`)
+    }
     if (searchQuery) parts.push(`Search: "${searchQuery}"`)
     return parts.length ? parts.join('  |  ') : 'All Records'
   }
@@ -304,14 +359,81 @@ const ExpensesPage = () => {
   }
 
   const filteredExpenses = expenses.filter((e) => {
-    if (filterDate && e.date?.split('T')[0] !== filterDate) return false
+    if (dateRange.from || dateRange.to) {
+      if (!e.date) return false
+      const expDate = startOfDay(parseISO(e.date.split('T')[0]))
+      const from = dateRange.from ? startOfDay(dateRange.from) : null
+      const to   = dateRange.to   ? endOfDay(dateRange.to)   : null
+      if (from && to) {
+        if (!isWithinInterval(expDate, { start: from, end: to })) return false
+      } else if (from) {
+        if (expDate < from) return false
+      }
+    }
     const q = searchQuery.toLowerCase()
     return e.title?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q) || e.paidTo?.toLowerCase().includes(q)
   })
 
   const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
 
+  // ── Category breakdown ─────────────────────────────────────────────────
+  const expenseCategoryBreakdown = Object.entries(
+    filteredExpenses.reduce((acc, e) => {
+      const cat = e.category || 'Uncategorized'
+      if (!acc[cat]) acc[cat] = { count: 0, total: 0 }
+      acc[cat].count++
+      acc[cat].total += e.amount || 0
+      return acc
+    }, {})
+  ).sort((a, b) => b[1].total - a[1].total)
+
+  const downloadExpenseCategoryPDF = () => {
+    const doc = new jsPDF()
+    const pageW = doc.internal.pageSize.getWidth()
+    doc.setFontSize(16); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 99, 235)
+    doc.text('Expense Category Report', 14, 16)
+    doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(100, 100, 100)
+    doc.text(`Filter: ${buildExpenseFilterLabel()}`, 14, 24)
+    doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, pageW - 14, 24, { align: 'right' })
+    autoTable(doc, {
+      head: [['Category', 'No. of Records', 'Total Amount (Rs.)']],
+      body: [
+        ...expenseCategoryBreakdown.map(([cat, { count, total }]) => [
+          cat.charAt(0).toUpperCase() + cat.slice(1),
+          String(count),
+          `Rs.${total.toLocaleString('en-IN')}`,
+        ]),
+        ['GRAND TOTAL', String(filteredExpenses.length), `Rs.${totalExpenses.toLocaleString('en-IN')}`],
+      ],
+      startY: 30,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [239, 246, 255] },
+      didParseCell: (data) => {
+        if (data.row.index === expenseCategoryBreakdown.length) {
+          data.cell.styles.fontStyle = 'bold'
+          data.cell.styles.fillColor = [219, 234, 254]
+          data.cell.styles.textColor = [37, 99, 235]
+        }
+      },
+      margin: { left: 14, right: 14 },
+    })
+    doc.save(`Expense_Category_Report_${new Date().toISOString().slice(0, 10)}.pdf`)
+  }
+
   const { paginatedItems, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredExpenses)
+
+  // Close date picker when clicking outside
+  useEffect(() => {
+    if (!showDatePicker) return
+    const handleOutsideClick = (e) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(e.target)) {
+        setShowDatePicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [showDatePicker])
 
   return (
     <div className="page">
@@ -339,20 +461,74 @@ const ExpensesPage = () => {
             placeholder="Search by title, category, paid to..."
           />
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', paddingBottom: '1.5rem' }}>
-          <input
-            type="date"
-            value={filterDate}
-            onChange={(e) => setFilterDate(e.target.value)}
-            style={{ padding: '0.75rem 0.75rem', border: '1px solid var(--border, #e2e8f0)', borderRadius: '8px', fontSize: '0.9rem', background: 'var(--card-bg, #fff)', color: 'var(--text, #1e293b)', cursor: 'pointer' }}
-            title="Filter by expense date"
-          />
-          {filterDate && (
-            <button onClick={() => setFilterDate('')} className="btn outline" style={{ fontSize: '0.8rem', padding: '0.65rem 0.9rem', whiteSpace: 'nowrap' }}>
-              ✕ Clear
+        <div ref={datePickerRef} style={{ position: 'relative', paddingBottom: '1.5rem' }}>
+          <button
+            onClick={() => setShowDatePicker((v) => !v)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.4rem',
+              padding: '0.68rem 1rem', border: '1px solid var(--border, #e2e8f0)',
+              borderRadius: '8px', fontSize: '0.9rem', background: (dateRange.from || dateRange.to) ? '#eff6ff' : 'var(--card-bg, #fff)',
+              color: (dateRange.from || dateRange.to) ? '#2563eb' : 'var(--text, #1e293b)',
+              cursor: 'pointer', fontWeight: (dateRange.from || dateRange.to) ? 600 : 400,
+              borderColor: (dateRange.from || dateRange.to) ? '#93c5fd' : 'var(--border, #e2e8f0)',
+              whiteSpace: 'nowrap',
+            }}
+            title="Filter by date range"
+          >
+            <CalendarRange size={16} />
+            {dateRange.from && dateRange.to
+              ? `${format(dateRange.from, 'dd MMM')} – ${format(dateRange.to, 'dd MMM yyyy')}`
+              : dateRange.from
+              ? `From ${format(dateRange.from, 'dd MMM yyyy')}`
+              : 'Date Range'}
+          </button>
+          {(dateRange.from || dateRange.to) && (
+            <button
+              onClick={() => { setDateRange({ from: undefined, to: undefined }); setShowDatePicker(false) }}
+              style={{ position: 'absolute', top: '0.5rem', right: '-2rem', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0.2rem' }}
+              title="Clear date filter"
+            >
+              <X size={14} />
             </button>
           )}
+          {showDatePicker && (
+            <div
+              style={{
+                position: 'absolute', top: 'calc(100% - 1.4rem)', right: 0, zIndex: 1000,
+                background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.12)', padding: '0.75rem',
+              }}
+            >
+              <DayPicker
+                mode="range"
+                selected={dateRange}
+                onSelect={(range) => {
+                  setDateRange(range || { from: undefined, to: undefined })
+                  if (range?.from && range?.to) setShowDatePicker(false)
+                }}
+                numberOfMonths={2}
+                styles={{
+                  caption: { color: '#1e293b' },
+                  day_selected: { backgroundColor: '#2563eb' },
+                  day_range_middle: { backgroundColor: '#eff6ff', color: '#1d4ed8' },
+                }}
+                footer={
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9', marginTop: '0.5rem' }}>
+                    <button
+                      onClick={() => { setDateRange({ from: undefined, to: undefined }); setShowDatePicker(false) }}
+                      style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', background: '#fff' }}
+                    >Clear</button>
+                    <button
+                      onClick={() => setShowDatePicker(false)}
+                      style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', border: 'none', borderRadius: '6px', cursor: 'pointer', background: '#2563eb', color: '#fff' }}
+                    >Done</button>
+                  </div>
+                }
+              />
+            </div>
+          )}
         </div>
+        <button onClick={downloadExpenseCategoryPDF} style={exportButtonStyle} title="Download Category Report">📊 Category Report</button>
       </div>
 
       <div className="page-content-scrollable">
@@ -464,15 +640,16 @@ const ExpensesPage = () => {
                         }}>{expense.status}</span>
                       </td>
                       <td>
+                        <button className="btn-icon" onClick={() => downloadExpenseReceipt(expense)} title="Download Receipt" style={{ color: '#7c3aed' }}><FileDown size={16} /></button>
                         {canEditExpenses && (
                           <button className="btn-icon edit" onClick={() => handleEdit(expense)}><SquarePen size={16} /></button>
                         )}
                         {canDeleteExpenses && (
                           <button className="btn-icon danger" onClick={() => handleDelete(expense.id)}><Trash2 size={16} /></button>
                         )}
-                        {!canEditExpenses && !canDeleteExpenses && (
+                        {/* {!canEditExpenses && !canDeleteExpenses && (
                           <span style={{ fontSize: '0.78rem', color: '#9ca3af' }}>View only</span>
-                        )}
+                        )} */}
                       </td>
                     </tr>
                   ))

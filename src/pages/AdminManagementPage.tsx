@@ -37,6 +37,8 @@ const emptyForm = {
   feeCanDelete: false,
   expenseCanEdit: false,
   expenseCanDelete: false,
+  incomeCanEdit: false,
+  incomeCanDelete: false,
 }
 
 type FormData = typeof emptyForm
@@ -129,6 +131,8 @@ const AdminManagementPage = () => {
       feeCanDelete:      admin.feeCanDelete ?? false,
       expenseCanEdit:    admin.expenseCanEdit ?? false,
       expenseCanDelete:  admin.expenseCanDelete ?? false,
+      incomeCanEdit:     admin.incomeCanEdit ?? false,
+      incomeCanDelete:   admin.incomeCanDelete ?? false,
     })
     setShowForm(true)
   }
@@ -168,6 +172,8 @@ const AdminManagementPage = () => {
         feeCanDelete:      form.feeCanDelete,
         expenseCanEdit:    form.expenseCanEdit,
         expenseCanDelete:  form.expenseCanDelete,
+        incomeCanEdit:     form.incomeCanEdit,
+        incomeCanDelete:   form.incomeCanDelete,
         ...(form.password ? { password: form.password } : {}),
       }
       if (editId) {
@@ -479,6 +485,54 @@ const AdminManagementPage = () => {
                     {!form.expenseCanEdit && !form.expenseCanDelete && (
                       <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.55rem 0.85rem' }}>
                         ⚠️ Both expense permissions disabled — this admin can only add expenses, not edit or delete.
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+              {/* ── Income Module Specific Permissions ── */}
+              <div>
+                  <span className="field-label" style={{ display: 'block', marginBottom: '0.5rem' }}>📈 Income Permissions</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      border: '1px solid var(--border)', borderRadius: '10px',
+                      padding: '0.75rem 1rem', cursor: 'pointer',
+                      background: form.incomeCanEdit ? 'rgba(58,102,255,0.04)' : 'var(--surface)',
+                      transition: 'background 0.15s',
+                    }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 500, fontSize: '0.92rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.incomeCanEdit}
+                          onChange={(e) => setForm((p) => ({ ...p, incomeCanEdit: e.target.checked }))}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }}
+                        />
+                        ✏️ Edit Income
+                      </span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Allow modifying income records</span>
+                    </label>
+                    <label style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      border: '1px solid var(--border)', borderRadius: '10px',
+                      padding: '0.75rem 1rem', cursor: 'pointer',
+                      background: form.incomeCanDelete ? 'rgba(58,102,255,0.04)' : 'var(--surface)',
+                      transition: 'background 0.15s',
+                    }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontWeight: 500, fontSize: '0.92rem' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.incomeCanDelete}
+                          onChange={(e) => setForm((p) => ({ ...p, incomeCanDelete: e.target.checked }))}
+                          style={{ width: '16px', height: '16px', accentColor: 'var(--primary)', flexShrink: 0 }}
+                        />
+                        🗑️ Delete Income
+                      </span>
+                      <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>Allow permanently removing income records</span>
+                    </label>
+                    {!form.incomeCanEdit && !form.incomeCanDelete && (
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e', background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', padding: '0.55rem 0.85rem' }}>
+                        ⚠️ Both income permissions disabled — this admin can only view income, not edit or delete.
                       </p>
                     )}
                   </div>
