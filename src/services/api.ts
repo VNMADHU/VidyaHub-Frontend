@@ -800,6 +800,30 @@ const apiClient = {
   waDisconnect:  () => api.post('/whatsapp/disconnect').then((r) => r.data),
   waRecipients:  (audience: string) => api.get('/whatsapp/recipients', { params: { audience } }).then((r) => r.data),
   waSend:        (data: any) => api.post('/whatsapp/send', data).then((r) => r.data),
+  // Payroll
+  listPayroll:     (params?: any) => api.get('/payroll', { params }).then((r) => r.data),
+  generatePayroll: (data: any) => api.post('/payroll/generate', data).then((r) => r.data),
+  updatePayroll:   (id: string, data: any) => api.patch(`/payroll/${id}`, data).then((r) => r.data),
+  deletePayroll:   (id: string) => api.delete(`/payroll/${id}`).then((r) => r.data),
+  // GST Invoices
+  listGstInvoices:   () => api.get('/gst-invoices').then((r) => r.data),
+  createGstInvoice:  (data: any) => api.post('/gst-invoices', data).then((r) => r.data),
+  updateGstInvoice:  (id: string, data: any) => api.patch(`/gst-invoices/${id}`, data).then((r) => r.data),
+  deleteGstInvoice:  (id: string) => api.delete(`/gst-invoices/${id}`).then((r) => r.data),
+
+  // Ledgers (Tally-like Chart of Accounts)
+  listLedgers:       () => api.get('/ledgers').then((r) => r.data),
+  seedLedgers:       () => api.post('/ledgers/seed').then((r) => r.data),
+  createLedger:      (data: any) => api.post('/ledgers', data).then((r) => r.data),
+  updateLedger:      (id: number, data: any) => api.patch(`/ledgers/${id}`, data).then((r) => r.data),
+  deleteLedger:      (id: number) => api.delete(`/ledgers/${id}`).then((r) => r.data),
+
+  // Vouchers (Receipt / Payment / Journal / Contra)
+  listVouchers:      (params?: any) => api.get('/vouchers', { params }).then((r) => r.data),
+  createVoucher:     (data: any) => api.post('/vouchers', data).then((r) => r.data),
+  updateVoucher:     (id: number, data: any) => api.patch(`/vouchers/${id}`, data).then((r) => r.data),
+  deleteVoucher:     (id: number) => api.delete(`/vouchers/${id}`).then((r) => r.data),
+  getLedgerBalances: () => api.get('/vouchers/ledger-balances').then((r) => r.data),
 }
 
 export default apiClient

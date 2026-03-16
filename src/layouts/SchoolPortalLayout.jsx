@@ -62,6 +62,9 @@ const menuItems = [
   { path: '/portal/fees', icon: '💰', label: 'Fees', module: 'fees' },
   { path: '/portal/income', icon: '📈', label: 'Income', moduleKey: 'income' },
   { path: '/portal/expenses', icon: '💸', label: 'Expenses', module: 'expenses' },
+  { path: '/portal/payroll',      icon: '💼', label: 'Payroll',       moduleKey: 'payroll' },
+  { path: '/portal/accounting',   icon: '📒', label: 'Accounting',    moduleKey: 'accounting' },
+  // { path: '/portal/gst-billing',  icon: '🧾', label: 'GST Billing',   moduleKey: 'gst' },
 
 
   // STAFF / HR

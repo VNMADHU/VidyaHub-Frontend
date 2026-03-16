@@ -53,6 +53,9 @@ import HostelPage from './pages/HostelPage'
 import AdmissionsPage from './pages/AdmissionsPage'
 import AdminProfilesPage from './pages/AdminProfilesPage'
 import LoginPage from './pages/LoginPage'
+import PayrollPage from './pages/PayrollPage'
+import AccountingPage from './pages/AccountingPage'
+import GstBillingPage from './pages/GstBillingPage'
 
 const router = createBrowserRouter([
   {
@@ -159,6 +162,9 @@ const router = createBrowserRouter([
       { path: 'transport/drivers/:driverId', element: <DriverDetailPage /> },
       { path: 'transport/vehicles/:vehicleId', element: <VehicleDetailPage /> },
       { path: 'expenses', element: <ExpensesPage /> },
+      { path: 'payroll', element: <PayrollPage /> },
+      { path: 'accounting', element: <AccountingPage /> },
+      { path: 'gst-billing', element: <GstBillingPage /> },
       { path: 'support', element: <SupportPage /> },
       { path: 'holidays', element: <HolidaysPage /> },
       { path: 'leaves', element: <LeavesPage /> },

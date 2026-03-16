@@ -48,6 +48,9 @@ import AdmissionsPage from './pages/AdmissionsPage'
 import UserProfilePage from './pages/UserProfilePage'
 import AdminProfilesPage from './pages/AdminProfilesPage'
 import LoginPage from './pages/LoginPage'
+import PayrollPage from './pages/PayrollPage'
+import AccountingPage from './pages/AccountingPage'
+import GstBillingPage from './pages/GstBillingPage'
 
 const router = createBrowserRouter([
   {
@@ -107,6 +110,9 @@ const router = createBrowserRouter([
       { path: 'admissions', element: <AdmissionsPage /> },
       { path: 'profile', element: <UserProfilePage /> },
       { path: 'admin-profiles', element: <AdminProfilesPage /> },
+      { path: 'payroll', element: <PayrollPage /> },
+      { path: 'accounting', element: <AccountingPage /> },
+      { path: 'gst-billing', element: <GstBillingPage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],
