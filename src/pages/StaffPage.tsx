@@ -306,13 +306,13 @@ const StaffPage = () => {
       )}
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, designation, ID..." />
-        <select value={filterDesignation} onChange={(e) => setFilterDesignation(e.target.value)} className="filter-select">
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, designation, ID..." style={{ flex: '1 1 260px', minWidth: '200px', marginBottom: 0 }} />
+        <select value={filterDesignation} onChange={(e) => setFilterDesignation(e.target.value)} style={{ flex: '0 0 auto', padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px', minWidth: '160px' }}>
           <option value="">All Designations</option>
           {staffDesignations.map((d) => <option key={d.id} value={d.label}>{d.label}</option>)}
         </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="filter-select">
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ flex: '0 0 auto', padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px', minWidth: '130px' }}>
           <option value="">All Status</option>
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>

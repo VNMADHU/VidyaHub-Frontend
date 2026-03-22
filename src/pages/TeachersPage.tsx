@@ -122,7 +122,7 @@ const TeachersPage = () => {
 
   const handleAddNew = () => {
     setEditingId(null)
-    setFormData(EMPTY_TEACHER_FORM)
+    setFormData({ ...EMPTY_TEACHER_FORM, teacherId: String(Math.floor(10000000 + Math.random() * 90000000)) })
     setShowForm(true)
   }
 

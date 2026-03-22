@@ -142,10 +142,12 @@ const AttendancePage = () => {
 
   const { paginatedItems: paginatedStudents, currentPage, totalPages, totalItems, goToPage } = usePagination(filteredStudents, 20)
 
-  const presentCount = todayAttendance.filter(r => r.status === 'present').length
-  const absentCount = todayAttendance.filter(r => r.status === 'absent').length
-  const lateCount = todayAttendance.filter(r => r.status === 'late').length
-  const unmarkedCount = filteredStudents.length - todayAttendance.filter(r => filteredStudents.some(s => s.id === r.studentId)).length
+  // Only count attendance records that belong to the currently filtered students
+  const filteredTodayAttendance = todayAttendance.filter(r => filteredStudents.some(s => s.id === r.studentId))
+  const presentCount = filteredTodayAttendance.filter(r => r.status === 'present').length
+  const absentCount = filteredTodayAttendance.filter(r => r.status === 'absent').length
+  const lateCount = filteredTodayAttendance.filter(r => r.status === 'late').length
+  const unmarkedCount = filteredStudents.length - filteredTodayAttendance.length
   const attendanceRate = filteredStudents.length > 0 
     ? Math.round(((presentCount + lateCount) / filteredStudents.length) * 100) 
     : 0

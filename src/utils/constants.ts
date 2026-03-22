@@ -11,7 +11,7 @@ export const APP_DESCRIPTION = 'Comprehensive School Management System'
 // ── API ───────────────────────────────────────────────────
 export const API_BASE_URL: string =
   import.meta.env.VITE_API_URL || 'http://localhost:5002/api'
-export const API_TIMEOUT = 30_000 // 30 seconds
+export const API_TIMEOUT = 60_000 // 60 seconds
 export const MAX_UPLOAD_SIZE = 5 * 1024 * 1024 // 5 MB
 
 // ── User Roles ────────────────────────────────────────────

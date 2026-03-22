@@ -246,13 +246,14 @@ const HostelPage = () => {
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-start', justifyContent:'flex-start' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '1rem' }}>
         <SearchBar value={searchQuery} onChange={setSearchQuery}
           placeholder={activeTab === 'hostels' ? 'Search by name, warden...' : activeTab === 'rooms' ? 'Search by room number, hostel...' : 'Search by student, room...'}
+          style={{ flex: '1 1 260px', minWidth: '200px', marginBottom: 0 }}
         />
         {activeTab !== 'hostels' && (
           <select value={filterHostelId} onChange={e => setFilterHostelId(e.target.value)} className="filter-select"
-            style={{marginTop:2}}>
+            style={{ minWidth: '150px', height: '42px' }}>
             <option value="">All Hostels</option>
             {hostels.map(h => <option key={h.id} value={h.id}>{h.name}</option>)}
           </select>

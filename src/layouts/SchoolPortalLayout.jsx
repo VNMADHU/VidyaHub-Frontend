@@ -1,10 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom'
+import {
+  LayoutDashboard, UserPlus, School, Users, GraduationCap,
+  CalendarCheck, CalendarDays, BookOpen, FileQuestion, ListOrdered,
+  FileText, BarChart2, CircleDollarSign, TrendingUp, TrendingDown,
+  Banknote, Calculator, UserCog, CalendarOff, UserCheck,
+  Library, Bus, Hotel, Boxes,
+  CalendarHeart, Trophy, Award, Palmtree,
+  Bell, Megaphone, ScrollText,
+  UserCircle, Settings, HelpCircle, Menu, LogOut,
+} from 'lucide-react'
 import { useAppSelector, useAppDispatch } from '@/store'
 import { logout } from '@/store/slices/authSlice'
 import usePreventBackNavigation from '../hooks/usePreventBackNavigation'
 import apiClient from '@/services/api'
-import path from 'node:path'
+import ChatBot from '@/components/ChatBot'
 
 const SchoolPortalLayout = () => {
   const dispatch = useAppDispatch()
@@ -39,61 +49,60 @@ const SchoolPortalLayout = () => {
       : null // null = full access
 const menuItems = [
   // Dashboard
-  { path: '/portal/dashboard', icon: '📊', label: 'Dashboard' },
+  { path: '/portal/dashboard', Icon: LayoutDashboard, label: 'Dashboard' },
 
   // ACADEMICS
-  { path: '/portal/admissions', icon: '📋', label: 'Admissions', module: 'admissions' },
-  { path: '/portal/classes', icon: '🏫', label: 'Classes', module: 'classes' },
-  { path: '/portal/students', icon: '👥', label: 'Students', module: 'students' },
-  { path: '/portal/teachers', icon: '👨‍🏫', label: 'Teachers', module: 'teachers' },
-  { path: '/portal/attendance', icon: '✅', label: 'Attendance', module: 'attendance' },
-  { path: '/portal/timetable', icon: '📅', label: 'Timetable', module: 'classes' },
-  { path: '/portal/homework', icon: '📝', label: 'Homework', module: 'students' },
-
-  // ATTENDANCE
+  { path: '/portal/admissions',   Icon: UserPlus,           label: 'Admissions',   module: 'admissions' },
+  { path: '/portal/classes',      Icon: School,             label: 'Classes',      module: 'classes' },
+  { path: '/portal/students',     Icon: Users,              label: 'Students',     module: 'students' },
+  { path: '/portal/teachers',     Icon: GraduationCap,      label: 'Teachers',     module: 'teachers' },
+  { path: '/portal/attendance',   Icon: CalendarCheck,      label: 'Attendance',   module: 'attendance' },
+  { path: '/portal/timetable',    Icon: CalendarDays,       label: 'Timetable',    module: 'classes' },
+  { path: '/portal/homework',     Icon: BookOpen,           label: 'Homework',     module: 'students' },
 
   // EXAMINATION
-  { path: '/portal/exam-management', icon: '📋', label: 'Exams', module: 'exams' },
-  { path: '/portal/exams', icon: '📝', label: 'Marks', module: 'exams' },
-  { path: '/portal/report-card', icon: '📄', label: 'Report Card', module: 'exams' },
-  { path: '/portal/attendance-report', icon: '📊', label: 'Att. Report', module: 'attendance' },
+  { path: '/portal/exam-management', Icon: FileQuestion, label: 'Exams',       module: 'exams' },
+  { path: '/portal/exams',           Icon: ListOrdered,  label: 'Marks',       module: 'exams' },
+  { path: '/portal/report-card',     Icon: FileText,     label: 'Report Card', module: 'exams' },
+  { path: '/portal/attendance-report', Icon: BarChart2,  label: 'Att. Report', module: 'attendance' },
 
   // FINANCE
-  { path: '/portal/fees', icon: '💰', label: 'Fees', module: 'fees' },
-  { path: '/portal/income', icon: '📈', label: 'Income', moduleKey: 'income' },
-  { path: '/portal/expenses', icon: '💸', label: 'Expenses', module: 'expenses' },
-  { path: '/portal/payroll',      icon: '💼', label: 'Payroll',       moduleKey: 'payroll' },
-  { path: '/portal/accounting',   icon: '📒', label: 'Accounting',    moduleKey: 'accounting' },
-  // { path: '/portal/gst-billing',  icon: '🧾', label: 'GST Billing',   moduleKey: 'gst' },
-
+  { path: '/portal/fees',       Icon: CircleDollarSign, label: 'Fees',       module: 'fees' },
+  { path: '/portal/income',     Icon: TrendingUp,       label: 'Income',     moduleKey: 'income' },
+  { path: '/portal/expenses',   Icon: TrendingDown,     label: 'Expenses',   module: 'expenses' },
+  { path: '/portal/payroll',    Icon: Banknote,         label: 'Payroll',    moduleKey: 'payroll' },
+  { path: '/portal/accounting', Icon: Calculator,       label: 'Accounting', moduleKey: 'accounting' },
 
   // STAFF / HR
-  { path: '/portal/staff', icon: '🧑‍💼', label: 'Staff', module: 'staff' },
-  { path: '/portal/leaves', icon: '📋', label: 'Leaves', module: 'leaves' },
+  { path: '/portal/staff',            Icon: UserCog,   label: 'Staff',            module: 'staff' },
+  { path: '/portal/staff-attendance', Icon: UserCheck, label: 'Staff Attendance', module: 'staff' },
+  { path: '/portal/leaves',           Icon: CalendarOff, label: 'Leaves',         module: 'leaves' },
 
   // FACILITIES
-  { path: '/portal/library', icon: '📚', label: 'Library', module: 'library' },
-  { path: '/portal/transport', icon: '🚌', label: 'Transport', module: 'transport' },
-  { path: '/portal/hostel', icon: '🏠', label: 'Hostel', module: 'hostel' },
+  { path: '/portal/library',   Icon: Library,  label: 'Library',   module: 'library' },
+  { path: '/portal/transport', Icon: Bus,      label: 'Transport', module: 'transport' },
+  { path: '/portal/hostel',    Icon: Hotel,    label: 'Hostel',    module: 'hostel' },
+  { path: '/portal/inventory', Icon: Boxes,    label: 'Inventory', module: 'inventory' },
 
   // ACTIVITIES
-  { path: '/portal/events', icon: '🎉', label: 'Events', module: 'events' },
-  { path: '/portal/sports', icon: '⚽', label: 'Sports', module: 'sports' },
-  { path: '/portal/achievements', icon: '🏆', label: 'Awards', module: 'achievements' },
-  { path: '/portal/holidays', icon: '🏖️', label: 'Holidays', module: 'holidays' },
+  { path: '/portal/events',       Icon: CalendarHeart, label: 'Events',   module: 'events' },
+  { path: '/portal/sports',       Icon: Trophy,        label: 'Sports',   module: 'sports' },
+  { path: '/portal/achievements', Icon: Award,         label: 'Awards',   module: 'achievements' },
+  { path: '/portal/holidays',     Icon: Palmtree,      label: 'Holidays', module: 'holidays' },
 
   // COMMUNICATION
-  { path: '/portal/notifications', icon: '📨', label: 'Notifications', module: 'announcements' },
-  { path: '/portal/announcements', icon: '📣', label: 'Announcements', module: 'announcements' },
-  { path: '/portal/transfer-certificate', icon: '📜', label: 'Certificates', module: 'students' },
+  { path: '/portal/notifications',       Icon: Bell,       label: 'Notifications', module: 'announcements' },
+  { path: '/portal/announcements',       Icon: Megaphone,  label: 'Announcements', module: 'announcements' },
+  { path: '/portal/transfer-certificate', Icon: ScrollText, label: 'Certificates', module: 'students' },
+
   // ADMIN
   ...(role === 'super-admin'
-    ? [{ path: '/portal/admin-profiles', icon: '👤', label: 'Admin Profiles' }]
+    ? [{ path: '/portal/admin-profiles', Icon: UserCircle, label: 'Admin Profiles' }]
     : []),
 
   // SYSTEM
-  { path: '/portal/settings', icon: '⚙️', label: 'Settings' },
-  { path: '/portal/support', icon: 'ℹ️', label: 'Support' }
+  { path: '/portal/settings', Icon: Settings,   label: 'Settings' },
+  { path: '/portal/support',  Icon: HelpCircle, label: 'Support' },
   ].filter((item) => {
     // super-admin always sees everything
     if (role === 'super-admin') return true
@@ -133,7 +142,7 @@ const menuItems = [
               className={`sidebar-link ${isActive(item.path) ? 'active' : ''}`}
               onClick={() => setSidebarOpen(false)}
             >
-              <span className="link-icon">{item.icon}</span>
+              <span className="link-icon"><item.Icon size={18} strokeWidth={1.75} /></span>
               <span className="link-label">{item.label}</span>
             </Link>
           ))}
@@ -147,8 +156,8 @@ const menuItems = [
               <p className="user-role">{role}</p>
             </div>
           </div>
-          <button className="btn-logout" onClick={handleLogout} type="button">
-            🚪 Logout
+          <button className="btn-logout" onClick={handleLogout} type="button" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+            <LogOut size={15} strokeWidth={2} />Logout
           </button>
         </div>
       </aside>
@@ -170,7 +179,7 @@ const menuItems = [
             type="button"
             aria-label="Toggle menu"
           >
-            ☰
+            <Menu size={22} strokeWidth={2} />
           </button>
           <h1 className="portal-title">{schoolName ? (/school/i.test(schoolName) ? `${schoolName} Portal` : `${schoolName} Portal`) : 'Portal'}</h1>
           <div className="header-user">
@@ -185,6 +194,8 @@ const menuItems = [
           <Outlet />
         </main>
       </div>
+        {/* VidyaBot — floating AI chat assistant */}
+      <ChatBot />
     </div>
   )
 }

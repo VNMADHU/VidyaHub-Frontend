@@ -313,15 +313,13 @@ const AdmissionsPage = () => {
       )}
 
       {/* ── Filters ── */}
-      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-start', justifyContent: 'flex-start' }}>
-        
-        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, app. no., phone..." />
- 
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px', marginTop: '0.4rem' }}>
+      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, app. no., phone..." style={{ flex: '1 1 260px', minWidth: '200px', marginBottom: 0 }} />
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ flex: '0 0 auto', padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px' }}>
           <option value="">All Statuses</option>
           {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
-        <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} style={{ padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px', marginTop: '0.4rem' }}>
+        <select value={filterClass} onChange={(e) => setFilterClass(e.target.value)} style={{ flex: '0 0 auto', padding: '0.45rem 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9rem', height: '40px' }}>
           <option value="">All Classes</option>
           {classes.map((c) => <option key={c.id} value={c.name}>{c.name}</option>)}
         </select>
@@ -337,8 +335,8 @@ const AdmissionsPage = () => {
         </div>
       ) : (
         <div id="admissions-print-area">
-          <div className="table-container">
-            <table className="data-table">
+          <div className="data-table">
+            <table>
               <thead>
                 <tr>
                   <th>App. No.</th>

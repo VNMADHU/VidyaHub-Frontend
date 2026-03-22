@@ -56,6 +56,9 @@ import LoginPage from './pages/LoginPage'
 import PayrollPage from './pages/PayrollPage'
 import AccountingPage from './pages/AccountingPage'
 import GstBillingPage from './pages/GstBillingPage'
+import InventoryPage from './pages/InventoryPage'
+import StaffAttendancePage from './pages/StaffAttendancePage'
+import UserProfilePage from './pages/UserProfilePage'
 
 const router = createBrowserRouter([
   {
@@ -172,6 +175,9 @@ const router = createBrowserRouter([
       { path: 'staff/:staffId', element: <StaffDetailPage /> },
       { path: 'hostel', element: <HostelPage /> },
       { path: 'admissions', element: <AdmissionsPage /> },
+      { path: 'profile', element: <UserProfilePage /> },
+      { path: 'inventory', element: <InventoryPage /> },
+      { path: 'staff-attendance', element: <StaffAttendancePage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
       { path: 'admin-profiles', element: <AdminProfilesPage /> },

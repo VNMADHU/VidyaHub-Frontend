@@ -55,7 +55,7 @@ const NotificationsPage = () => {
   const [waClassId, setWaClassId]             = useState('')
   const [waCustomNumbers, setWaCustomNumbers] = useState('') // newline-separated, never saved
   const [waMessage, setWaMessage]             = useState('')
-  const [waAttachment, setWaAttachment]       = useState(null) // { name, b64, mime }
+  const [waAttachments, setWaAttachments]     = useState([])   // [{ name, b64, mime }, ...]
   const [waSending, setWaSending]             = useState(false)
   const [waPreview, setWaPreview]             = useState([])  // { name, phone }[]
   const waFileRef = useRef(null)
@@ -94,8 +94,13 @@ const NotificationsPage = () => {
   const handleWaConnect = async () => {
     setWaStatus('connecting')
     try {
+      // If already in qr/connecting (e.g. user reopening a closed browser),
+      // disconnect first so initialize() isn't skipped by the status guard
+      await apiClient.waDisconnect().catch(() => {})
       await apiClient.waConnect()
-      waPollerRef.current = setInterval(pollWaStatus, 3000)
+      if (!waPollerRef.current) {
+        waPollerRef.current = setInterval(pollWaStatus, 3000)
+      }
     } catch (err) {
       toast.error(err.message || 'Failed to start WhatsApp')
       setWaStatus('disconnected')
@@ -112,18 +117,30 @@ const NotificationsPage = () => {
   }
 
   const handleWaFile = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => {
-      const b64 = reader.result.split(',')[1]
-      setWaAttachment({ name: file.name, b64, mime: file.type })
-    }
-    reader.readAsDataURL(file)
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+    // Read all selected files in parallel, then append to existing list
+    Promise.all(
+      files.map(
+        (file) =>
+          new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onload = () => {
+              const b64 = reader.result.split(',')[1]
+              resolve({ name: file.name, b64, mime: file.type })
+            }
+            reader.readAsDataURL(file)
+          })
+      )
+    ).then((newFiles) => {
+      setWaAttachments((prev) => [...prev, ...newFiles])
+    })
+    // Reset input so the same file can be re-selected if needed
+    e.target.value = ''
   }
 
   const handleWaSend = async () => {
-    if (!waMessage.trim()) return toast.error('Please enter a message')
+    if (!waMessage.trim() && waAttachments.length === 0) return toast.error('Please enter a message or attach a file')
     if (waAudience === 'custom' && !waCustomNumbers.trim()) return toast.error('Please enter at least one phone number')
     if (waAudience === 'class' && !waClassId) return toast.error('Please select a class')
 
@@ -150,16 +167,25 @@ const NotificationsPage = () => {
         audience,
         customNumbers,
         message: waMessage,
-        attachmentB64: waAttachment?.b64,
-        attachmentMime: waAttachment?.mime,
-        attachmentName: waAttachment?.name,
+        attachments: waAttachments.map((a) => ({ b64: a.b64, mime: a.mime, name: a.name })),
       })
       toast.success(result.message || 'WhatsApp messages sent!')
       setWaMessage('')
-      setWaAttachment(null)
+      setWaAttachments([])
       setWaCustomNumbers('')
     } catch (err) {
-      toast.error(err.message || 'Failed to send WhatsApp messages')
+      const msg: string = err?.response?.data?.message || err.message || 'Failed to send WhatsApp messages'
+      // If the browser page died, reset to disconnected so the Connect button reappears
+      if (msg.toLowerCase().includes('browser was closed') || msg.toLowerCase().includes('crashed') || msg.toLowerCase().includes('reconnect')) {
+        setWaStatus('disconnected')
+        toast.error('WhatsApp browser was closed. Please click Connect WhatsApp and scan the QR again.')
+      } else if (msg.toLowerCase().includes('already sending') || msg.toLowerCase().includes('batch is already')) {
+        toast.error('Messages are still being sent in the background. Please wait for the current batch to finish.')
+        setWaSending(true) // re-lock the button — batch is still running
+        return // skip the finally unlock below
+      } else {
+        toast.error(msg)
+      }
     } finally {
       setWaSending(false)
     }
@@ -532,7 +558,7 @@ const NotificationsPage = () => {
                   <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--muted)' }}>
                     {waStatus === 'ready' && 'You can now send WhatsApp messages to parents & staff'}
                     {waStatus === 'qr' && 'Open WhatsApp on your phone → Linked Devices → Link a Device → Scan QR'}
-                    {waStatus === 'connecting' && 'Please wait while the WhatsApp session initializes...'}
+                    {waStatus === 'connecting' && 'Opening browser… please wait 15–30 seconds'}
                     {waStatus === 'disconnected' && 'Click Connect to link your WhatsApp account'}
                   </p>
                 </div>
@@ -558,17 +584,36 @@ const NotificationsPage = () => {
 
             {/* Browser-window QR instruction */}
             {waStatus === 'qr' && (
-              <div style={{ marginTop: '1.25rem', padding: '1rem 1.25rem', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                <span style={{ fontSize: '1.6rem', lineHeight: 1 }}>📱</span>
-                <div>
-                  <p style={{ margin: '0 0 0.3rem', fontWeight: 600, color: '#166534', fontSize: '0.95rem' }}>Scan the QR code in the browser window that just opened</p>
-                  <p style={{ margin: 0, color: '#15803d', fontSize: '0.82rem' }}>Open WhatsApp on your phone → tap ⋮ or Settings → Linked Devices → Link a Device, then scan the QR.</p>
+              <div style={{ marginTop: '1.25rem', padding: '1.25rem', background: '#fefce8', border: '2px solid #fbbf24', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#92400e', fontSize: '1rem' }}>
+                    📂 A browser window has opened on this computer!
+                  </p>
+                  <button
+                    onClick={handleWaConnect}
+                    title="Accidentally closed the browser? Click to reopen it"
+                    style={{ padding: '0.4rem 0.9rem', background: '#92400e', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600, cursor: 'pointer', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                  >
+                    🔄 Reopen Browser
+                  </button>
                 </div>
+                <p style={{ margin: '0 0 0.5rem', color: '#78350f', fontSize: '0.9rem' }}>
+                  <strong>Step 1:</strong> Look at your taskbar / Dock — a Chrome or Chromium window just opened showing WhatsApp Web.
+                </p>
+                <p style={{ margin: '0 0 0.5rem', color: '#78350f', fontSize: '0.9rem' }}>
+                  <strong>Step 2:</strong> On your phone → WhatsApp → ⋮ Settings → <strong>Linked Devices</strong> → <strong>Link a Device</strong>
+                </p>
+                <p style={{ margin: 0, color: '#78350f', fontSize: '0.9rem' }}>
+                  <strong>Step 3:</strong> Point your phone camera at the QR code on that browser window. Done! ✅
+                </p>
+                <p style={{ margin: '0.75rem 0 0', color: '#92400e', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                  💡 Accidentally closed the window? Click <strong>Reopen Browser</strong> above to bring it back.
+                </p>
               </div>
             )}
             {waStatus === 'connecting' && (
               <div style={{ marginTop: '1rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
-                ⏳ Opening browser window... This may take 15–30 seconds on first run.
+                ⏳ Opening browser window… This may take 15–30 seconds on first run.
               </div>
             )}
           </div>
@@ -638,23 +683,34 @@ const NotificationsPage = () => {
                 />
               </div>
 
-              {/* Attachment */}
+              {/* Attachments — multiple files */}
               <div>
-                <label style={labelStyle}>Attachment (optional)</label>
-                <input ref={waFileRef} type="file" accept="image/*,application/pdf,.doc,.docx" style={{ display: 'none' }} onChange={handleWaFile} />
-                {waAttachment ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.9rem', background: 'rgba(37,211,102,0.08)', border: '1px solid #86efac', borderRadius: '8px' }}>
-                    <Paperclip size={16} style={{ color: '#25d366' }} />
-                    <span style={{ fontSize: '0.85rem', flex: 1 }}>{waAttachment.name}</span>
-                    <button onClick={() => setWaAttachment(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0 }}>
-                      <X size={16} />
-                    </button>
+                <label style={labelStyle}>Attachments (optional)</label>
+                <input ref={waFileRef} type="file" accept="image/*,application/pdf,.doc,.docx" multiple style={{ display: 'none' }} onChange={handleWaFile} />
+
+                {/* Chips for already-attached files */}
+                {waAttachments.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    {waAttachments.map((att, idx) => (
+                      <div key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', background: 'rgba(37,211,102,0.08)', border: '1px solid #86efac', borderRadius: '20px', fontSize: '0.82rem', maxWidth: 260 }}>
+                        <Paperclip size={13} style={{ color: '#25d366', flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }} title={att.name}>{att.name}</span>
+                        <button
+                          onClick={() => setWaAttachments((prev) => prev.filter((_, i) => i !== idx))}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', padding: 0, lineHeight: 1, flexShrink: 0 }}
+                          title="Remove"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <button onClick={() => waFileRef.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.9rem', border: '1px dashed var(--border)', borderRadius: '8px', background: 'var(--surface-alt,#f8fafc)', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>
-                    <Paperclip size={14} /> Attach Image / PDF
-                  </button>
                 )}
+
+                {/* Always-visible Add button */}
+                <button onClick={() => waFileRef.current?.click()} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.45rem 0.9rem', border: '1px dashed var(--border)', borderRadius: '8px', background: 'var(--surface-alt,#f8fafc)', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <Paperclip size={14} /> {waAttachments.length > 0 ? 'Add More Files' : 'Attach Image / PDF'}
+                </button>
               </div>
             </div>
 

@@ -587,6 +587,29 @@ export const masterDataApi = {
     api.delete(`/master-data/${id}`).then((r) => r.data),
 }
 
+// Inventory / Assets
+export const assetApi = {
+  list: (params?: { category?: string; status?: string; location?: string; search?: string }) =>
+    api.get('/assets', { params }).then((r) => r.data),
+  summary: () => api.get('/assets/summary').then((r) => r.data),
+  create: (data: Record<string, unknown>) => api.post('/assets', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) => api.patch(`/assets/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/assets/${id}`).then((r) => r.data),
+}
+
+// Staff / Teacher Daily Attendance
+export const staffAttendanceApi = {
+  list: (params?: { date?: string; employeeType?: string; month?: number; year?: number }) =>
+    api.get('/staff-attendance', { params }).then((r) => r.data),
+  bulkMark: (data: { date: string; records: Record<string, unknown>[] }) =>
+    api.post('/staff-attendance/bulk', data).then((r) => r.data),
+  update: (id: string, data: Record<string, unknown>) =>
+    api.patch(`/staff-attendance/${id}`, data).then((r) => r.data),
+  delete: (id: string) => api.delete(`/staff-attendance/${id}`).then((r) => r.data),
+  monthlySummary: (params: { month: number; year: number; employeeType?: string }) =>
+    api.get('/staff-attendance/monthly-summary', { params }).then((r) => r.data),
+}
+
 // Legacy-compatible default export (class-like singleton that wraps the new API)
 const apiClient = {
   // Auth
@@ -799,7 +822,7 @@ const apiClient = {
   waConnect:     () => api.post('/whatsapp/connect').then((r) => r.data),
   waDisconnect:  () => api.post('/whatsapp/disconnect').then((r) => r.data),
   waRecipients:  (audience: string) => api.get('/whatsapp/recipients', { params: { audience } }).then((r) => r.data),
-  waSend:        (data: any) => api.post('/whatsapp/send', data).then((r) => r.data),
+  waSend:        (data: any) => api.post('/whatsapp/send', data, { timeout: 0 }).then((r) => r.data),
   // Payroll
   listPayroll:     (params?: any) => api.get('/payroll', { params }).then((r) => r.data),
   generatePayroll: (data: any) => api.post('/payroll/generate', data).then((r) => r.data),
@@ -824,6 +847,24 @@ const apiClient = {
   updateVoucher:     (id: number, data: any) => api.patch(`/vouchers/${id}`, data).then((r) => r.data),
   deleteVoucher:     (id: number) => api.delete(`/vouchers/${id}`).then((r) => r.data),
   getLedgerBalances: () => api.get('/vouchers/ledger-balances').then((r) => r.data),
+
+  // AI Chat (VidyaBot — Gemini powered)
+  sendChat: (message: string, history: { role: string; content: string }[], image?: { data: string; mimeType: string } | null) =>
+    api.post('/chat', { message, history, image }, { timeout: 180_000 }).then((r) => r.data),
+
+  // Inventory / Assets
+  listAssets:       (params?: Record<string, unknown>) => api.get('/assets', { params }).then((r) => r.data),
+  getAssetSummary:  () => api.get('/assets/summary').then((r) => r.data),
+  createAsset:      (data: Record<string, unknown>) => api.post('/assets', data).then((r) => r.data),
+  updateAsset:      (id: string, data: Record<string, unknown>) => api.patch(`/assets/${id}`, data).then((r) => r.data),
+  deleteAsset:      (id: string) => api.delete(`/assets/${id}`).then((r) => r.data),
+
+  // Staff / Teacher Daily Attendance
+  listStaffAttendance:            (params?: Record<string, unknown>) => api.get('/staff-attendance', { params }).then((r) => r.data),
+  bulkMarkStaffAttendance:        (data: Record<string, unknown>) => api.post('/staff-attendance/bulk', data).then((r) => r.data),
+  updateStaffAttendance:          (id: string, data: Record<string, unknown>) => api.patch(`/staff-attendance/${id}`, data).then((r) => r.data),
+  deleteStaffAttendance:          (id: string) => api.delete(`/staff-attendance/${id}`).then((r) => r.data),
+  getStaffAttendanceMonthlySummary: (params: Record<string, unknown>) => api.get('/staff-attendance/monthly-summary', { params }).then((r) => r.data),
 }
 
 export default apiClient

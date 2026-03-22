@@ -282,14 +282,14 @@ const LeavesPage = () => {
 
       {/* Filters Row */}
       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap' }}>
-        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, reason..." />
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+        <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by name, reason..." style={{ flex: '1 1 260px', minWidth: '200px', marginBottom: 0 }} />
+        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ minWidth: '150px', height: '42px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.95rem' }}>
           <option value="">All Employees</option>
           {EMPLOYEE_TYPES.map((t) => (
             <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}s</option>
           ))}
         </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ padding: '0.5rem', borderRadius: '6px', border: '1px solid #d1d5db' }}>
+        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ minWidth: '130px', height: '42px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.95rem' }}>
           <option value="">All Status</option>
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>

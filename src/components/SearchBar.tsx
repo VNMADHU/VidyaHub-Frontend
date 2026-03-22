@@ -1,19 +1,21 @@
+import React from 'react'
 import { Search } from 'lucide-react'
 
 interface SearchBarProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  style?: React.CSSProperties
 }
 
-const SearchBar = ({ value, onChange, placeholder = 'Search...' }: SearchBarProps) => {
+const SearchBar = ({ value, onChange, placeholder = 'Search...', style }: SearchBarProps) => {
   return (
     <div
       style={{
         flexShrink: 0,
         background: 'var(--background)',
-        paddingBottom: '1.5rem',
-        marginBottom: 0,
+        marginBottom: '1rem',
+        ...style,
       }}
     >
       <div style={{ position: 'relative' }}>

@@ -177,7 +177,7 @@ const EMPTY_STUDENT_FORM = {
 
   const handleAddNew = () => {
     setEditingId(null)
-    setFormData(EMPTY_STUDENT_FORM)
+    setFormData({ ...EMPTY_STUDENT_FORM, rollNumber: String(Math.floor(10000000 + Math.random() * 90000000)) })
     setShowForm(true)
   }
 
@@ -445,6 +445,8 @@ const EMPTY_STUDENT_FORM = {
       !query ||
       student.firstName?.toLowerCase().includes(query) ||
       student.lastName?.toLowerCase().includes(query) ||
+      `${student.firstName} ${student.lastName}`.toLowerCase().includes(query) ||
+      student.rollNumber?.toLowerCase().includes(query) ||
       student.email?.toLowerCase().includes(query) ||
       student.admissionNumber?.toLowerCase().includes(query) ||
       student.fatherName?.toLowerCase().includes(query) ||
@@ -482,7 +484,7 @@ const EMPTY_STUDENT_FORM = {
           <SearchBar
             value={searchQuery}
             onChange={setSearchQuery}
-            placeholder="Search students by name, email, admission number, or parent details..."
+            placeholder="Search by name, roll number, email, admission number, or parent details..."
           />
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', paddingBottom: '1.5rem' }}>
@@ -860,7 +862,6 @@ const EMPTY_STUDENT_FORM = {
           <table>
             <thead>
               <tr>
-                <th>Admission No.</th>
                 <th>Roll No.</th>
                 <th>Name</th>
                 <th>Email</th>
@@ -874,7 +875,7 @@ const EMPTY_STUDENT_FORM = {
             <tbody>
               {filteredStudents.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="empty-row">
+                  <td colSpan="8" className="empty-row">
                     {searchQuery ? 'No students match your search.' : 'No students found. Add your first student!'}
                   </td>
                 </tr>
@@ -885,7 +886,6 @@ const EMPTY_STUDENT_FORM = {
                     onClick={() => navigate(`/portal/students/${student.id}`)}
                     style={{ cursor: 'pointer' }}
                   >
-                    <td>{student.admissionNumber}</td>
                     <td>{student.rollNumber || '-'}</td>
                     <td>{student.firstName} {student.lastName}</td>
                     <td>{student.email}</td>

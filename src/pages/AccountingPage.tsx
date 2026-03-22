@@ -1,6 +1,9 @@
 // @ts-nocheck
-import { useEffect, useState, useMemo } from 'react'
-import { Plus, Trash2, FileDown, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { useEffect, useState, useMemo, useRef } from 'react'
+import { Plus, Trash2, FileDown, X, ChevronDown, ChevronRight, CalendarRange } from 'lucide-react'
+import { DayPicker } from 'react-day-picker'
+import { format, startOfDay, endOfDay } from 'date-fns'
+import 'react-day-picker/dist/style.css'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import apiClient from '@/services/api'
@@ -53,8 +56,9 @@ const AccountingPage = () => {
   const [plYear, setPlYear] = useState(new Date().getFullYear())
   const [schoolName, setSchoolName] = useState('School')
 
-  const [dbFrom, setDbFrom] = useState('')
-  const [dbTo, setDbTo] = useState('')
+  const [dbDateRange, setDbDateRange] = useState({ from: undefined, to: undefined })
+  const [showDbDatePicker, setShowDbDatePicker] = useState(false)
+  const dbDatePickerRef = useRef(null)
   const [dbType, setDbType] = useState('')
   const [expandedRows, setExpandedRows] = useState(new Set())
 
@@ -165,10 +169,10 @@ const AccountingPage = () => {
 
   const filteredVouchers = useMemo(() => vouchers.filter((v) => {
     if (dbType && v.voucherType !== dbType) return false
-    if (dbFrom && new Date(v.date) < new Date(dbFrom)) return false
-    if (dbTo) { const end = new Date(dbTo); end.setHours(23, 59, 59); if (new Date(v.date) > end) return false }
+    if (dbDateRange.from && new Date(v.date) < startOfDay(dbDateRange.from)) return false
+    if (dbDateRange.to && new Date(v.date) > endOfDay(dbDateRange.to)) return false
     return true
-  }), [vouchers, dbType, dbFrom, dbTo])
+  }), [vouchers, dbType, dbDateRange])
 
   const balanceMap = useMemo(() => { const m = {}; balances.forEach((b) => { m[b.ledger.id] = b }); return m }, [balances])
 
@@ -331,22 +335,77 @@ const AccountingPage = () => {
             {/* ══ DAY BOOK ══ */}
             {activeTab === 'daybook' && (
               <>
-                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'flex-end' }}>
-                  {[{ label: 'From Date', value: dbFrom, setter: setDbFrom }, { label: 'To Date', value: dbTo, setter: setDbTo }].map(({ label, value, setter }) => (
-                    <div key={label}>
-                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>{label}</label>
-                      <input type="date" value={value} onChange={(e) => setter(e.target.value)} style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: '0.85rem' }} />
-                    </div>
-                  ))}
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.5rem', alignItems: 'flex-start' }}>
+                  {/* Date Range Picker */}
+                  <div ref={dbDatePickerRef} style={{ position: 'relative', paddingBottom: '1.5rem' }}>
+                    <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>Select Dates</label>
+                    <button
+                      onClick={() => setShowDbDatePicker((v) => !v)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '0.4rem',
+                        padding: '0.5rem 1rem', border: '1px solid', borderRadius: '8px', fontSize: '0.875rem', cursor: 'pointer',
+                        background: (dbDateRange.from || dbDateRange.to) ? '#f0fdf4' : '#fff',
+                        color: (dbDateRange.from || dbDateRange.to) ? '#16a34a' : '#1e293b',
+                        borderColor: (dbDateRange.from || dbDateRange.to) ? '#86efac' : '#e2e8f0',
+                        fontWeight: (dbDateRange.from || dbDateRange.to) ? 600 : 400, whiteSpace: 'nowrap',
+                      }}
+                    >
+                      <CalendarRange size={15} />
+                      {dbDateRange.from && dbDateRange.to
+                        ? `${format(dbDateRange.from, 'dd MMM')} – ${format(dbDateRange.to, 'dd MMM yyyy')}`
+                        : dbDateRange.from ? `From ${format(dbDateRange.from, 'dd MMM yyyy')}` : 'Date Range'}
+                    </button>
+                    {showDbDatePicker && (
+                      <div style={{ position: 'absolute', top: 'calc(100% - 1.4rem)', left: 0, zIndex: 1000, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.12)', padding: '0.75rem' }}>
+                        <DayPicker
+                          mode="range"
+                          selected={dbDateRange}
+                          onSelect={(r) => {
+                            setDbDateRange(r || { from: undefined, to: undefined })
+                            if (r?.from && r?.to) setShowDbDatePicker(false)
+                          }}
+                          numberOfMonths={2}
+                          footer={
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9', marginTop: '0.5rem' }}>
+                              <button onClick={() => { setDbDateRange({ from: undefined, to: undefined }); setShowDbDatePicker(false) }} style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', background: '#fff' }}>Clear</button>
+                              <button onClick={() => setShowDbDatePicker(false)} style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem', border: 'none', borderRadius: '6px', cursor: 'pointer', background: '#16a34a', color: '#fff' }}>Done</button>
+                            </div>
+                          }
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Type filter */}
                   <div>
                     <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 3 }}>Type</label>
-                    <select value={dbType} onChange={(e) => setDbType(e.target.value)} style={{ padding: '0.4rem 0.6rem', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                    <select value={dbType} onChange={(e) => setDbType(e.target.value)} style={{ padding: '0.5rem 0.6rem', borderRadius: 6, border: '1px solid #e2e8f0', fontSize: '0.875rem' }}>
                       <option value="">All Types</option>
                       {VOUCHER_TYPES.map((t) => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
                     </select>
                   </div>
-                  {(dbFrom || dbTo || dbType) && <button onClick={() => { setDbFrom(''); setDbTo(''); setDbType('') }} style={{ padding: '0.4rem 0.8rem', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: '0.8rem', alignSelf: 'flex-end' }}>✕ Clear</button>}
+
+                  {(dbDateRange.from || dbDateRange.to || dbType) && (
+                    <div>
+                      <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'transparent', display: 'block', marginBottom: 3 }}>_</label>
+                      <button onClick={() => { setDbDateRange({ from: undefined, to: undefined }); setDbType('') }} style={{ padding: '0.5rem 0.8rem', borderRadius: 6, border: '1px solid #e2e8f0', background: '#f8fafc', cursor: 'pointer', fontSize: '0.8rem' }}>✕ Clear</button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Selected date range label */}
+                {(dbDateRange.from || dbDateRange.to) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem', fontSize: '0.82rem', color: '#16a34a', fontWeight: 600 }}>
+                    <CalendarRange size={13} />
+                    <span>
+                      {dbDateRange.from && dbDateRange.to
+                        ? `Showing: ${format(dbDateRange.from, 'dd MMM yyyy')} → ${format(dbDateRange.to, 'dd MMM yyyy')} (${filteredVouchers.length} voucher${filteredVouchers.length !== 1 ? 's' : ''})`
+                        : dbDateRange.from
+                        ? `Showing: From ${format(dbDateRange.from, 'dd MMM yyyy')} (${filteredVouchers.length} voucher${filteredVouchers.length !== 1 ? 's' : ''})`
+                        : `Showing: Up to ${format(dbDateRange.to, 'dd MMM yyyy')} (${filteredVouchers.length} voucher${filteredVouchers.length !== 1 ? 's' : ''})`}
+                    </span>
+                  </div>
+                )}
                 {filteredVouchers.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
                     <div style={{ fontSize: '3rem' }}>📋</div>

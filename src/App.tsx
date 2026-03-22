@@ -7,10 +7,7 @@ import SchoolPortalLayout from './layouts/SchoolPortalLayout'
 import AdminDashboard from './pages/AdminDashboard'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
-import ParentDashboard from './pages/ParentDashboard'
-import StudentDashboard from './pages/StudentDashboard'
 import SuperAdminDashboard from './pages/SuperAdminDashboard'
-import TeacherDashboard from './pages/TeacherDashboard'
 import PortalDashboard from './pages/PortalDashboard'
 import StudentsPage from './pages/StudentsPage'
 import TeachersPage from './pages/TeachersPage'
@@ -51,6 +48,8 @@ import LoginPage from './pages/LoginPage'
 import PayrollPage from './pages/PayrollPage'
 import AccountingPage from './pages/AccountingPage'
 import GstBillingPage from './pages/GstBillingPage'
+import InventoryPage from './pages/InventoryPage'
+import StaffAttendancePage from './pages/StaffAttendancePage'
 
 const router = createBrowserRouter([
   {
@@ -60,9 +59,6 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <Home /> },
       { path: 'admin', element: <AdminDashboard /> },
-      { path: 'teacher', element: <TeacherDashboard /> },
-      { path: 'student', element: <StudentDashboard /> },
-      { path: 'parent', element: <ParentDashboard /> },
       { path: 'super-admin', element: <SuperAdminDashboard /> },
     ],
   },
@@ -113,6 +109,8 @@ const router = createBrowserRouter([
       { path: 'payroll', element: <PayrollPage /> },
       { path: 'accounting', element: <AccountingPage /> },
       { path: 'gst-billing', element: <GstBillingPage /> },
+      { path: 'inventory', element: <InventoryPage /> },
+      { path: 'staff-attendance', element: <StaffAttendancePage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
     ],
