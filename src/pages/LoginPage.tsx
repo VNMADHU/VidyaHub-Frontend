@@ -7,7 +7,7 @@ import { login } from '@/store/slices/authSlice'
 import { authApi } from '@/services/api'
 import loginBg from '@/assets/login.jpg'
 
-type Step = 'credentials' | 'otp' | 'verifyEmail' | 'verifyPhone'
+type Step = 'credentials' | 'otp' | 'verifyPhone'
 
 // ── Icon components ───────────────────────────────────────
 const UserIcon = () => (
@@ -142,7 +142,7 @@ const ForgotPasswordModal = ({ onClose }: { onClose: () => void }) => {
         )}
 
         {fpStep !== 'done' && (
-          <button style={styles.cancelBtn} type="button" onClick={onClose}>✕ Cancel</button>
+          <button style={styles.cancelBtn} type="button" onClick={onClose}>Cancel</button>
         )}
       </div>
     </div>
@@ -150,14 +150,12 @@ const ForgotPasswordModal = ({ onClose }: { onClose: () => void }) => {
 }
 
 // ── Register modal ────────────────────────────────────────
-type RegStep = 'form' | 'verifyEmail' | 'verifyPhone' | 'done'
+type RegStep = 'form' | 'verifyPhone' | 'done'
 const RegisterModal = ({ onClose }: { onClose: () => void }) => {
   const [regStep, setRegStep] = useState<RegStep>('form')
   const [regData, setRegData] = useState({ schoolName: '', address: '', phone: '', email: '', password: '', isFreeTrail: true })
   const [pendingEmail, setPendingEmail] = useState('')
-  const [maskedEmail, setMaskedEmail] = useState('')
   const [maskedPhone, setMaskedPhone] = useState('')
-  const [emailCode, setEmailCode] = useState('')
   const [phoneOtp, setPhoneOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [msg, setMsg] = useState('')
@@ -177,26 +175,13 @@ const RegisterModal = ({ onClose }: { onClose: () => void }) => {
       const res = await authApi.register(
         regData.email, regData.password, regData.schoolName,
         regData.phone, regData.address, regData.isFreeTrail
-      ) as { email: string; maskedEmail: string; maskedPhone: string }
+      ) as { email: string; maskedPhone: string }
       setPendingEmail(res.email)
-      setMaskedEmail(res.maskedEmail)
       setMaskedPhone(res.maskedPhone)
-      setRegStep('verifyEmail')
-      startCooldown()
-    } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : 'Registration failed.')
-    } finally { setLoading(false) }
-  }
-
-  const handleVerifyEmail = async (e: FormEvent) => {
-    e.preventDefault()
-    setLoading(true); setMsg('')
-    try {
-      await authApi.verifyEmail(pendingEmail, emailCode)
       setRegStep('verifyPhone')
       startCooldown()
     } catch (err: unknown) {
-      setMsg(err instanceof Error ? err.message : 'Verification failed.')
+      setMsg(err instanceof Error ? err.message : 'Registration failed.')
     } finally { setLoading(false) }
   }
 
@@ -211,12 +196,12 @@ const RegisterModal = ({ onClose }: { onClose: () => void }) => {
     } finally { setLoading(false) }
   }
 
-  const handleResend = async (type: 'email' | 'phone') => {
+  const handleResend = async () => {
     if (resendCooldown > 0) return
     try {
-      await authApi.resendVerification(pendingEmail, type)
+      await authApi.resendVerification(pendingEmail, 'phone')
       startCooldown()
-      setMsg(`✓ New ${type === 'email' ? 'email code' : 'SMS OTP'} sent.`)
+      setMsg('✓ New SMS OTP sent.')
     } catch { setMsg('Failed to resend. Try again.') }
   }
 
@@ -282,33 +267,7 @@ const RegisterModal = ({ onClose }: { onClose: () => void }) => {
           </>
         )}
 
-        {/* ── Step 2: Verify Email ── */}
-        {regStep === 'verifyEmail' && (
-          <>
-            <h3 style={styles.modalTitle}>📧 Verify Your Email</h3>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', margin: '0 0 1.25rem', textAlign: 'center' }}>
-              A 6-digit code was sent to <strong>{maskedEmail}</strong>. Enter it below.
-            </p>
-            <form onSubmit={handleVerifyEmail}>
-              <div style={styles.inputGroup}>
-                <span style={styles.inputIcon}><LockIcon /></span>
-                <input data-lp style={{ ...styles.input, letterSpacing: '0.5rem', textAlign: 'center' }}
-                  type="text" inputMode="numeric" placeholder="_ _ _ _ _ _" maxLength={6}
-                  value={emailCode} onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, ''))} required autoFocus />
-              </div>
-              {msg && <p style={{ ...styles.errorMsg, color: msg.startsWith('✓') ? '#86efac' : '#fca5a5' }}>{msg}</p>}
-              <button style={styles.loginBtn} type="submit" disabled={loading}>
-                {loading ? 'VERIFYING...' : 'VERIFY EMAIL'}
-              </button>
-            </form>
-            <button type="button" style={{ ...styles.forgotLink, display: 'block', margin: '0.5rem auto 0', textAlign: 'center', opacity: resendCooldown > 0 ? 0.5 : 1 }}
-              onClick={() => handleResend('email')} disabled={resendCooldown > 0}>
-              {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code'}
-            </button>
-          </>
-        )}
-
-        {/* ── Step 3: Verify Phone ── */}
+        {/* ── Step 2: Verify Phone ── */}
         {regStep === 'verifyPhone' && (
           <>
             <h3 style={styles.modalTitle}>📱 Verify Your Mobile</h3>
@@ -328,7 +287,7 @@ const RegisterModal = ({ onClose }: { onClose: () => void }) => {
               </button>
             </form>
             <button type="button" style={{ ...styles.forgotLink, display: 'block', margin: '0.5rem auto 0', textAlign: 'center', opacity: resendCooldown > 0 ? 0.5 : 1 }}
-              onClick={() => handleResend('phone')} disabled={resendCooldown > 0}>
+              onClick={() => handleResend()} disabled={resendCooldown > 0}>
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
             </button>
           </>
@@ -381,9 +340,7 @@ const LoginPage = () => {
   } | null>(null)
 
   // ── Account verification ──────────────────────────────────
-  const [verifyEmailCode, setVerifyEmailCode]   = useState('')
   const [verifyPhoneOtp, setVerifyPhoneOtp]     = useState(['', '', '', '', '', ''])
-  const [verifyMaskedEmail, setVerifyMaskedEmail] = useState('')
   const [verifyMaskedPhone, setVerifyMaskedPhone] = useState('')
   const [verifyCooldown, setVerifyCooldown]     = useState(0)
   const otpBoxRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -436,8 +393,9 @@ const LoginPage = () => {
     const res = await authApi.login(email, password, activeRole) as unknown as Record<string, unknown>
     if ('token' in res && res.token && res.user) {
       // Direct login — MFA disabled, token issued immediately
-      dispatch(login({ user: res.user as any, token: res.token as string, role: (res.user as any).role, schoolId: String((res.user as any).schoolId || '') }))
-      navigate('/portal/dashboard', { replace: true })
+      const userRole = (res.user as any).role
+      dispatch(login({ user: res.user as any, token: res.token as string, role: userRole, schoolId: String((res.user as any).schoolId || '') }))
+      navigate(userRole === 'owner' ? '/owner/schools' : '/portal/dashboard', { replace: true })
     } else if (res.sessionConflict) {
       setSessionConflict({
         pendingEmail: email,
@@ -460,39 +418,12 @@ const LoginPage = () => {
       await doLogin()
     } catch (err: unknown) {
       const raw = err as Record<string, unknown>
-      if (raw?.needsEmailVerification) {
-        setVerifyMaskedEmail((raw.maskedEmail as string) || email)
-        setStep('verifyEmail')
-        startVerifyCooldown()
-      } else if (raw?.needsPhoneVerification) {
-        setVerifyMaskedPhone((raw.maskedPhone as string) || '')
-        setStep('verifyPhone')
-        startVerifyCooldown()
-      } else {
-        setError(err instanceof Error ? err.message : 'Invalid credentials.')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleVerifyEmail = async (e: FormEvent) => {
-    e.preventDefault()
-    if (verifyEmailCode.length !== 6) { setError('Enter the 6-digit verification code.'); return }
-    setLoading(true)
-    setError('')
-    try {
-      await authApi.verifyEmail(email, verifyEmailCode)
-      setVerifyEmailCode('')
-      await doLogin()
-    } catch (err: unknown) {
-      const raw = err as Record<string, unknown>
       if (raw?.needsPhoneVerification) {
         setVerifyMaskedPhone((raw.maskedPhone as string) || '')
         setStep('verifyPhone')
         startVerifyCooldown()
       } else {
-        setError(err instanceof Error ? err.message : 'Invalid code. Please try again.')
+        setError(err instanceof Error ? err.message : 'Invalid credentials.')
       }
     } finally {
       setLoading(false)
@@ -536,8 +467,9 @@ const LoginPage = () => {
       setSessionConflict(null)
       if ('token' in res && res.token && res.user) {
         // Direct login — MFA disabled
-        dispatch(login({ user: res.user as any, token: res.token as string, role: (res.user as any).role, schoolId: String((res.user as any).schoolId || '') }))
-        navigate('/portal/dashboard', { replace: true })
+        const forceRole = (res.user as any).role
+        dispatch(login({ user: res.user as any, token: res.token as string, role: forceRole, schoolId: String((res.user as any).schoolId || '') }))
+        navigate(forceRole === 'owner' ? '/owner/schools' : '/portal/dashboard', { replace: true })
       } else if (res.otpSent) {
         setOtpInfo({ maskedEmail: res.maskedEmail as string, maskedPhone: res.maskedPhone as string | null })
         setStep('otp')
@@ -558,8 +490,9 @@ const LoginPage = () => {
     setError('')
     try {
       const res = await authApi.verifyOtp(email, otp)
-      dispatch(login({ user: res.user, token: res.token, role: res.user.role, schoolId: String(res.user.schoolId || '') }))
-      navigate('/portal/dashboard', { replace: true })
+      const otpRole = res.user.role
+      dispatch(login({ user: res.user, token: res.token, role: otpRole, schoolId: String(res.user.schoolId || '') }))
+      navigate(otpRole === 'owner' ? '/owner/schools' : '/portal/dashboard', { replace: true })
     } catch (err: unknown) {
       const raw = err as Record<string, unknown>
       if (raw?.accountLocked) {
@@ -636,7 +569,7 @@ const LoginPage = () => {
                     style={styles.teacherTab}
                     onClick={() => navigate('/teacher-login')}
                   >
-                    📚 Teacher Portal
+                    � Employee Portal
                   </button>
                 </div>
 
@@ -698,44 +631,6 @@ const LoginPage = () => {
 
                 <Link to="/" style={styles.backLink}>← Back to Home</Link>
               </>
-            ) : step === 'verifyEmail' ? (
-              /* ── Email Verification step ── */
-              <>
-                <p style={styles.otpHint}>
-                  📧 Check your email for the verification code sent to <strong>{verifyMaskedEmail}</strong>
-                </p>
-                <form onSubmit={handleVerifyEmail} style={{ width: '100%' }}>
-                  <div style={styles.inputGroup}>
-                    <span style={styles.inputIcon}><LockIcon /></span>
-                    <input
-                      style={{ ...styles.input, letterSpacing: '0.6rem', fontSize: '1.2rem', textAlign: 'center' }}
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="_ _ _ _ _ _"
-                      maxLength={6}
-                      value={verifyEmailCode}
-                      onChange={(e) => { setVerifyEmailCode(e.target.value.replace(/\D/g, '')); if (error) setError('') }}
-                      required
-                      autoFocus
-                    />
-                  </div>
-                  {error && <p style={styles.errorMsg}>{error}</p>}
-                  <button style={styles.loginBtn} type="submit" disabled={loading}>
-                    {loading ? 'VERIFYING...' : 'VERIFY EMAIL'}
-                  </button>
-                </form>
-                <div style={styles.rowBetween}>
-                  <button type="button" style={styles.forgotLink}
-                    onClick={() => { setStep('credentials'); setVerifyEmailCode(''); setError('') }}>
-                    ← Back
-                  </button>
-                  <button type="button"
-                    style={{ ...styles.forgotLink, opacity: verifyCooldown > 0 ? 0.4 : 1 }}
-                    onClick={() => handleResendVerification('email')} disabled={verifyCooldown > 0}>
-                    {verifyCooldown > 0 ? `Resend in ${verifyCooldown}s` : 'Resend Code'}
-                  </button>
-                </div>
-              </>
             ) : step === 'verifyPhone' ? (
               /* ── Phone OTP Verification step ── */
               <>
@@ -793,8 +688,7 @@ const LoginPage = () => {
               /* ── OTP (2FA login) step ── */
               <>
                 <p style={styles.otpHint}>
-                  OTP sent to <strong>{otpInfo.maskedEmail}</strong>
-                  {otpInfo.maskedPhone && <> & <strong>{otpInfo.maskedPhone}</strong></>}
+                  OTP sent to <strong>{otpInfo.maskedPhone || 'your registered phone'}</strong>
                 </p>
 
                 {/* Account locked banner */}

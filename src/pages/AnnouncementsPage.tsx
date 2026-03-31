@@ -97,7 +97,7 @@ const AnnouncementsPage = () => {
     await loadAnnouncements()
   }
 
-  const announcementTemplateHeaders = ['title', 'message']
+  const announcementTemplateHeaders = ['title', 'message', 'targetAudience']
 
   const mapAnnouncementRow = (row) => {
     if (!row.title || !row.message) {
@@ -107,6 +107,7 @@ const AnnouncementsPage = () => {
     return {
       title: String(row.title).trim(),
       message: String(row.message).trim(),
+      targetAudience: row.targetAudience ? String(row.targetAudience).trim() : 'All',
     }
   }
 

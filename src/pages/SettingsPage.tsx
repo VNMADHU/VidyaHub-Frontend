@@ -163,7 +163,7 @@ const SettingsPage = () => {
   const [passwordMsg, setPasswordMsg] = useState('')
 
   // MFA settings
-  const [mfa, setMfa] = useState({ mfaEmail: true, mfaPhone: false })
+  const [mfa, setMfa] = useState({ mfaEmail: false, mfaPhone: false })
   const [mfaMsg, setMfaMsg] = useState('')
   const [mfaLoading, setMfaLoading] = useState(false)
 
@@ -171,6 +171,13 @@ const SettingsPage = () => {
   const [smsSettings, setSmsSettings] = useState({ smsEnabled: false, smsOnAbsent: false, smsOnFeeAssigned: false, smsOnLeaveApproved: false, smsOnAnnouncement: false })
   const [smsMsg, setSmsMsg] = useState('')
   const [smsLoading, setSmsLoading] = useState(false)
+
+  // School configuration (Gemini key, SMS limit, usage stats)
+  const [config, setConfig] = useState({ totalSmsUsed: 0, totalChatCalls: 0, smsLimit: 1000 })
+  const [configForm, setConfigForm] = useState({ geminiApiKey: '', smsLimit: 1000 })
+  const [configMsg, setConfigMsg] = useState('')
+  const [configLoading, setConfigLoading] = useState(false)
+  const [showGeminiKey, setShowGeminiKey] = useState(false)
 
   // Subject management
   const [subjects, setSubjects] = useState([])
@@ -189,11 +196,11 @@ const SettingsPage = () => {
     loadSubjects()
     loadPeriods()
     apiClient.getMfaSettings().then((data) => {
-      setMfa({ mfaEmail: data.mfaEmail ?? true, mfaPhone: data.mfaPhone ?? false })
+      setMfa({ mfaEmail: false, mfaPhone: data.mfaPhone ?? false })
     }).catch(() => {})
   }, [])
 
-  // Load SMS settings whenever school is loaded
+  // Load SMS settings + config whenever school is loaded
   useEffect(() => {
     if (school?.id) {
       apiClient.getSmsSettings(String(school.id)).then((res) => {
@@ -205,6 +212,11 @@ const SettingsPage = () => {
           smsOnLeaveApproved: d.smsOnLeaveApproved ?? false,
           smsOnAnnouncement: d.smsOnAnnouncement ?? false,
         })
+      }).catch(() => {})
+      apiClient.getSchoolConfig(String(school.id)).then((res) => {
+        const d = res?.data || {}
+        setConfig({ totalSmsUsed: d.totalSmsUsed ?? 0, totalChatCalls: d.totalChatCalls ?? 0, smsLimit: d.smsLimit ?? 1000 })
+        setConfigForm({ geminiApiKey: d.geminiApiKey || '', smsLimit: d.smsLimit ?? 1000 })
       }).catch(() => {})
     }
   }, [school?.id])
@@ -363,6 +375,7 @@ const SettingsPage = () => {
           { id: 'designations', label: '🏷️ Designations' },
           { id: 'finance', label: '💰 Finance Types' },
           { id: 'lookups', label: '📋 Lookups' },
+          { id: 'config', label: '⚙️ Config' },
           ...(role === 'super-admin' ? [{ id: 'security', label: '🔒 Security' }] : []),
         ].map(({ id, label }) => (
           <button
@@ -684,6 +697,57 @@ const SettingsPage = () => {
           </div>
         )}
 
+        {/* ── Config ── */}
+        {activeTab === 'config' && school && (
+          <div className="settings-card">
+            <h3>⚙️ SMS Usage</h3>
+            <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1.75rem' }}>
+              Total SMS messages sent by this school.
+            </p>
+
+            {/* Over-limit error banner */}
+            {config.smsLimit > 0 && config.totalSmsUsed >= config.smsLimit && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '1rem 1.25rem', marginBottom: '1.5rem', borderRadius: '10px', background: '#fef2f2', border: '1.5px solid #fca5a5' }}>
+                <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>🚫</span>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#dc2626', fontSize: '0.95rem' }}>SMS Limit Reached</div>
+                  <div style={{ color: '#b91c1c', fontSize: '0.85rem', marginTop: '0.2rem' }}>
+                    This school has used all {config.smsLimit.toLocaleString('en-IN')} allocated SMS messages.
+                    No further SMS notifications will be delivered until the limit is increased.
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Stat card */}
+            <div style={{ display: 'inline-flex', flexDirection: 'column', padding: '1.5rem 2rem', borderRadius: '12px', background: 'var(--surface)', border: `1.5px solid ${config.smsLimit > 0 && config.totalSmsUsed >= config.smsLimit ? '#fca5a5' : 'var(--border, #e5e7eb)'}`, marginBottom: '1.5rem', minWidth: '200px' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--muted)', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>💬 Total SMS Sent</div>
+              <div style={{ fontSize: '2.5rem', fontWeight: 800, color: config.smsLimit > 0 && config.totalSmsUsed >= config.smsLimit ? '#ef4444' : 'var(--text)', lineHeight: 1.1 }}>
+                {config.totalSmsUsed.toLocaleString('en-IN')}
+              </div>
+            </div>
+
+            <div>
+              <button
+                className="btn outline"
+                disabled={configLoading}
+                onClick={async () => {
+                  setConfigLoading(true)
+                  try {
+                    const res = await apiClient.getSchoolConfig(String(school.id))
+                    const d = res?.data || {}
+                    setConfig({ totalSmsUsed: d.totalSmsUsed ?? 0, totalChatCalls: d.totalChatCalls ?? 0, smsLimit: d.smsLimit ?? 1000 })
+                  } catch (_) {} finally {
+                    setConfigLoading(false)
+                  }
+                }}
+              >
+                {configLoading ? 'Refreshing…' : '🔄 Refresh'}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* ── Security (Change Password) ── */}
         {activeTab === 'security' && (
           <div className="settings-card">
@@ -699,20 +763,6 @@ const SettingsPage = () => {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', cursor: 'pointer', padding: '1rem', borderRadius: '10px', border: `2px solid ${mfa.mfaEmail ? '#3b82f6' : 'var(--border, #e5e7eb)'}`, background: mfa.mfaEmail ? '#eff6ff' : 'var(--surface)' }}>
-                <input
-                  type="checkbox"
-                  checked={mfa.mfaEmail}
-                  onChange={(e) => setMfa({ ...mfa, mfaEmail: e.target.checked })}
-                  style={{ marginTop: '2px', width: '18px', height: '18px', accentColor: '#3b82f6', flexShrink: 0 }}
-                />
-                <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text)' }}>📧 Email OTP</div>
-                  <div style={{ fontSize: '0.825rem', color: 'var(--muted)', marginTop: '2px' }}>
-                    Send a one-time password to your registered email address on every login.
-                  </div>
-                </div>
-              </label>
               <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', cursor: 'pointer', padding: '1rem', borderRadius: '10px', border: `2px solid ${mfa.mfaPhone ? '#3b82f6' : 'var(--border, #e5e7eb)'}`, background: mfa.mfaPhone ? '#eff6ff' : 'var(--surface)' }}>
                 <input
                   type="checkbox"
@@ -727,7 +777,7 @@ const SettingsPage = () => {
                   </div>
                 </div>
               </label>
-              {!mfa.mfaEmail && !mfa.mfaPhone && (
+              {!mfa.mfaPhone && (
                 <div style={{ padding: '0.75rem 1rem', borderRadius: '8px', background: '#fef9c3', border: '1px solid #fbbf24', fontSize: '0.85rem', color: '#92400e' }}>
                   ⚠️ <strong>No MFA enabled</strong> — you will log in directly without any OTP verification.
                 </div>
@@ -739,7 +789,7 @@ const SettingsPage = () => {
               onClick={async () => {
                 setMfaLoading(true)
                 try {
-                  await apiClient.updateMfaSettings(mfa)
+                  await apiClient.updateMfaSettings({ ...mfa, mfaEmail: false })
                   setMfaMsg('✅ MFA settings saved!')
                 } catch (err) {
                   setMfaMsg('❌ ' + (err?.response?.data?.message || 'Failed to save'))

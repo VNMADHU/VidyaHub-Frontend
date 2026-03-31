@@ -234,6 +234,8 @@ export const adminApi = {
     firstName?: string
     lastName?: string
     phone?: string
+    role?: string
+    isPhoneVerified?: boolean
     modulePermissions?: string[] | null
     mfaEmail?: boolean
     mfaPhone?: boolean
@@ -261,6 +263,9 @@ export const schoolApi = {
   getSmsSettings: (id: string) => api.get(`/schools/${id}/sms-settings`).then((r) => r.data),
   updateSmsSettings: (id: string, data: Record<string, boolean>) =>
     api.patch(`/schools/${id}/sms-settings`, data).then((r) => r.data),
+  getSchoolConfig: (id: string) => api.get(`/schools/${id}/config`).then((r) => r.data),
+  updateSchoolConfig: (id: string, data: { geminiApiKey?: string; smsLimit?: number; freeTrialLimit?: number }) =>
+    api.patch(`/schools/${id}/config`, data).then((r) => r.data),
 }
 
 // Students
@@ -642,6 +647,8 @@ const apiClient = {
   deleteSchool: schoolApi.delete,
   getSmsSettings: schoolApi.getSmsSettings,
   updateSmsSettings: schoolApi.updateSmsSettings,
+  getSchoolConfig: schoolApi.getSchoolConfig,
+  updateSchoolConfig: schoolApi.updateSchoolConfig,
   // Students
   listStudents: studentApi.list,
   getStudent: studentApi.getById,
@@ -822,7 +829,10 @@ const apiClient = {
   waConnect:     () => api.post('/whatsapp/connect').then((r) => r.data),
   waDisconnect:  () => api.post('/whatsapp/disconnect').then((r) => r.data),
   waRecipients:  (audience: string) => api.get('/whatsapp/recipients', { params: { audience } }).then((r) => r.data),
-  waSend:        (data: any) => api.post('/whatsapp/send', data, { timeout: 0 }).then((r) => r.data),
+  waContacts:          () => api.get('/whatsapp/contacts').then((r) => r.data),
+  waAddContact:        (data: { name: string; number: string }) => api.post('/whatsapp/contacts', data).then((r) => r.data),
+  waBulkImportContacts:(data: { contacts: { name: string; number: string }[] }) => api.post('/whatsapp/contacts/bulk', data, { timeout: 0 }).then((r) => r.data),
+  waSend:              (data: any) => api.post('/whatsapp/send', data, { timeout: 0 }).then((r) => r.data),
   // Payroll
   listPayroll:     (params?: any) => api.get('/payroll', { params }).then((r) => r.data),
   generatePayroll: (data: any) => api.post('/payroll/generate', data).then((r) => r.data),

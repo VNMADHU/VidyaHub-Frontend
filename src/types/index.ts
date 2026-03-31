@@ -80,6 +80,7 @@ export interface ForgotPasswordResponse {
 export interface AdminUser {
   id: number
   email: string
+  role?: string
   phone?: string
   modulePermissions?: string[] | null
   schoolId?: number | null

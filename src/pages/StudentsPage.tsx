@@ -94,6 +94,9 @@ const EMPTY_STUDENT_FORM = {
     motherContact: '',
     guardianContact: '',
     parentEmail: '',
+    siblingStudentId: '',
+    siblingNames: '',
+    siblingRelation: '',
   }
   const [formData, setFormData] = useState(EMPTY_STUDENT_FORM)
 
@@ -212,6 +215,9 @@ const EMPTY_STUDENT_FORM = {
       motherContact: student.motherContact || '',
       guardianContact: student.guardianContact || '',
       parentEmail: student.parentEmail || '',
+      siblingStudentId: student.siblingStudentId || '',
+      siblingNames: student.siblingNames || '',
+      siblingRelation: student.siblingRelation || '',
     })
     setShowForm(true)
   }
@@ -238,12 +244,26 @@ const EMPTY_STUDENT_FORM = {
   const studentTemplateHeaders = [
     'firstName',
     'lastName',
+    'rollNumber',
+    'admissionNumber',
     'email',
     'dateOfBirth',
     'gender',
-    'admissionNumber',
     'classId',
     'sectionId',
+    // Indian school fields
+    'aadhaarNumber',
+    'bloodGroup',
+    'category',
+    'religion',
+    'nationality',
+    'address',
+    'permanentAddress',
+    'transportMode',
+    'busRoute',
+    'previousSchool',
+    'tcNumber',
+    // Parent / Guardian
     'fatherName',
     'motherName',
     'guardianName',
@@ -251,6 +271,10 @@ const EMPTY_STUDENT_FORM = {
     'motherContact',
     'guardianContact',
     'parentEmail',
+    // Sibling
+    'siblingStudentId',
+    'siblingNames',
+    'siblingRelation',
   ]
 
   const mapStudentRow = (row) => {
@@ -280,12 +304,26 @@ const EMPTY_STUDENT_FORM = {
       schoolId: schoolId,
       firstName: String(row.firstName).trim(),
       lastName: String(row.lastName).trim(),
+      rollNumber: row.rollNumber ? String(row.rollNumber).trim() : '',
+      admissionNumber: row.admissionNumber ? String(row.admissionNumber).trim() : '',
       email,
       dateOfBirth,
       gender: row.gender ? String(row.gender).toLowerCase().trim() : 'male',
-      admissionNumber: row.admissionNumber ? String(row.admissionNumber).trim() : '',
       classId: row.classId ? Number(row.classId) : undefined,
       sectionId: row.sectionId ? Number(row.sectionId) : undefined,
+      // Indian school fields
+      aadhaarNumber: row.aadhaarNumber ? String(row.aadhaarNumber).trim() : undefined,
+      bloodGroup: row.bloodGroup ? String(row.bloodGroup).trim() : undefined,
+      category: row.category ? String(row.category).trim() : undefined,
+      religion: row.religion ? String(row.religion).trim() : undefined,
+      nationality: row.nationality ? String(row.nationality).trim() : undefined,
+      address: row.address ? String(row.address).trim() : undefined,
+      permanentAddress: row.permanentAddress ? String(row.permanentAddress).trim() : undefined,
+      transportMode: row.transportMode ? String(row.transportMode).trim() : undefined,
+      busRoute: row.busRoute ? String(row.busRoute).trim() : undefined,
+      previousSchool: row.previousSchool ? String(row.previousSchool).trim() : undefined,
+      tcNumber: row.tcNumber ? String(row.tcNumber).trim() : undefined,
+      // Parent / Guardian
       fatherName: row.fatherName ? String(row.fatherName).trim() : '',
       motherName: row.motherName ? String(row.motherName).trim() : '',
       guardianName: row.guardianName ? String(row.guardianName).trim() : '',
@@ -293,6 +331,10 @@ const EMPTY_STUDENT_FORM = {
       motherContact,
       guardianContact,
       parentEmail,
+      // Sibling
+      siblingStudentId: row.siblingStudentId ? Number(row.siblingStudentId) : undefined,
+      siblingNames: row.siblingNames ? String(row.siblingNames).trim() : undefined,
+      siblingRelation: row.siblingRelation ? String(row.siblingRelation).trim() : undefined,
     }
   }
 
@@ -837,6 +879,50 @@ const EMPTY_STUDENT_FORM = {
                 value={formData.parentEmail}
                 onChange={(e) => setFormData({ ...formData, parentEmail: e.target.value })}
               />
+            </label>
+
+            <h4 style={{ gridColumn: '1 / -1', margin: '0.5rem 0 0', color: 'var(--primary)', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              👨‍👧‍👦 Sibling / Family Relation
+            </h4>
+            <label>
+              <span className="field-label">Sibling Student ID</span>
+              <select
+                value={formData.siblingStudentId}
+                onChange={(e) => {
+                  const sibId = e.target.value
+                  const sib = students.find(s => String(s.id) === sibId)
+                  setFormData({ ...formData, siblingStudentId: sibId, siblingNames: sib ? `${sib.firstName} ${sib.lastName}` : formData.siblingNames })
+                }}
+              >
+                <option value="">— Select Sibling Student —</option>
+                {students.filter(s => !editingId || s.id !== editingId).map(s => (
+                  <option key={s.id} value={s.id}>{s.firstName} {s.lastName} ({s.admissionNumber || `ID:${s.id}`})</option>
+                ))}
+              </select>
+            </label>
+            <label style={{ gridColumn: '1 / -1' }}>
+              <span className="field-label">Sibling Name(s)</span>
+              <input
+                type="text"
+                placeholder="e.g. Ravi Kumar, Priya Kumar"
+                value={formData.siblingNames}
+                onChange={(e) => setFormData({ ...formData, siblingNames: e.target.value })}
+              />
+            </label>
+            <label>
+              <span className="field-label">Relation Type</span>
+              <select
+                value={formData.siblingRelation}
+                onChange={(e) => setFormData({ ...formData, siblingRelation: e.target.value })}
+              >
+                <option value="">— Select Relation —</option>
+                <option value="Brother">Brother</option>
+                <option value="Sister">Sister</option>
+                <option value="Twin Brother">Twin Brother</option>
+                <option value="Twin Sister">Twin Sister</option>
+                <option value="Cousin">Cousin</option>
+                <option value="Other">Other</option>
+              </select>
             </label>
           </form>
         </Modal>

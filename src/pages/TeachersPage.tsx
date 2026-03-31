@@ -174,10 +174,21 @@ const TeachersPage = () => {
     'firstName',
     'lastName',
     'email',
+    'teacherId',
     'phoneNumber',
     'subject',
     'qualification',
     'experience',
+    'designation',
+    'department',
+    'dateOfBirth',
+    'joiningDate',
+    'address',
+    'gender',
+    'bloodGroup',
+    'aadhaarNumber',
+    'panNumber',
+    'salary',
   ]
 
   const mapTeacherRow = (row) => {
@@ -195,10 +206,21 @@ const TeachersPage = () => {
       firstName: String(row.firstName).trim(),
       lastName: String(row.lastName).trim(),
       email,
+      teacherId: row.teacherId ? String(row.teacherId).trim() : `TCH-${Date.now()}-${Math.floor(Math.random()*1000)}`,
       phoneNumber,
       subject: row.subject ? String(row.subject).trim() : '',
       qualification: row.qualification ? String(row.qualification).trim() : '',
       experience: row.experience ? String(row.experience).trim() : '',
+      designation: row.designation ? String(row.designation).trim() : '',
+      department: row.department ? String(row.department).trim() : '',
+      dateOfBirth: row.dateOfBirth ? String(row.dateOfBirth).trim() : '',
+      joiningDate: row.joiningDate ? String(row.joiningDate).trim() : '',
+      address: row.address ? String(row.address).trim() : '',
+      gender: row.gender ? String(row.gender).toLowerCase().trim() : '',
+      bloodGroup: row.bloodGroup ? String(row.bloodGroup).trim() : '',
+      aadhaarNumber: row.aadhaarNumber ? String(row.aadhaarNumber).trim() : '',
+      panNumber: row.panNumber ? String(row.panNumber).trim() : '',
+      salary: row.salary ? parseFloat(row.salary) : undefined,
     }
   }
 

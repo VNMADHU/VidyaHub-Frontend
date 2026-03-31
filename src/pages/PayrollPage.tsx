@@ -29,6 +29,13 @@ const PayrollPage = () => {
   const [generating, setGenerating] = useState(false)
   const [schoolName, setSchoolName] = useState('School')
 
+  // Employee selection for individual payroll generation
+  const [empPanelOpen, setEmpPanelOpen] = useState(false)
+  const [allEmployees, setAllEmployees] = useState([])
+  const [selEmp, setSelEmp] = useState(new Set())
+  const [empSearch, setEmpSearch] = useState('')
+  const [empLoading, setEmpLoading] = useState(false)
+
   useEffect(() => { loadPayroll() }, [month, year])
   useEffect(() => {
     apiClient.listSchools().then((r) => {
@@ -46,16 +53,40 @@ const PayrollPage = () => {
     finally { setLoading(false) }
   }
 
-  const handleGenerate = async () => {
+  const loadEmployees = async () => {
+    if (allEmployees.length > 0) { setEmpPanelOpen(true); return }
+    setEmpLoading(true)
+    try {
+      const [teachers, staffRes, driversRes] = await Promise.all([
+        apiClient.listTeachers(),
+        apiClient.listStaff(),
+        apiClient.listDrivers(),
+      ])
+      const toArr = (r) => Array.isArray(r) ? r : (r?.data || [])
+      const list = [
+        ...toArr(teachers).map(t => ({ key: `teacher_${t.id}`, id: t.id, type: 'teacher', name: `${t.firstName} ${t.lastName}`, designation: t.subject || t.designation || '', salary: t.salary })),
+        ...toArr(staffRes).map(s => ({ key: `staff_${s.id}`, id: s.id, type: 'staff', name: `${s.firstName} ${s.lastName}`, designation: s.designation || '', salary: s.salary })),
+        ...toArr(driversRes).map(d => ({ key: `driver_${d.id}`, id: d.id, type: 'driver', name: `${d.firstName} ${d.lastName}`, designation: 'Driver', salary: d.salary })),
+      ].sort((a, b) => a.name.localeCompare(b.name))
+      setAllEmployees(list)
+      setEmpPanelOpen(true)
+    } catch { toast.error('Failed to load employees.') }
+    finally { setEmpLoading(false) }
+  }
+
+  const handleGenerate = async (forSelected = false) => {
+    const selArr = forSelected ? [...selEmp].map(k => { const [type, ...rest] = k.split('_'); return { type, id: parseInt(rest.join('_')) } }) : []
+    const label = forSelected ? `${selArr.length} selected employee(s)` : 'all employees'
     const ok = await confirm({
-      message: `Generate payroll for ${MONTHS[month - 1]} ${year}?\n\nSalary components will be calculated as:\n• HRA: 40% of Basic\n• Conveyance: Rs.1,600\n• Medical: Rs.1,250\n• Employee PF: 12% of Basic\n• Employee ESI: 0.75% (if gross ≤ Rs.21,000)\n• Professional Tax: Slab-based\n• TDS: New Tax Regime slabs u/s 192`,
+      message: `Generate payroll for ${MONTHS[month - 1]} ${year} (${label})?\n\nSalary components will be calculated as:\n• HRA: 40% of Basic\n• Conveyance: Rs.1,600\n• Medical: Rs.1,250\n• Employee PF: 12% of Basic\n• Employee ESI: 0.75% (if gross ≤ Rs.21,000)\n• Professional Tax: Slab-based\n• TDS: New Tax Regime slabs u/s 192`,
       confirmText: '⚡ Generate',
       confirmVariant: 'success',
     })
     if (!ok) return
     setGenerating(true)
     try {
-      const res = await apiClient.generatePayroll({ month, year })
+      const body = { month, year, ...(selArr.length > 0 ? { employees: selArr } : {}) }
+      const res = await apiClient.generatePayroll(body)
       toast.success(`Payroll generated for ${res?.data?.length || 0} employees.`)
       loadPayroll()
     } catch (err) { toast.error(err?.message || 'Failed to generate payroll.') }
@@ -252,12 +283,94 @@ const PayrollPage = () => {
             <button style={exportButtonStyle} onClick={downloadAllSlips} title="Download Payroll PDF">📥 Payroll PDF</button>
           )}
           {isSuperAdmin && (
-            <button className="btn primary" onClick={handleGenerate} disabled={generating}>
-              {generating ? '⏳ Generating…' : '⚡ Generate Payroll'}
-            </button>
+            <>
+              <button
+                style={{ padding: '0.5rem 0.85rem', borderRadius: 8, border: `1px solid ${empPanelOpen ? '#93c5fd' : '#e2e8f0'}`, background: empPanelOpen ? '#dbeafe' : '#f8fafc', color: '#1e40af', fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                onClick={() => { if (empPanelOpen) { setEmpPanelOpen(false); setSelEmp(new Set()) } else { loadEmployees() } }}
+                disabled={empLoading}
+              >
+                {empLoading ? '⏳' : '👤'} {empPanelOpen ? 'Hide Selection' : 'Select Employees'}
+                {selEmp.size > 0 && <span style={{ background: '#1e40af', color: '#fff', borderRadius: 10, padding: '0 0.4rem', fontSize: '0.72rem', fontWeight: 700 }}>{selEmp.size}</span>}
+              </button>
+              {selEmp.size > 0 && (
+                <button className="btn primary" onClick={() => handleGenerate(true)} disabled={generating}>
+                  {generating ? '⏳ Generating…' : `⚡ Generate for Selected (${selEmp.size})`}
+                </button>
+              )}
+              <button
+                style={{ padding: '0.5rem 0.85rem', borderRadius: 8, border: '1px solid #86efac', background: '#f0fdf4', color: '#166534', fontSize: '0.875rem', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => handleGenerate(false)}
+                disabled={generating}
+              >
+                {generating ? '⏳ Generating…' : '⚡ Generate All'}
+              </button>
+            </>
           )}
         </div>
       </div>
+
+      {/* Employee Selection Panel */}
+      {isSuperAdmin && empPanelOpen && (() => {
+        const filteredEmp = allEmployees.filter(e =>
+          !empSearch ||
+          e.name.toLowerCase().includes(empSearch.toLowerCase()) ||
+          e.type.toLowerCase().includes(empSearch.toLowerCase()) ||
+          (e.designation || '').toLowerCase().includes(empSearch.toLowerCase())
+        )
+        return (
+          <div style={{ background: '#f8fafc', border: '1px solid #bfdbfe', borderRadius: 10, padding: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <span style={{ fontWeight: 600, color: '#1e40af', fontSize: '0.9rem' }}>👤 Select Employees for Payroll</span>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                {selEmp.size > 0 && <span style={{ fontSize: '0.8rem', color: '#6b7280' }}><strong>{selEmp.size}</strong> selected</span>}
+                <button style={{ fontSize: '0.8rem', color: '#2563eb', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }} onClick={() => setSelEmp(new Set(filteredEmp.map(e => e.key)))}>Select All</button>
+                <button style={{ fontSize: '0.8rem', color: '#6b7280', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }} onClick={() => setSelEmp(new Set())}>Deselect All</button>
+                <button style={{ fontSize: '0.8rem', color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem' }} onClick={() => { setEmpPanelOpen(false); setSelEmp(new Set()); setEmpSearch('') }}>✕ Close</button>
+              </div>
+            </div>
+            <input
+              placeholder="🔍 Search by name, type or designation…"
+              value={empSearch}
+              onChange={e => setEmpSearch(e.target.value)}
+              style={{ width: '100%', padding: '0.4rem 0.75rem', borderRadius: 6, border: '1px solid #e2e8f0', marginBottom: '0.75rem', fontSize: '0.875rem', boxSizing: 'border-box' }}
+            />
+            {empLoading ? (
+              <div style={{ color: '#6b7280', fontSize: '0.85rem', padding: '0.5rem 0' }}>Loading employees…</div>
+            ) : filteredEmp.length === 0 ? (
+              <div style={{ color: '#6b7280', fontSize: '0.85rem', padding: '0.5rem 0' }}>No employees with salary found.</div>
+            ) : (
+              <div style={{ maxHeight: 200, overflowY: 'auto', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {filteredEmp.map(e => (
+                  <label key={e.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: selEmp.has(e.key) ? '#dbeafe' : '#fff', border: `1px solid ${selEmp.has(e.key) ? '#93c5fd' : (!(e.salary > 0) ? '#fca5a5' : '#e2e8f0')}`, borderRadius: 6, padding: '0.35rem 0.65rem', cursor: 'pointer', fontSize: '0.82rem', userSelect: 'none', transition: 'all 0.15s' }}>
+                    <input
+                      type="checkbox"
+                      checked={selEmp.has(e.key)}
+                      onChange={() => {
+                        const next = new Set(selEmp)
+                        next.has(e.key) ? next.delete(e.key) : next.add(e.key)
+                        setSelEmp(next)
+                      }}
+                      style={{ margin: 0, cursor: 'pointer' }}
+                    />
+                    <span style={{ fontWeight: 600, color: '#111827' }}>{e.name}</span>
+                    <span style={{ color: '#6b7280', fontSize: '0.75rem', background: e.type === 'teacher' ? '#f0fdf4' : e.type === 'driver' ? '#faf5ff' : '#fff7ed', borderRadius: 4, padding: '0.1rem 0.35rem' }}>{e.type}</span>
+                    {e.designation && <span style={{ color: '#9ca3af', fontSize: '0.73rem' }}>{e.designation}</span>}
+                    {!(e.salary > 0) && <span title="No salary set — will be skipped" style={{ color: '#dc2626', fontSize: '0.7rem' }}>⚠ no salary</span>}
+                  </label>
+                ))}
+              </div>
+            )}
+            {selEmp.size > 0 && (
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.6rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: '#374151' }}><strong>{selEmp.size}</strong> employee(s) selected —</span>
+                <button className="btn primary" style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }} onClick={() => handleGenerate(true)} disabled={generating}>
+                  {generating ? '⏳ Generating…' : `⚡ Generate for Selected (${selEmp.size})`}
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Summary Cards */}
       <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>

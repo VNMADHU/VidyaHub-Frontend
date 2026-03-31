@@ -103,8 +103,9 @@ const AdmissionsPage = () => {
         remarks:       formData.remarks        || null,
       }
       if (editingId) {
-        await apiClient.updateAdmission(editingId, payload)
-        toast.success('Admission updated successfully')
+        const res = await apiClient.updateAdmission(editingId, payload)
+        const msg = res?.message
+        toast.success(msg || 'Admission updated successfully')
       } else {
         await apiClient.createAdmission(payload)
         toast.success('Admission application created')
@@ -348,6 +349,7 @@ const AdmissionsPage = () => {
                   <th>Category</th>
                   <th>Interview Date</th>
                   <th>Status</th>
+                  <th>Student Portal</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -372,6 +374,15 @@ const AdmissionsPage = () => {
                         <span style={{ background: sc.bg, color: sc.color, padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600, textTransform: 'capitalize' }}>
                           {record.status}
                         </span>
+                      </td>
+                      <td>
+                        {record.linkedStudentId ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#ede9fe', color: '#5b21b6', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600 }}>
+                            ✅ Added <span style={{ fontWeight: 400, opacity: 0.75 }}>#{record.linkedStudentId}</span>
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--muted)', fontSize: '0.8rem' }}>—</span>
+                        )}
                       </td>
                       <td>
                         <div style={{ display: 'flex', gap: '0.4rem' }}>

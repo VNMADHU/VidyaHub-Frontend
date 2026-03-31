@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
-import { Send, Mail, MessageSquare, Users, ChevronDown, Trash2, CheckCircle, AlertCircle, Clock, RefreshCw, Paperclip, X } from 'lucide-react'
+import { Send, MessageSquare, Users, ChevronDown, Trash2, CheckCircle, AlertCircle, Clock, RefreshCw, Paperclip, X } from 'lucide-react'
 import apiClient from '@/services/api'
 import { useConfirm } from '@/components/ConfirmDialog'
 import { useToast } from '@/components/ToastContainer'
@@ -18,9 +18,7 @@ const NOTIFICATION_TYPES = [
 ]
 
 const CHANNELS = [
-  { value: 'email', label: '📧 Email Only', icon: Mail },
   { value: 'sms', label: '💬 SMS Only', icon: MessageSquare },
-  { value: 'both', label: '📧+💬 Email & SMS', icon: Send },
 ]
 
 const NotificationsPage = () => {
@@ -30,7 +28,7 @@ const NotificationsPage = () => {
   // Compose form state
   const [form, setForm] = useState({
     type: 'announcement',
-    channel: 'email',
+    channel: 'sms',
     subject: '',
     message: '',
     audience: 'all-parents',
@@ -58,6 +56,19 @@ const NotificationsPage = () => {
   const [waAttachments, setWaAttachments]     = useState([])   // [{ name, b64, mime }, ...]
   const [waSending, setWaSending]             = useState(false)
   const [waPreview, setWaPreview]             = useState([])  // { name, phone }[]
+  const [waContacts, setWaContacts]           = useState([])   // { name, number }[] — from WA address book
+  const [waContactSearch, setWaContactSearch] = useState('')   // search filter for contact picker
+  const [waSelectedContacts, setWaSelectedContacts] = useState([]) // selected { name, number }[]
+  const [waContactsLoading, setWaContactsLoading] = useState(false)
+  const [waShowAddForm, setWaShowAddForm]     = useState(false)  // toggle add-contact inline form
+  const [waNewName, setWaNewName]             = useState('')
+  const [waNewNumber, setWaNewNumber]         = useState('')
+  const [waAddingSaving, setWaAddingSaving]   = useState(false)
+  const [waShowCsvImport, setWaShowCsvImport] = useState(false)  // toggle CSV import panel
+  const [waCsvPreview, setWaCsvPreview]       = useState([])     // [{ name, number }] parsed rows
+  const [waCsvImporting, setWaCsvImporting]   = useState(false)
+  const [waCsvResult, setWaCsvResult]         = useState(null)   // { saved, failed } after import
+  const waCsvFileRef = useRef(null)
   const waFileRef = useRef(null)
   const waPollerRef = useRef(null)
 
@@ -85,11 +96,22 @@ const NotificationsPage = () => {
   // Reload recipient preview when whatsapp audience changes
   useEffect(() => {
     if (tab !== 'whatsapp') return
-    if (waAudience === 'custom') { setWaPreview([]); return }
+    if (waAudience === 'custom' || waAudience === 'wa-contacts') { setWaPreview([]); return }
     const aud = waAudience === 'class' ? (waClassId ? `class:${waClassId}` : '') : waAudience
     if (!aud) { setWaPreview([]); return }
     apiClient.waRecipients(aud).then((r) => setWaPreview(r.contacts || [])).catch(() => {})
   }, [waAudience, waClassId, tab])
+
+  // Load WA contacts when wa-contacts audience is selected
+  useEffect(() => {
+    if (tab !== 'whatsapp' || waAudience !== 'wa-contacts') return
+    if (waContacts.length > 0) return  // already loaded
+    setWaContactsLoading(true)
+    apiClient.waContacts()
+      .then((r) => setWaContacts(r.contacts || []))
+      .catch((err) => toast.error(err?.response?.data?.message || 'Failed to load contacts'))
+      .finally(() => setWaContactsLoading(false))
+  }, [waAudience, tab])
 
   const handleWaConnect = async () => {
     setWaStatus('connecting')
@@ -139,13 +161,105 @@ const NotificationsPage = () => {
     e.target.value = ''
   }
 
+  // ── CSV import handlers ──────────────────────────────────────
+  const handleWaCsvFile = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    import('papaparse').then(({ default: Papa }) => {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        transformHeader: (h) => h.trim().toLowerCase(),
+        complete: (results) => {
+          const rows = (results.data || []).map((r: any) => ({
+            name:   (r.name || r['contact name'] || r['full name'] || '').toString().trim(),
+            number: (r.number || r.phone || r['phone number'] || r.mobile || '').toString().trim(),
+          })).filter((r) => r.name || r.number)
+          if (rows.length === 0) return toast.error('No valid rows found. Check the CSV has "name" and "number" columns.')
+          if (rows.length > 500) return toast.error('Maximum 500 contacts per import. Please split the file.')
+          setWaCsvPreview(rows)
+          setWaCsvResult(null)
+        },
+        error: () => toast.error('Failed to parse CSV file.'),
+      })
+    })
+  }
+
+  const handleWaCsvImport = async () => {
+    if (waCsvPreview.length === 0) return
+    setWaCsvImporting(true)
+    setWaCsvResult(null)
+    try {
+      const res = await apiClient.waBulkImportContacts({ contacts: waCsvPreview })
+      setWaCsvResult(res)
+      toast.success(res.message || 'Import complete')
+      // Merge newly saved contacts into the local list
+      if (res.saved?.length > 0) {
+        setWaContacts((prev) => {
+          const merged = [...prev]
+          for (const c of res.saved) {
+            if (!merged.some((x) => x.number === c.number)) merged.push(c)
+          }
+          return merged.sort((a, b) => a.name.localeCompare(b.name))
+        })
+      }
+      setWaCsvPreview([])
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Import failed')
+    } finally {
+      setWaCsvImporting(false)
+    }
+  }
+
+  const downloadCsvTemplate = () => {
+    const csv = 'name,number\nRavi Kumar,9876543210\nPriya Sharma,9123456789'
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement('a')
+    a.href = url; a.download = 'whatsapp_contacts_template.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleWaAddContact = async () => {
+    if (!waNewName.trim()) return toast.error('Please enter a contact name')
+    if (!waNewNumber.trim()) return toast.error('Please enter a phone number')
+    setWaAddingSaving(true)
+    try {
+      const res = await apiClient.waAddContact({ name: waNewName.trim(), number: waNewNumber.trim() })
+      toast.success(res.message || 'Contact saved!')
+      // Add to local list immediately so it shows without a full reload
+      const saved = res.contact
+      setWaContacts((prev) => {
+        const exists = prev.some((c) => c.number === saved.number)
+        if (exists) return prev
+        return [...prev, saved].sort((a, b) => a.name.localeCompare(b.name))
+      })
+      // Auto-select the newly added contact
+      setWaSelectedContacts((prev) => {
+        const exists = prev.some((c) => c.number === saved.number)
+        return exists ? prev : [...prev, saved]
+      })
+      setWaNewName('')
+      setWaNewNumber('')
+      setWaShowAddForm(false)
+    } catch (err) {
+      toast.error(err?.response?.data?.message || err.message || 'Failed to save contact')
+    } finally {
+      setWaAddingSaving(false)
+    }
+  }
+
   const handleWaSend = async () => {
     if (!waMessage.trim() && waAttachments.length === 0) return toast.error('Please enter a message or attach a file')
     if (waAudience === 'custom' && !waCustomNumbers.trim()) return toast.error('Please enter at least one phone number')
+    if (waAudience === 'wa-contacts' && waSelectedContacts.length === 0) return toast.error('Please select at least one contact')
     if (waAudience === 'class' && !waClassId) return toast.error('Please select a class')
 
     const targetCount = waAudience === 'custom'
       ? waCustomNumbers.split('\n').filter((n) => n.trim()).length
+      : waAudience === 'wa-contacts'
+      ? waSelectedContacts.length
       : waPreview.length
 
     const ok = await confirm({
@@ -158,9 +272,11 @@ const NotificationsPage = () => {
 
     setWaSending(true)
     try {
-      const audience = waAudience === 'class' ? `class:${waClassId}` : waAudience
+      const audience = waAudience === 'class' ? `class:${waClassId}` : waAudience === 'wa-contacts' ? 'custom' : waAudience
       const customNumbers = waAudience === 'custom'
         ? waCustomNumbers.split('\n').map((n) => n.trim()).filter(Boolean)
+        : waAudience === 'wa-contacts'
+        ? waSelectedContacts.map((c) => c.number)
         : undefined
 
       const result = await apiClient.waSend({
@@ -173,6 +289,7 @@ const NotificationsPage = () => {
       setWaMessage('')
       setWaAttachments([])
       setWaCustomNumbers('')
+      setWaSelectedContacts([])
     } catch (err) {
       const msg: string = err?.response?.data?.message || err.message || 'Failed to send WhatsApp messages'
       // If the browser page died, reset to disconnected so the Connect button reappears
@@ -235,7 +352,7 @@ const NotificationsPage = () => {
 
     const ok = await confirm({
       title: 'Send Notification?',
-      message: `This will send ${form.channel === 'both' ? 'email & SMS' : form.channel} to ${recipientPreview.count} recipient(s). Continue?`,
+      message: `This will send SMS to ${recipientPreview.count} recipient(s). Continue?`,
       confirmText: 'Send',
       confirmVariant: 'success',
     })
@@ -344,7 +461,7 @@ const NotificationsPage = () => {
         <div>
           <h1 className="page-title">📨 Notifications</h1>
           <p style={{ color: 'var(--muted)', margin: 0, fontSize: '0.9rem' }}>
-            Send announcements, event info, fee reminders & more to parents via Email or SMS
+            Send announcements, event info, fee reminders & more to parents via SMS
           </p>
         </div>
       </div>
@@ -473,7 +590,6 @@ const NotificationsPage = () => {
               <Users size={16} />
               <span>
                 <strong>{recipientPreview.count}</strong> recipient(s) found
-                {recipientPreview.emailCount > 0 && ` • ${recipientPreview.emailCount} with email`}
                 {recipientPreview.phoneCount > 0 && ` • ${recipientPreview.phoneCount} with phone`}
               </span>
             </div>
@@ -627,8 +743,7 @@ const NotificationsPage = () => {
                 {[
                   { value: 'all-parents', label: '👨‍👩‍👧 All Parents' },
                   { value: 'all-teachers', label: '👨‍🏫 All Teachers' },
-                  { value: 'class', label: '🏫 By Class' },
-                  { value: 'custom', label: '📱 Custom Numbers' },
+                  { value: 'class', label: '🏫 By Class' },                  { value: 'wa-contacts', label: '📇 WA Contacts' },                  { value: 'custom', label: '📱 Custom Numbers' },
                 ].map((a) => (
                   <button key={a.value} type="button" onClick={() => setWaAudience(a.value)} style={chipStyle(waAudience === a.value)}>
                     {a.label}
@@ -657,8 +772,271 @@ const NotificationsPage = () => {
                 </div>
               )}
 
+              {waAudience === 'wa-contacts' && (
+                <div>
+                  {/* Search bar */}
+                  <input
+                    type="text"
+                    style={{ ...inputStyle, marginBottom: '0.6rem' }}
+                    placeholder="🔍 Search contacts by name or number..."
+                    value={waContactSearch}
+                    onChange={(e) => setWaContactSearch(e.target.value)}
+                  />
+
+                  {waContactsLoading && (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center', padding: '1rem 0' }}>⏳ Loading contacts...</p>
+                  )}
+
+                  {!waContactsLoading && waContacts.length === 0 && (
+                    <p style={{ color: 'var(--muted)', fontSize: '0.85rem', textAlign: 'center', padding: '1rem 0' }}>No saved contacts found in WhatsApp.</p>
+                  )}
+
+                  {!waContactsLoading && waContacts.length > 0 && (() => {
+                    const q = waContactSearch.trim().toLowerCase()
+                    const filtered = q
+                      ? waContacts.filter((c) => c.name.toLowerCase().includes(q) || c.number.includes(q))
+                      : waContacts
+                    const isAllSelected = filtered.length > 0 && filtered.every((c) => waSelectedContacts.some((s) => s.number === c.number))
+                    return (
+                      <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+                        {/* Select all row */}
+                        <div
+                          onClick={() => {
+                            if (isAllSelected) {
+                              setWaSelectedContacts((prev) => prev.filter((s) => !filtered.some((c) => c.number === s.number)))
+                            } else {
+                              const toAdd = filtered.filter((c) => !waSelectedContacts.some((s) => s.number === c.number))
+                              setWaSelectedContacts((prev) => [...prev, ...toAdd])
+                            }
+                          }}
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.9rem', background: 'var(--surface-alt,#f8fafc)', cursor: 'pointer', borderBottom: '1px solid var(--border)', userSelect: 'none' }}
+                        >
+                          <input type="checkbox" readOnly checked={isAllSelected} style={{ accentColor: '#25d366', width: 15, height: 15 }} />
+                          <span style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--muted)' }}>
+                            {isAllSelected ? 'Deselect all' : `Select all (${filtered.length})`}
+                          </span>
+                        </div>
+
+                        {/* Contact rows */}
+                        <div style={{ maxHeight: '260px', overflowY: 'auto' }}>
+                          {filtered.map((c) => {
+                            const selected = waSelectedContacts.some((s) => s.number === c.number)
+                            return (
+                              <div
+                                key={c.number}
+                                onClick={() => setWaSelectedContacts((prev) =>
+                                  selected ? prev.filter((s) => s.number !== c.number) : [...prev, c]
+                                )}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                  padding: '0.55rem 0.9rem',
+                                  borderBottom: '1px solid var(--border)',
+                                  cursor: 'pointer',
+                                  background: selected ? 'rgba(37,211,102,0.06)' : 'transparent',
+                                  transition: 'background 0.15s',
+                                  userSelect: 'none',
+                                }}
+                              >
+                                <input type="checkbox" readOnly checked={selected} style={{ accentColor: '#25d366', width: 15, height: 15, flexShrink: 0 }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                                  <span style={{ fontWeight: 600, fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                                  <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>+{c.number}</span>
+                                </div>
+                              </div>
+                            )
+                          })}
+                          {filtered.length === 0 && (
+                            <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '1rem', fontSize: '0.85rem' }}>No contacts match your search.</p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  {/* Selected count + clear */}
+                  {waSelectedContacts.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.82rem', color: '#25d366', fontWeight: 600 }}>✅ {waSelectedContacts.length} contact(s) selected</span>
+                      <button
+                        onClick={() => setWaSelectedContacts([])}
+                        style={{ fontSize: '0.78rem', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Clear selection
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Refresh + Add Contact + Import CSV buttons */}
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={() => { setWaContacts([]); setWaContactsLoading(true); apiClient.waContacts().then((r) => setWaContacts(r.contacts || [])).catch(() => {}).finally(() => setWaContactsLoading(false)) }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', fontSize: '0.8rem', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface-alt,#f8fafc)', color: 'var(--muted)', cursor: 'pointer' }}
+                    >
+                      <RefreshCw size={12} /> Refresh contacts
+                    </button>
+                    <button
+                      onClick={() => { setWaShowAddForm((v) => !v); setWaShowCsvImport(false) }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', fontSize: '0.8rem', border: '1px solid #25d366', borderRadius: '6px', background: waShowAddForm ? '#25d366' : 'rgba(37,211,102,0.07)', color: waShowAddForm ? '#fff' : '#128c7e', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      {waShowAddForm ? '✕ Cancel' : '➕ Add New Contact'}
+                    </button>
+                    <button
+                      onClick={() => { setWaShowCsvImport((v) => !v); setWaShowAddForm(false); setWaCsvPreview([]); setWaCsvResult(null) }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.75rem', fontSize: '0.8rem', border: '1px solid #6366f1', borderRadius: '6px', background: waShowCsvImport ? '#6366f1' : 'rgba(99,102,241,0.07)', color: waShowCsvImport ? '#fff' : '#4338ca', fontWeight: 600, cursor: 'pointer' }}
+                    >
+                      {waShowCsvImport ? '✕ Cancel' : '📅 Import CSV'}
+                    </button>
+                  </div>
+
+                  {/* Inline Add Contact Form */}
+                  {waShowAddForm && (
+                    <div style={{ marginTop: '0.75rem', padding: '1rem', border: '1.5px solid #25d366', borderRadius: '10px', background: 'rgba(37,211,102,0.04)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#128c7e' }}>➕ Add New WhatsApp Contact</p>
+                      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                        <div style={{ flex: '1 1 160px' }}>
+                          <label style={{ ...labelStyle, fontSize: '0.78rem', marginBottom: '0.25rem' }}>Name *</label>
+                          <input
+                            type="text"
+                            style={{ ...inputStyle, fontSize: '0.85rem', padding: '0.5rem 0.65rem' }}
+                            placeholder="e.g. Ravi Kumar"
+                            value={waNewName}
+                            onChange={(e) => setWaNewName(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleWaAddContact()}
+                          />
+                        </div>
+                        <div style={{ flex: '1 1 160px' }}>
+                          <label style={{ ...labelStyle, fontSize: '0.78rem', marginBottom: '0.25rem' }}>Phone Number *</label>
+                          <input
+                            type="tel"
+                            style={{ ...inputStyle, fontSize: '0.85rem', padding: '0.5rem 0.65rem' }}
+                            placeholder="10-digit or with country code"
+                            value={waNewNumber}
+                            onChange={(e) => setWaNewNumber(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleWaAddContact()}
+                          />
+                        </div>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '0.73rem', color: 'var(--muted)' }}>10-digit numbers get +91 auto-added. Number must be registered on WhatsApp.</p>
+                      <button
+                        onClick={handleWaAddContact}
+                        disabled={waAddingSaving}
+                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.1rem', background: waAddingSaving ? '#94a3b8' : '#25d366', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: waAddingSaving ? 'not-allowed' : 'pointer' }}
+                      >
+                        {waAddingSaving ? '⏳ Saving...' : '💾 Save Contact'}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* ── CSV Import Panel ── */}
+                  {waShowCsvImport && (
+                    <div style={{ marginTop: '0.75rem', padding: '1rem', border: '1.5px solid #6366f1', borderRadius: '10px', background: 'rgba(99,102,241,0.04)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: '0.9rem', color: '#4338ca' }}>📅 Bulk Import Contacts via CSV</p>
+                        <button
+                          onClick={downloadCsvTemplate}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0.7rem', fontSize: '0.78rem', border: '1px solid #6366f1', borderRadius: '6px', background: 'transparent', color: '#4338ca', cursor: 'pointer' }}
+                        >
+                          ⬇️ Download Template
+                        </button>
+                      </div>
+
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--muted)', lineHeight: 1.5 }}>
+                        CSV must have two columns: <strong>name</strong> and <strong>number</strong> (header row required).
+                        Max 500 contacts per import. 10-digit numbers get +91 added automatically.
+                      </p>
+
+                      {/* File picker */}
+                      <input ref={waCsvFileRef} type="file" accept=".csv,text/csv" style={{ display: 'none' }} onChange={handleWaCsvFile} />
+                      {waCsvPreview.length === 0 && !waCsvResult && (
+                        <button
+                          onClick={() => waCsvFileRef.current?.click()}
+                          style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.55rem 1.1rem', border: '2px dashed #6366f1', borderRadius: '8px', background: 'transparent', color: '#4338ca', fontWeight: 600, fontSize: '0.88rem', cursor: 'pointer' }}
+                        >
+                          📂 Choose CSV File
+                        </button>
+                      )}
+
+                      {/* Preview table */}
+                      {waCsvPreview.length > 0 && (
+                        <div>
+                          <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', fontWeight: 600, color: '#4338ca' }}>
+                            🔍 Preview — {waCsvPreview.length} row(s) found
+                          </p>
+                          <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #c7d2fe', borderRadius: '8px' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                              <thead>
+                                <tr style={{ background: '#eef2ff', position: 'sticky', top: 0 }}>
+                                  <th style={{ padding: '0.4rem 0.7rem', textAlign: 'left', color: '#4338ca', fontWeight: 700, borderBottom: '1px solid #c7d2fe' }}>#</th>
+                                  <th style={{ padding: '0.4rem 0.7rem', textAlign: 'left', color: '#4338ca', fontWeight: 700, borderBottom: '1px solid #c7d2fe' }}>Name</th>
+                                  <th style={{ padding: '0.4rem 0.7rem', textAlign: 'left', color: '#4338ca', fontWeight: 700, borderBottom: '1px solid #c7d2fe' }}>Number</th>
+                                  <th style={{ padding: '0.4rem 0.7rem', textAlign: 'left', color: '#4338ca', fontWeight: 700, borderBottom: '1px solid #c7d2fe' }}>Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {waCsvPreview.map((row, i) => {
+                                  const hasName = !!row.name
+                                  const hasNum  = !!row.number
+                                  const ok = hasName && hasNum
+                                  return (
+                                    <tr key={i} style={{ borderBottom: '1px solid #e0e7ff', background: ok ? 'transparent' : '#fff7ed' }}>
+                                      <td style={{ padding: '0.35rem 0.7rem', color: 'var(--muted)' }}>{i + 1}</td>
+                                      <td style={{ padding: '0.35rem 0.7rem', fontWeight: 500 }}>{row.name || <span style={{ color: '#ef4444' }}>missing</span>}</td>
+                                      <td style={{ padding: '0.35rem 0.7rem', fontFamily: 'monospace' }}>{row.number || <span style={{ color: '#ef4444' }}>missing</span>}</td>
+                                      <td style={{ padding: '0.35rem 0.7rem' }}>{ok ? <span style={{ color: '#10b981', fontWeight: 600 }}>✓ OK</span> : <span style={{ color: '#f59e0b', fontWeight: 600 }}>⚠ Incomplete</span>}</td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                            <button
+                              onClick={handleWaCsvImport}
+                              disabled={waCsvImporting}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.1rem', background: waCsvImporting ? '#94a3b8' : '#6366f1', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', cursor: waCsvImporting ? 'not-allowed' : 'pointer' }}
+                            >
+                              {waCsvImporting ? '⏳ Importing...' : `💾 Import ${waCsvPreview.length} Contact(s)`}
+                            </button>
+                            <button
+                              onClick={() => { setWaCsvPreview([]); waCsvFileRef.current?.click() }}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', border: '1px solid var(--border)', borderRadius: '8px', background: 'var(--surface-alt,#f8fafc)', color: 'var(--muted)', fontSize: '0.85rem', cursor: 'pointer' }}
+                            >
+                              📂 Change File
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Result summary */}
+                      {waCsvResult && (
+                        <div style={{ padding: '0.75rem 1rem', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px' }}>
+                          <p style={{ margin: '0 0 0.4rem', fontWeight: 700, fontSize: '0.88rem', color: '#166534' }}>
+                            ✅ Import complete — {waCsvResult.saved?.length || 0} saved, {waCsvResult.failed?.length || 0} failed
+                          </p>
+                          {waCsvResult.failed?.length > 0 && (
+                            <div style={{ maxHeight: '140px', overflowY: 'auto', marginTop: '0.35rem' }}>
+                              {waCsvResult.failed.map((f, i) => (
+                                <p key={i} style={{ margin: '0.15rem 0', fontSize: '0.78rem', color: '#991b1b' }}>
+                                  ✗ {f.name} ({f.number}) — {f.reason}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => { setWaCsvResult(null); setWaCsvPreview([]) }}
+                            style={{ marginTop: '0.5rem', fontSize: '0.78rem', color: '#4338ca', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
+                          >
+                            Import another file
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Recipient preview */}
-              {waAudience !== 'custom' && (
+              {waAudience !== 'custom' && waAudience !== 'wa-contacts' && (
                 <div style={{ ...previewBoxStyle, marginTop: '0.75rem' }}>
                   <Users size={16} />
                   <span><strong>{waPreview.length}</strong> phone number(s) found</span>

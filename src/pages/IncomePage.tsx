@@ -486,29 +486,30 @@ const IncomePage = () => {
         <div style={{ flex: 1, minWidth: '220px' }}>
           <SearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search by title, category, received from…" />
         </div>
-        <div ref={datePickerRef} style={{ position: 'relative', paddingBottom: '1.5rem' }}>
-          <button
-            onClick={() => setShowDatePicker((v) => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              padding: '0.68rem 1rem', border: '1px solid', borderRadius: '8px', fontSize: '0.9rem', cursor: 'pointer',
-              background: (dateRange.from || dateRange.to) ? '#f0fdf4' : '#fff',
-              color: (dateRange.from || dateRange.to) ? '#16a34a' : '#1e293b',
-              borderColor: (dateRange.from || dateRange.to) ? '#86efac' : '#e2e8f0',
-              fontWeight: (dateRange.from || dateRange.to) ? 600 : 400, whiteSpace: 'nowrap',
-            }}
-          >
-            <CalendarRange size={16} />
-            {dateRange.from && dateRange.to
-              ? `${format(dateRange.from, 'dd MMM')} – ${format(dateRange.to, 'dd MMM yyyy')}`
-              : dateRange.from ? `From ${format(dateRange.from, 'dd MMM yyyy')}` : 'Date Range'}
-          </button>
-          {(dateRange.from || dateRange.to) && (
+        <div ref={datePickerRef} style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid ${(dateRange.from || dateRange.to) ? '#86efac' : '#e2e8f0'}`, borderRadius: '8px', background: (dateRange.from || dateRange.to) ? '#f0fdf4' : '#fff', overflow: 'hidden' }}>
             <button
-              onClick={() => { setDateRange({ from: undefined, to: undefined }); setShowDatePicker(false) }}
-              style={{ position: 'absolute', top: '0.5rem', right: '-2rem', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0.2rem' }}
-            ><X size={14} /></button>
-          )}
+              onClick={() => setShowDatePicker((v) => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.68rem 0.75rem', border: 'none', background: 'transparent',
+                fontSize: '0.9rem', cursor: 'pointer',
+                color: (dateRange.from || dateRange.to) ? '#16a34a' : '#1e293b',
+                fontWeight: (dateRange.from || dateRange.to) ? 600 : 400, whiteSpace: 'nowrap',
+              }}
+            >
+              <CalendarRange size={16} />
+              {dateRange.from && dateRange.to
+                ? `${format(dateRange.from, 'dd MMM')} – ${format(dateRange.to, 'dd MMM yyyy')}`
+                : dateRange.from ? `From ${format(dateRange.from, 'dd MMM yyyy')}` : 'Date Range'}
+            </button>
+            {(dateRange.from || dateRange.to) && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setDateRange({ from: undefined, to: undefined }); setShowDatePicker(false) }}
+                style={{ display: 'flex', alignItems: 'center', padding: '0.68rem 0.5rem 0.68rem 0', border: 'none', background: 'transparent', cursor: 'pointer', color: '#16a34a' }}
+              ><X size={14} /></button>
+            )}
+          </div>
           {showDatePicker && (
             <div style={{ position: 'absolute', top: 'calc(100% - 1.4rem)', right: 0, zIndex: 1000, background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.12)', padding: '0.75rem' }}>
               <DayPicker

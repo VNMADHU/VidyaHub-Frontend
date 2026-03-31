@@ -344,7 +344,7 @@ const ExpensesPage = () => {
     printWindow.print()
   }
 
-  const templateHeaders = ['title', 'category', 'amount', 'date', 'paidTo', 'paymentMode', 'description']
+  const templateHeaders = ['title', 'category', 'amount', 'date', 'paidTo', 'paymentMode', 'receiptNo', 'approvedBy', 'status', 'description']
   const mapRow = (row) => {
     if (!row.title || !row.amount || !row.date) return null
     return {
@@ -354,6 +354,9 @@ const ExpensesPage = () => {
       date: String(row.date).trim(),
       paidTo: row.paidTo || '',
       paymentMode: row.paymentMode || 'cash',
+      receiptNo: row.receiptNo || '',
+      approvedBy: row.approvedBy || '',
+      status: row.status || 'approved',
       description: row.description || '',
     }
   }
@@ -461,36 +464,37 @@ const ExpensesPage = () => {
             placeholder="Search by title, category, paid to..."
           />
         </div>
-        <div ref={datePickerRef} style={{ position: 'relative', paddingBottom: '1.5rem' }}>
-          <button
-            onClick={() => setShowDatePicker((v) => !v)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.4rem',
-              padding: '0.68rem 1rem', border: '1px solid var(--border, #e2e8f0)',
-              borderRadius: '8px', fontSize: '0.9rem', background: (dateRange.from || dateRange.to) ? '#eff6ff' : 'var(--card-bg, #fff)',
-              color: (dateRange.from || dateRange.to) ? '#2563eb' : 'var(--text, #1e293b)',
-              cursor: 'pointer', fontWeight: (dateRange.from || dateRange.to) ? 600 : 400,
-              borderColor: (dateRange.from || dateRange.to) ? '#93c5fd' : 'var(--border, #e2e8f0)',
-              whiteSpace: 'nowrap',
-            }}
-            title="Filter by date range"
-          >
-            <CalendarRange size={16} />
-            {dateRange.from && dateRange.to
-              ? `${format(dateRange.from, 'dd MMM')} – ${format(dateRange.to, 'dd MMM yyyy')}`
-              : dateRange.from
-              ? `From ${format(dateRange.from, 'dd MMM yyyy')}`
-              : 'Date Range'}
-          </button>
-          {(dateRange.from || dateRange.to) && (
+        <div ref={datePickerRef} style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid ${(dateRange.from || dateRange.to) ? '#93c5fd' : 'var(--border, #e2e8f0)'}`, borderRadius: '8px', background: (dateRange.from || dateRange.to) ? '#eff6ff' : 'var(--card-bg, #fff)', overflow: 'hidden' }}>
             <button
-              onClick={() => { setDateRange({ from: undefined, to: undefined }); setShowDatePicker(false) }}
-              style={{ position: 'absolute', top: '0.5rem', right: '-2rem', background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', padding: '0.2rem' }}
-              title="Clear date filter"
+              onClick={() => setShowDatePicker((v) => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.68rem 0.75rem', border: 'none', background: 'transparent',
+                fontSize: '0.9rem',
+                color: (dateRange.from || dateRange.to) ? '#2563eb' : 'var(--text, #1e293b)',
+                cursor: 'pointer', fontWeight: (dateRange.from || dateRange.to) ? 600 : 400,
+                whiteSpace: 'nowrap',
+              }}
+              title="Filter by date range"
             >
-              <X size={14} />
+              <CalendarRange size={16} />
+              {dateRange.from && dateRange.to
+                ? `${format(dateRange.from, 'dd MMM')} – ${format(dateRange.to, 'dd MMM yyyy')}`
+                : dateRange.from
+                ? `From ${format(dateRange.from, 'dd MMM yyyy')}`
+                : 'Date Range'}
             </button>
-          )}
+            {(dateRange.from || dateRange.to) && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setDateRange({ from: undefined, to: undefined }); setShowDatePicker(false) }}
+                style={{ display: 'flex', alignItems: 'center', padding: '0.68rem 0.5rem 0.68rem 0', border: 'none', background: 'transparent', cursor: 'pointer', color: '#2563eb' }}
+                title="Clear date filter"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
           {showDatePicker && (
             <div
               style={{

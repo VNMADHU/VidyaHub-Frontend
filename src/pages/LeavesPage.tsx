@@ -222,17 +222,20 @@ const LeavesPage = () => {
     { key: 'status', label: 'Status' },
   ]
 
-  const templateHeaders = ['employeeType', 'employeeName', 'leaveType', 'fromDate', 'toDate', 'days', 'reason']
+  const templateHeaders = ['employeeType', 'employeeId', 'employeeName', 'leaveType', 'fromDate', 'toDate', 'days', 'reason', 'approvedBy', 'remarks']
   const mapRow = (row) => {
     if (!row.employeeName || !row.fromDate || !row.toDate) return null
     return {
       employeeType: EMPLOYEE_TYPES.includes(row.employeeType) ? row.employeeType : 'staff',
+      employeeId: row.employeeId ? parseInt(row.employeeId) : null,
       employeeName: String(row.employeeName).trim(),
       leaveType: row.leaveType || 'casual',
       fromDate: String(row.fromDate).trim(),
       toDate: String(row.toDate).trim(),
       days: parseInt(row.days) || 1,
       reason: row.reason || 'Leave',
+      approvedBy: row.approvedBy || null,
+      remarks: row.remarks || null,
     }
   }
 

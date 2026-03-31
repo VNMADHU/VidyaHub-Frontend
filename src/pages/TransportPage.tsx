@@ -173,8 +173,8 @@ const TransportPage = () => {
     { key: 'experience', label: 'Experience' },
   ]
 
-  const vehicleTemplateHeaders = ['vehicleNumber', 'vehicleType', 'capacity', 'routeName', 'routeStops']
-  const driverTemplateHeaders = ['firstName', 'lastName', 'phoneNumber', 'licenseNumber', 'licenseType', 'experience', 'address']
+  const vehicleTemplateHeaders = ['vehicleNumber', 'vehicleType', 'capacity', 'routeName', 'routeStops', 'insuranceExpiry', 'fitnessExpiry', 'permitExpiry', 'status']
+  const driverTemplateHeaders = ['firstName', 'lastName', 'phoneNumber', 'licenseNumber', 'licenseType', 'licenseExpiry', 'dateOfBirth', 'experience', 'aadhaarNumber', 'badgeNumber', 'bloodGroup', 'emergencyContact', 'salary', 'address', 'status']
 
   return (
     <div className="page">
@@ -450,10 +450,36 @@ const TransportPage = () => {
             mapRowToPayload={(row) => {
               if (activeTab === 'vehicles') {
                 if (!row.vehicleNumber || !row.vehicleType) return null
-                return { vehicleNumber: String(row.vehicleNumber).trim(), vehicleType: String(row.vehicleType).trim(), capacity: parseInt(row.capacity) || 0, routeName: row.routeName || '', routeStops: row.routeStops || '' }
+                return {
+                  vehicleNumber: String(row.vehicleNumber).trim(),
+                  vehicleType: String(row.vehicleType).trim(),
+                  capacity: parseInt(row.capacity) || 0,
+                  routeName: row.routeName || '',
+                  routeStops: row.routeStops || '',
+                  insuranceExpiry: row.insuranceExpiry || undefined,
+                  fitnessExpiry: row.fitnessExpiry || undefined,
+                  permitExpiry: row.permitExpiry || undefined,
+                  status: row.status || 'active',
+                }
               } else {
                 if (!row.firstName || !row.lastName || !row.licenseNumber) return null
-                return { firstName: String(row.firstName).trim(), lastName: String(row.lastName).trim(), phoneNumber: String(row.phoneNumber || '').trim(), licenseNumber: String(row.licenseNumber).trim(), licenseType: row.licenseType || 'HMV', experience: row.experience || '', address: row.address || '' }
+                return {
+                  firstName: String(row.firstName).trim(),
+                  lastName: String(row.lastName).trim(),
+                  phoneNumber: String(row.phoneNumber || '').trim(),
+                  licenseNumber: String(row.licenseNumber).trim(),
+                  licenseType: row.licenseType || 'HMV',
+                  licenseExpiry: row.licenseExpiry || undefined,
+                  dateOfBirth: row.dateOfBirth || undefined,
+                  experience: row.experience || '',
+                  aadhaarNumber: row.aadhaarNumber || undefined,
+                  badgeNumber: row.badgeNumber || undefined,
+                  bloodGroup: row.bloodGroup || undefined,
+                  emergencyContact: row.emergencyContact || undefined,
+                  salary: row.salary ? parseFloat(row.salary) : undefined,
+                  address: row.address || '',
+                  status: row.status || 'active',
+                }
               }
             }}
             createItem={(payload) => activeTab === 'vehicles' ? apiClient.createVehicle(payload) : apiClient.createDriver(payload)}

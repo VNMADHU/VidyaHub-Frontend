@@ -164,7 +164,7 @@ const LibraryPage = () => {
   }
 
   // ── Bulk Import ─────────────────────────────────────────
-  const bookTemplateHeaders = ['title', 'author', 'isbn', 'category', 'publisher', 'totalCopies', 'shelfLocation']
+  const bookTemplateHeaders = ['title', 'author', 'isbn', 'category', 'publisher', 'edition', 'language', 'totalCopies', 'shelfLocation']
   const mapBookRow = (row) => {
     if (!row.title || !row.author) return null
     return {
@@ -173,6 +173,8 @@ const LibraryPage = () => {
       isbn: row.isbn ? String(row.isbn).trim() : undefined,
       category: row.category ? String(row.category).trim() : 'textbook',
       publisher: row.publisher ? String(row.publisher).trim() : undefined,
+      edition: row.edition ? String(row.edition).trim() : undefined,
+      language: row.language ? String(row.language).trim() : undefined,
       totalCopies: parseInt(row.totalCopies) || 1,
       shelfLocation: row.shelfLocation ? String(row.shelfLocation).trim() : undefined,
     }

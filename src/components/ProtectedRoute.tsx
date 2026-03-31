@@ -35,6 +35,12 @@ const ProtectedRoute = ({ children, requiredRole = null }: ProtectedRouteProps) 
         return
       }
 
+      // Owner should never be in the school portal — send them to owner console
+      if (role === 'owner' && !requiredRole) {
+        navigate('/owner/schools', { replace: true })
+        return
+      }
+
       if (requiredRole && role !== requiredRole) {
         navigate('/unauthorized')
       }

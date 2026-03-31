@@ -65,7 +65,7 @@ const emptyForm = {
   lastName: '',
   phone: '',
   modulePermissions: null as string[] | null,
-  mfaEmail: true,
+  mfaEmail: false,
   mfaPhone: false,
   feeCanEdit: false,
   feeCanDelete: false,
@@ -142,6 +142,7 @@ const AdminProfilesPage = () => {
 
   /* ── Filtering ────────────────────────────────────────────────── */
   const filtered = admins.filter((a) => {
+    if (a.role === 'super-admin') return false
     if (!search.trim()) return true
     const q = search.toLowerCase()
     const name = `${a.profile?.firstName ?? ''} ${a.profile?.lastName ?? ''}`.toLowerCase()
@@ -169,7 +170,7 @@ const AdminProfilesPage = () => {
       lastName: admin.profile?.lastName ?? '',
       phone: admin.phone ?? '',
       modulePermissions: moduleKeys,
-      mfaEmail: admin.mfaEmail ?? true,
+      mfaEmail: false,
       mfaPhone: admin.mfaPhone ?? false,
       feeCanEdit: admin.feeCanEdit ?? false,
       feeCanDelete: admin.feeCanDelete ?? false,
@@ -224,7 +225,7 @@ const AdminProfilesPage = () => {
         lastName: form.lastName,
         phone: form.phone,
         modulePermissions: finalPermissions,
-        mfaEmail: form.mfaEmail,
+        mfaEmail: false,
         mfaPhone: form.mfaPhone,
         feeCanEdit: form.feeCanEdit,
         feeCanDelete: form.feeCanDelete,
@@ -240,7 +241,7 @@ const AdminProfilesPage = () => {
       } else {
         if (!form.password) { toast.error('Password is required for new admins.'); setSaving(false); return }
         await adminApi.create({ ...payload, password: form.password })
-        toast.success('Admin created. Welcome email & SMS sent.')
+        toast.success('Admin created. Welcome SMS sent.')
       }
       closePanel()
       loadAdmins()
@@ -356,7 +357,6 @@ const AdminProfilesPage = () => {
               <div className="ap-card-meta">
                 <span>&#128241; {admin.phone ?? '\u2014'}</span>
                 <span className="ap-card-badges">
-                  <VerifyBadge ok={admin.isEmailVerified} label="Email" />
                   <VerifyBadge ok={admin.isPhoneVerified} label="Phone" />
                 </span>
               </div>
@@ -384,7 +384,7 @@ const AdminProfilesPage = () => {
 
         {!editId && (
           <div className="ap-panel-notice">
-            A welcome email with credentials and a verification code will be sent automatically.
+            A welcome SMS with a verification code will be sent automatically.
           </div>
         )}
 
@@ -410,20 +410,9 @@ const AdminProfilesPage = () => {
             <input type="tel" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} required placeholder="10-digit mobile number" minLength={10} maxLength={10} autoComplete="off" />
           </div>
 
-          {/* ── MFA Settings ── */}
           <div className="ap-field">
             <label>MFA / Login Verification</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.mfaEmail ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.mfaEmail ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
-                <input
-                  type="checkbox"
-                  checked={form.mfaEmail}
-                  onChange={(e) => setForm((p) => ({ ...p, mfaEmail: e.target.checked }))}
-                  style={{ width: '16px', height: '16px', accentColor: '#2563eb' }}
-                />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>📧 Email OTP</span>
-                <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Send OTP to email on login</span>
-              </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', border: `1.5px solid ${form.mfaPhone ? '#2563eb' : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: form.mfaPhone ? '#eff6ff' : '#f9fafb', userSelect: 'none' }}>
                 <input
                   type="checkbox"
@@ -435,9 +424,9 @@ const AdminProfilesPage = () => {
                 <span style={{ fontSize: '12px', color: '#6b7280', marginLeft: 'auto' }}>Send OTP to mobile on login</span>
               </label>
             </div>
-            {!form.mfaEmail && !form.mfaPhone && (
+            {!form.mfaPhone && (
               <div style={{ marginTop: '8px', padding: '8px 12px', background: '#fef9c3', border: '1px solid #fde047', borderRadius: '6px', fontSize: '13px', color: '#92400e' }}>
-                ⚠️ Both MFA methods disabled — this admin will log in without OTP verification.
+                ⚠️ SMS MFA disabled — this admin will log in without OTP verification.
               </div>
             )}
           </div>
@@ -678,7 +667,6 @@ const AdminProfilesPage = () => {
               </div>
               <div className="ap-detail-grid">
                 <div className="ap-detail-item"><span className="ap-detail-lbl">Mobile</span><span>{detailAdmin.phone ?? '\u2014'}</span></div>
-                <div className="ap-detail-item"><span className="ap-detail-lbl">Email Verified</span><VerifyBadge ok={detailAdmin.isEmailVerified} label={detailAdmin.isEmailVerified ? 'Yes' : 'No'} /></div>
                 <div className="ap-detail-item"><span className="ap-detail-lbl">Phone Verified</span><VerifyBadge ok={detailAdmin.isPhoneVerified} label={detailAdmin.isPhoneVerified ? 'Yes' : 'No'} /></div>
                 <div className="ap-detail-item"><span className="ap-detail-lbl">Created</span><span>{new Date(detailAdmin.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span></div>
               </div>

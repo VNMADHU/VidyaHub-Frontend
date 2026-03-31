@@ -48,7 +48,7 @@ const TeacherLoginPage = () => {
     <div className="portal-login-page">
       <div className="portal-login-card">
         <div className="portal-login-icon">👨‍🏫</div>
-        <h1>Teacher Portal</h1>
+        <h1>Employee Portal</h1>
         <p className="portal-login-subtitle">Enter your Teacher ID and Date of Birth to access your profile</p>
 
         <form onSubmit={handleLogin} className="portal-login-form">

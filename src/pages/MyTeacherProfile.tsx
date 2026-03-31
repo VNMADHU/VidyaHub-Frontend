@@ -175,7 +175,7 @@ const MyTeacherProfile = () => {
           <span className="tp-sidebar-logo">🎓</span>
           <div>
             <div className="tp-sidebar-school">{teacher.school?.name || 'Vidya Hub'}</div>
-            <span className="tp-sidebar-badge">Teacher Portal</span>
+            <span className="tp-sidebar-badge">Employee Portal</span>
           </div>
         </div>
 

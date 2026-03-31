@@ -206,7 +206,7 @@ const ExamsPage = () => {
     await loadExams()
   }
 
-  const marksTemplateHeaders = ['studentId', 'examId', 'marks', 'subject']
+  const marksTemplateHeaders = ['studentId', 'examId', 'subject', 'marks', 'maxScore']
 
   const mapMarksRow = (row) => {
     if (!row.studentId || !row.examId) {
@@ -216,8 +216,9 @@ const ExamsPage = () => {
     return {
       studentId: Number(row.studentId),
       examId: Number(row.examId),
-      marks: row.marks !== '' && row.marks !== undefined ? Number(row.marks) : 0,
       subject: row.subject ? String(row.subject).trim() : '',
+      marks: row.marks !== '' && row.marks !== undefined ? Number(row.marks) : 0,
+      maxScore: row.maxScore ? Number(row.maxScore) : 100,
     }
   }
 

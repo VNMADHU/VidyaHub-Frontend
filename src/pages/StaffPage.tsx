@@ -44,7 +44,7 @@ const exportCols = [
   { key: 'status', label: 'Status' },
 ]
 
-const templateHeaders = ['firstName', 'lastName', 'staffId', 'designation', 'department', 'phoneNumber', 'email', 'gender', 'joiningDate', 'salary', 'status']
+const templateHeaders = ['firstName', 'lastName', 'staffId', 'designation', 'department', 'phoneNumber', 'email', 'gender', 'dateOfBirth', 'address', 'aadhaarNumber', 'bloodGroup', 'emergencyContact', 'joiningDate', 'salary', 'status']
 
 const StaffPage = () => {
   const { confirm } = useConfirm()
@@ -191,19 +191,30 @@ const StaffPage = () => {
         <BulkImportModal
           title="Bulk Import Staff"
           templateHeaders={templateHeaders}
-          onImport={async (rows) => {
-            let ok = 0, fail = 0
-            for (const row of rows) {
-              try {
-                await apiClient.createStaff({ ...row, salary: row.salary ? parseFloat(row.salary) : null })
-                ok++
-              } catch { fail++ }
+          mapRowToPayload={(row) => {
+            if (!row.firstName || !row.lastName || !row.designation) return null
+            return {
+              firstName: String(row.firstName).trim(),
+              lastName: String(row.lastName).trim(),
+              staffId: row.staffId || null,
+              designation: String(row.designation).trim(),
+              department: row.department || null,
+              phoneNumber: row.phoneNumber || null,
+              email: row.email || null,
+              gender: row.gender || null,
+              dateOfBirth: row.dateOfBirth || null,
+              address: row.address || null,
+              aadhaarNumber: row.aadhaarNumber || null,
+              bloodGroup: row.bloodGroup || null,
+              emergencyContact: row.emergencyContact || null,
+              joiningDate: row.joiningDate || null,
+              salary: row.salary ? parseFloat(row.salary) : null,
+              status: row.status || 'active',
             }
-            toast.success(`Imported ${ok} staff members${fail ? `, ${fail} failed` : ''}`)
-            loadStaff()
-            setShowBulkImport(false)
           }}
+          createItem={(payload) => apiClient.createStaff(payload)}
           onClose={() => setShowBulkImport(false)}
+          onDone={() => { loadStaff(); setShowBulkImport(false) }}
         />
       )}
 

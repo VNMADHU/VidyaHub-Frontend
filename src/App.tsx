@@ -4,6 +4,8 @@ import ErrorBoundary from './components/ErrorBoundary'
 import ToastContainer from './components/ToastContainer'
 import RootLayout from './layouts/RootLayout'
 import SchoolPortalLayout from './layouts/SchoolPortalLayout'
+import OwnerLayout from './layouts/OwnerLayout'
+import OwnerSchoolsPage from './pages/OwnerSchoolsPage'
 import AdminDashboard from './pages/AdminDashboard'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
@@ -113,6 +115,19 @@ const router = createBrowserRouter([
       { path: 'staff-attendance', element: <StaffAttendancePage /> },
       { path: 'about', element: <AboutPage /> },
       { path: 'settings', element: <SettingsPage /> },
+    ],
+  },
+  // ── Owner console (role: owner) ───────────────────────────
+  {
+    path: '/owner',
+    element: (
+      <ProtectedRoute requiredRole="owner">
+        <OwnerLayout />
+      </ProtectedRoute>
+    ),
+    errorElement: <NotFound />,
+    children: [
+      { path: 'schools', element: <OwnerSchoolsPage /> },
     ],
   },
 ])

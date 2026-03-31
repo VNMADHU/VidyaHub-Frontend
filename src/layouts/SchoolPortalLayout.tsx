@@ -67,6 +67,13 @@ const SchoolPortalLayout = () => {
   // Prevent back navigation when logged in
   usePreventBackNavigation()
 
+  // Owner should never land in the school portal — redirect to owner console
+  useEffect(() => {
+    if (role === 'owner') {
+      navigate('/owner/schools', { replace: true })
+    }
+  }, [role, navigate])
+
   // Session polling — every 30s check if this session is still valid
   useEffect(() => {
     const check = async () => {

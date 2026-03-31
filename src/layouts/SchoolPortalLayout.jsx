@@ -28,6 +28,13 @@ const SchoolPortalLayout = () => {
   // Prevent back navigation when logged in
   usePreventBackNavigation()
 
+  // Owner should never land in the school portal — redirect to owner console
+  useEffect(() => {
+    if (role === 'owner') {
+      navigate('/owner/schools', { replace: true })
+    }
+  }, [role, navigate])
+
   useEffect(() => {
     const loadSchoolName = async () => {
       try {
